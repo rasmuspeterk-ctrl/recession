@@ -67,7 +67,12 @@ er acceptancetestens reelle formaal, og DEN er bestaaet.
       (+33,2% log-loss / +33,6% Brier vs teknisk +19,1%; 2001 fanges med max p 76%;
       embargo-spaend L=12/18/24 kun 1,7pp; PROMOVERET — weights.json er nu NBER-onset,
       teknisk baseline gemt som weights_trin1_teknisk.json; resultat: ablation2_resultat.json)
-- [ ] 3. Frekvens-ablation (maanedlig vs kvartal, numerisk gate −1pp)
+- [x] **3. Frekvens-ablation** — `ablation3_frekvens.py`: TESTET, IKKE BESTAAET.
+      Kvt-tyndet maanedlig 32,1% vs krav 32,2% (kvartal 33,2 − 1pp-gate) — fejlet
+      med 0,1pp. Parret forskel −1,1pp, MDE 4,4pp: forskellen ligger dybt under
+      stoejgulvet, men gaten lempes ikke efter resultatet (Grok R6). KVARTAL
+      FORBLIVER PRIMAER. Fuld maanedlig (36,8%) rapporteret som reference —
+      overlaps-inflateret. Resultat: ablation3_resultat.json
 - [ ] 4. Feature-genforsvar + laaste udfordrere (Sahm, claims, permits) + ACM-testen
 - [ ] 5. ALFRED vintage-audit
 - [ ] 6. Output/dom-ombygning (baand, sprogregler, benchmark-tabel)
