@@ -42,6 +42,7 @@ SERIES = {
     "GDPC1":           "real BNP niveau (reserve)",
     "FEDFUNDS":        "effektiv fed funds (market conditions: realt kontantafkast)",
     "PCEPI":           "PCE-prisindeks (market conditions: realt kontantafkast)",
+    "THREEFYTP10":     "ACM 10-aars term-praemie, FRED-spejl 1990+ (trin 4: substitutionstest)",
 }
 
 def fetch_series(sid):
@@ -98,7 +99,7 @@ def main():
             print(f"{sid:<18}  FEJL: {e}")
 
     # manuelle filer kopieres ind i snapshottet og hashes med
-    for name in ("shiller.csv", "manual.json"):
+    for name in ("shiller.csv", "manual.json", "acm.csv"):
         src = MANUAL / name
         if src.exists():
             shutil.copy(src, outdir / name)

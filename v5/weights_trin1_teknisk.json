@@ -1,12 +1,12 @@
 {
  "protocol_version": "5.0-trin2-nber",
- "created_utc": "2026-08-09T20:57:07+00:00",
+ "created_utc": "2026-08-09T20:57:51+00:00",
  "snapshot": "2026-08-09",
  "snapshot_sha256": "8881590d6748cd7106ed6897fa4e7ae5fe4c9375f41c135e9d20deaed48d09d5",
  "label": "nber-onset",
  "label_tekst": "NBER-onset inden 4 kvartaler",
  "n_obs": 264,
- "n_episoder": 35,
+ "n_episoder": 12,
  "base_rate": 0.1818,
  "features": [
   "curve",

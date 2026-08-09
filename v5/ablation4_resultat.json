@@ -1,0 +1,102 @@
+{
+ "protocol_version": "5.0-trin4-features",
+ "created_utc": "2026-08-09T21:13:07+00:00",
+ "snapshot": "2026-08-09",
+ "snapshot_sha256": "3cd0063f68ac3398b6797e60f157419aaabd6c10acae7b17590f1b6534331d76",
+ "determinisme": true,
+ "kandidater": {
+  "sahm_t": {
+   "dLL": -1.71,
+   "dBrier": -3.49,
+   "n_parret": 189,
+   "egen_imp": 32.91,
+   "baseline_imp": 34.62,
+   "folds_niveau_pct": 0.0,
+   "alle_folds_positive": false,
+   "persistens_pct": 28.7,
+   "mde_pp": 6.75,
+   "fortegn_fuldfit": -1,
+   "fortegn_stab_pct": 0.0,
+   "fortegn_folds": 12,
+   "A1": false,
+   "A2": false,
+   "A3": false,
+   "OPTAGET": false
+  },
+  "claims_mom": {
+   "dLL": -61.91,
+   "dBrier": -18.26,
+   "n_parret": 125,
+   "egen_imp": -45.61,
+   "baseline_imp": 16.3,
+   "folds_niveau_pct": 0.0,
+   "alle_folds_positive": false,
+   "persistens_pct": 14.7,
+   "mde_pp": 194.71,
+   "fortegn_fuldfit": -1,
+   "fortegn_stab_pct": 33.0,
+   "fortegn_folds": 12,
+   "A1": false,
+   "A2": false,
+   "A3": false,
+   "OPTAGET": false
+  },
+  "permits_yoy": {
+   "dLL": -14.53,
+   "dBrier": -17.07,
+   "n_parret": 155,
+   "egen_imp": 14.37,
+   "baseline_imp": 28.9,
+   "folds_niveau_pct": 0.0,
+   "alle_folds_positive": false,
+   "persistens_pct": 10.4,
+   "mde_pp": 25.61,
+   "fortegn_fuldfit": -1,
+   "fortegn_stab_pct": 100.0,
+   "fortegn_folds": 12,
+   "A1": false,
+   "A2": false,
+   "A3": true,
+   "OPTAGET": false
+  }
+ },
+ "incumbents": {
+  "curve": {
+   "dLL_ved_drop": -44.56,
+   "dBrier_ved_drop": -48.33,
+   "folds_pos_pct": 0.0,
+   "DEMOTERET": false
+  },
+  "realrate": {
+   "dLL_ved_drop": 0.95,
+   "dBrier_ved_drop": 0.33,
+   "folds_pos_pct": 100.0,
+   "DEMOTERET": false
+  },
+  "dd": {
+   "dLL_ved_drop": 1.12,
+   "dBrier_ved_drop": 0.54,
+   "folds_pos_pct": 100.0,
+   "DEMOTERET": false
+  },
+  "d_infl": {
+   "dLL_ved_drop": 1.45,
+   "dBrier_ved_drop": -1.36,
+   "folds_pos_pct": 100.0,
+   "DEMOTERET": false
+  },
+  "cape_pct": {
+   "dLL_ved_drop": -3.19,
+   "dBrier_ved_drop": -2.13,
+   "folds_pos_pct": 0.0,
+   "DEMOTERET": false
+  }
+ },
+ "acm": {
+  "dLL_fuldsti": -77.88,
+  "dBrier": -30.82,
+  "n_parret": 192,
+  "folds_pos_pct": 0.0,
+  "ADOPTERET": false
+ }
+}

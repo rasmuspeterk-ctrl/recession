@@ -73,6 +73,15 @@ er acceptancetestens reelle formaal, og DEN er bestaaet.
       stoejgulvet, men gaten lempes ikke efter resultatet (Grok R6). KVARTAL
       FORBLIVER PRIMAER. Fuld maanedlig (36,8%) rapporteret som reference —
       overlaps-inflateret. Resultat: ablation3_resultat.json
-- [ ] 4. Feature-genforsvar + laaste udfordrere (Sahm, claims, permits) + ACM-testen
+- [x] **4. Feature-genforsvar** — `ablation4_features.py`: FEATURE-SAETTET UAENDRET.
+      Alle 3 udfordrere "testet, ikke bestaaet" (sahm_t dLL −1,7; claims_mom −61,9
+      paa kort sample; permits_yoy −14,5 — alle med persistens-flag <60%).
+      Bemaerk: sahm_t's fortegn VENDER under onset-censureringen (hoej Sahm uden
+      for recession = typisk lige-efter-recession) — Statistikerens R1-forudsigelse
+      bekraeftet. Incumbents: curve uundvaerlig (drop koster 44,6pp), cape_pct
+      bekraeftet (drop koster 3,2pp — Geminis R1-position afkraeftet); realrate/dd/
+      d_infl marginale men under demotions-gaten. ACM-substitution: −77,9pp fuld-sti
+      (pre-1961-straffen + kort faelleshistorik) — raa kurve bestaar, 2023 forbliver
+      dokumenteret fejlmode. Resultat: ablation4_resultat.json
 - [ ] 5. ALFRED vintage-audit
 - [ ] 6. Output/dom-ombygning (baand, sprogregler, benchmark-tabel)

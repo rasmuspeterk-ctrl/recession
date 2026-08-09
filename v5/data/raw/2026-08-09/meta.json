@@ -1,5 +1,5 @@
 {
- "retrieved_utc": "2026-08-09T16:16:30+00:00",
+ "retrieved_utc": "2026-08-09T21:09:52+00:00",
  "series": {
   "GS10": {
    "rows": 880,
@@ -112,6 +112,14 @@
    "last_value": "131.392",
    "sha256": "0d37320b25ed0cc6296fc8662fc04819d469bd6bcb02986a45e8a678a0d5c794",
    "purpose": "PCE-prisindeks (market conditions: realt kontantafkast)"
+  },
+  "THREEFYTP10": {
+   "rows": 9131,
+   "first": "1990-01-02",
+   "last": "2026-07-31",
+   "last_value": "0.8681",
+   "sha256": "bbc00501e1607c1b9ab160e8523adca78d126be94649d98c791403a0e6e104ff",
+   "purpose": "ACM 10-aars term-praemie, FRED-spejl 1990+ (trin 4: substitutionstest)"
   }
  },
  "manual": {
@@ -122,7 +130,11 @@
   "manual.json": {
    "sha256": "57976b6eb1bdc007ba0d1017a52f416fdc6dcad4ab4bba2ab0d8c8707fd63d4c",
    "bytes": 388
+  },
+  "acm.csv": {
+   "sha256": "91f7aa97d4504e49cf0868907f6f51984e34a03e4a69cd4c5c68ee3be59d252e",
+   "bytes": 14190
   }
  },
- "snapshot_sha256": "8881590d6748cd7106ed6897fa4e7ae5fe4c9375f41c135e9d20deaed48d09d5"
+ "snapshot_sha256": "3cd0063f68ac3398b6797e60f157419aaabd6c10acae7b17590f1b6534331d76"
 }
