@@ -4084,7 +4084,12 @@
     -1.6907
    ]
   },
-  "cp_serie": "RECPROUSM156N"
+  "cp_serie": "RECPROUSM156N",
+  "curve_cape": {
+   "wf_improvement": 36.81,
+   "wf_brier": 34.32,
+   "status": "testet, ikke bestaaet (data-foreslaaet)"
+  }
  },
  "fallback_note": "Forhaandsforpligtet i RAADETS_KONSENSUS (Kimi R5/Sol R6) FOER foerste test."
 }

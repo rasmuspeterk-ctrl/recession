@@ -101,6 +101,12 @@ er acceptancetestens reelle formaal, og DEN er bestaaet.
 Rekalibreringskaede (sjaelden): `fetch.py` → `ablation2_nber.py --promote` →
 `finalize6.py`. Maanedligt ritual uaendret: `fetch.py` + manual.json + `motor.py`.
 
-Aaben, IKKE-koert idee til evt. praeregistreret v5.1 (kraever Rasmus' godkendelse
-FOER koersel; den er data-foreslaaet og vil baere det stempel): curve+cape_pct-
-subsettet, antydet af trin 4-drop-analysen og trin 6-benchmarken.
+## v5.1-testen: curve+cape — TESTET, IKKE BESTAAET (data-foreslaaet)
+
+Koert 2026-08-09 efter Rasmus' godkendelse (`ablation7_curvecape.py`, een koersel).
+Fejlede 3 af 6 forhaandsregistrerede gates: G2 (Brier +1,47 < 2,0; LL +2,49 bestod),
+G3 (kun 50% af LOEO-folds paa niveau) og — vigtigst — G5, anti-forurenings-tjekket:
+fordelen findes KUN post-1990 (+5,31pp); pre-1990 er subsettet DAARLIGERE (−0,34pp).
+Selektionsforureningens signatur. MDE 12,3pp. Linjen staar permanent i benchmark-
+tabellen; delmaengde-jagten er LUKKET — ingen ny subset-hypotese uden ny oekonomisk
+begrundelse (praeregistreret i ablation7's header). Resultat: ablation7_resultat.json

@@ -1,0 +1,38 @@
+{
+ "protocol_version": "5.1-curvecape",
+ "created_utc": "2026-08-09T21:51:43+00:00",
+ "snapshot": "2026-08-09",
+ "snapshot_sha256": "6677ea30d166872b7d10098f292af4b8a0dc59119758ff403654c357be931ac6",
+ "stempel": "data-foreslaaet hypotese (trin 4-drop + trin 6-benchmark)",
+ "gates": {
+  "G1": true,
+  "G2": false,
+  "G3": false,
+  "G4": true,
+  "G5": false,
+  "G6": true,
+  "promoveret": false
+ },
+ "curvecape": {
+  "improvement": 36.81,
+  "brier": 34.32
+ },
+ "curveonly": {
+  "improvement": 34.32,
+  "brier": 32.85
+ },
+ "dLL": 2.49,
+ "dBrier": 1.47,
+ "n_parret": 195,
+ "folds_niveau_pct": 50.0,
+ "alle_folds_positive": true,
+ "persistens_pct": 65.6,
+ "mde_pp": 12.26,
+ "cape_fortegn": -1,
+ "fortegn_stab_pct": 100.0,
+ "fortegn_folds": 35,
+ "aera_pre1990_dLL": -0.34,
+ "aera_post1990_dLL": 5.31,
+ "n_pre": 73,
+ "n_post": 122
+}

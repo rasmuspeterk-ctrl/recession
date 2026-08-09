@@ -140,6 +140,9 @@ def main():
           + ("   <- OPERATIONEL" if W["operationel"] == "curve_only" else ""))
     print(f"   {'fuldmodel (5 features)':<34}{'+'+format(fm['wf_improvement'],'.1f')+'%':>10}{p_full*100:>8.1f}%"
           f"   [{fm['status']}]")
+    cc = W["benchmarks"].get("curve_cape")
+    if cc:
+        print(f"   {'curve+cape (praereg. v5.1-test)':<34}{'+'+format(cc['wf_improvement'],'.1f')+'%':>10}{'':>9}   [{cc['status']}]")
     if p_arv is not None:
         print(f"   {'v4-arv (teknisk label)':<34}{'':>10}{p_arv*100:>8.1f}%   [andet maal — arv]")
     print(f"   {'realtids-Sahm (trigger 0,50)':<34}{'':>10}{sahm[1]:>8.2f}    [naerhorisont-signal]")
