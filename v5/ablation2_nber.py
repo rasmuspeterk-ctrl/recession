@@ -287,7 +287,9 @@ def promote(snap, meta, res):
 
     old = HERE / "weights.json"
     if old.exists():
-        (HERE / "weights_trin1_teknisk.json").write_text(old.read_text(encoding="utf-8"), encoding="utf-8")
+        prev = json.loads(old.read_text(encoding="utf-8"))
+        bk = HERE / f"weights_backup_{prev.get('protocol_version','ukendt')}.json"
+        bk.write_text(old.read_text(encoding="utf-8"), encoding="utf-8")
     out = dict(protocol_version=PROTOCOL,
                created_utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),
                snapshot=snap.name, snapshot_sha256=meta["snapshot_sha256"],

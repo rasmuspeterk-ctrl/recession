@@ -43,6 +43,7 @@ SERIES = {
     "FEDFUNDS":        "effektiv fed funds (market conditions: realt kontantafkast)",
     "PCEPI":           "PCE-prisindeks (market conditions: realt kontantafkast)",
     "THREEFYTP10":     "ACM 10-aars term-praemie, FRED-spejl 1990+ (trin 4: substitutionstest)",
+    "RECPROUSM156N":   "Chauvet-Piger glattet recessionssandsynlighed (benchmark, coincident nowcast)",
 }
 
 def fetch_series(sid):

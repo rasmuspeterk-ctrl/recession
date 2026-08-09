@@ -1,5 +1,5 @@
 {
- "retrieved_utc": "2026-08-09T21:09:52+00:00",
+ "retrieved_utc": "2026-08-09T21:32:05+00:00",
  "series": {
   "GS10": {
    "rows": 880,
@@ -120,6 +120,14 @@
    "last_value": "0.8681",
    "sha256": "bbc00501e1607c1b9ab160e8523adca78d126be94649d98c791403a0e6e104ff",
    "purpose": "ACM 10-aars term-praemie, FRED-spejl 1990+ (trin 4: substitutionstest)"
+  },
+  "RECPROUSM156N": {
+   "rows": 709,
+   "first": "1967-06-01",
+   "last": "2026-06-01",
+   "last_value": "0.60",
+   "sha256": "219163a89789c140f9a1265b0b75f78f54888d2a956d6809043bbb3c5b8e9a0e",
+   "purpose": "Chauvet-Piger glattet recessionssandsynlighed (benchmark, coincident nowcast)"
   }
  },
  "manual": {
@@ -136,5 +144,5 @@
    "bytes": 14190
   }
  },
- "snapshot_sha256": "3cd0063f68ac3398b6797e60f157419aaabd6c10acae7b17590f1b6534331d76"
+ "snapshot_sha256": "6677ea30d166872b7d10098f292af4b8a0dc59119758ff403654c357be931ac6"
 }

@@ -1,0 +1,31 @@
+{
+ "protocol_version": "5.0-trin5-audit",
+ "created_utc": "2026-08-09T21:30:46+00:00",
+ "snapshot": "2026-08-09",
+ "snapshot_sha256": "3cd0063f68ac3398b6797e60f157419aaabd6c10acae7b17590f1b6534331d76",
+ "cpi_revisioner": {
+  "n_vintages": 52,
+  "n_obs": 312,
+  "mean_abs": 0.0032,
+  "p95_abs": 0.0278,
+  "max_abs": 0.1203
+ },
+ "skill_baseline": 33.13,
+ "skill_udsving_pp": {
+  "plus": 0.11,
+  "minus": 0.11,
+  "sav": 0.0
+ },
+ "vaerste_udsving_pp": 0.11,
+ "gdp_advance_demo": {
+  "2022Q1": {
+   "advance_2022_08": -1.6,
+   "endelig_nu": -1.0
+  },
+  "2022Q2": {
+   "advance_2022_08": -0.9,
+   "endelig_nu": 0.6
+  }
+ },
+ "permanent_lag_kraevet": false
+}
