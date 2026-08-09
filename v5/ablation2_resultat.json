@@ -1,0 +1,49 @@
+{
+ "protocol_version": "5.0-trin2-nber",
+ "created_utc": "2026-08-09T20:57:51+00:00",
+ "snapshot": "2026-08-09",
+ "snapshot_sha256": "8881590d6748cd7106ed6897fa4e7ae5fe4c9375f41c135e9d20deaed48d09d5",
+ "gates": {
+  "G1": true,
+  "G2": true,
+  "G3": true,
+  "promoveret": true
+ },
+ "n_scored": 195,
+ "base_rate": 0.1641,
+ "first_scored": "1967Q4",
+ "last_scored": "2023Q2",
+ "onsets_total": 35,
+ "onsets_i_sample": [
+  "1948-12",
+  "1953-08",
+  "1957-09",
+  "1960-05",
+  "1970-01",
+  "1973-12",
+  "1980-02",
+  "1981-08",
+  "1990-08",
+  "2001-04",
+  "2008-01",
+  "2020-03"
+ ],
+ "improvement": 33.23,
+ "brier": 33.6,
+ "logloss": 0.2981,
+ "max_p_2001": 0.7602,
+ "scored_2001": 4,
+ "embargo_sens": {
+  "12": 33.04,
+  "18": 33.23,
+  "24": 34.68
+ },
+ "flips_provisoriske_nuller": 7,
+ "power_median_pos": 36,
+ "power_min_pos": 16,
+ "teknisk_samme_origins": {
+  "improvement": 5.64,
+  "brier": -6.94,
+  "n": 195
+ }
+}

@@ -69,13 +69,14 @@ def main():
     p12 = 1 / (1 + np.exp(-np.clip(logit, -30, 30)))
     base = W["base_rate"]
 
+    label_tekst = W.get("label_tekst", "teknisk recession inden 4 kvartaler")
+    wf_imp = W.get("wf_improvement") or W["wf_table"]["5: + CAPE"]["improvement"]
     print("=" * 74)
-    print(f" MOTOR v5.0-trin1   snapshot {snap.name} (hash {meta['snapshot_sha256'][:10]}...)")
-    print(f" vaegte: {W['protocol_version']} kalibreret {W['created_utc'][:10]} "
+    print(f" MOTOR {W['protocol_version']}   snapshot {snap.name} (hash {meta['snapshot_sha256'][:10]}...)")
+    print(f" vaegte kalibreret {W['created_utc'][:10]} "
           f"paa {W['n_obs']} kvartaler / {W['n_episoder']} episoder")
     print("=" * 74)
-    print(f"\nLAG 1 — P(teknisk recession inden 4 kvartaler)   [walk-forward "
-          f"+{W['wf_table']['5: + CAPE']['improvement']:.1f}% log-loss]\n")
+    print(f"\nLAG 1 — P({label_tekst})   [walk-forward +{wf_imp:.1f}% log-loss]\n")
     NAVN = dict(curve="Rentekurve 10y-3m", realrate="Realrente 10y-CPI",
                 dd="S&P vs 12-mdr hoejde", d_infl="Aendring i inflation",
                 cape_pct="CAPE-percentil")
@@ -142,14 +143,20 @@ def main():
     for navn, vaerdi in mc:
         print(f"      {navn:<34}{vaerdi}")
 
+    if W.get("label") == "nber-onset":
+        label_adv = ("NBER-onset-label (trin 2): 2001 er med; origins inde i recession\n"
+                     "  censureres; traening under L=18-mdr-embargo. P er betinget af\n"
+                     "  NBER-datering pr. snapshot-datoen.")
+    else:
+        label_adv = ("Teknisk label (2 neg. kvartaler): 2001 mangler i kalibreringen.\n"
+                     "  P er betinget af BNP-data som revideret pr. snapshot-datoen.")
     print(f"""
 ADVARSEL (staar permanent, T8)
   2023: modellens vaerste fejl, 76,9% uden recession — kurveregime-risiko
   gaelder begge veje. {W['n_episoder']} episoder er faa; forskellen fra
-  basisraten er endnu ikke forsynet med baand (trin 4-6). Teknisk label
-  (2 neg. kvartaler) skiftes til NBER-onset i trin 2 — 2001 mangler i
-  denne kalibrering. Eksogene chok kan ikke forudsiges.
-  P er betinget af BNP-data som revideret pr. snapshot-datoen.""")
+  basisraten er endnu ikke forsynet med baand (trin 4-6). Eksogene chok
+  kan ikke forudsiges.
+  {label_adv}""")
 
 if __name__ == "__main__":
     main()

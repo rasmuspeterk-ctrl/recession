@@ -62,8 +62,11 @@ er acceptancetestens reelle formaal, og DEN er bestaaet.
 
 ## Byggeorden-status (blueprint sektion 10)
 
-- [x] **1. Reproducerbarheds-refaktor** — denne mappe (acceptancetest afventer shiller.csv)
-- [ ] 2. Label-ablation: teknisk → NBER-onset (mekanisk regel + annonceringstabel)
+- [x] **1. Reproducerbarheds-refaktor** — denne mappe (determinisme OK; niveaudiff mod v4 attribueret, se ovenfor)
+- [x] **2. Label-ablation: teknisk → NBER-onset** — `ablation2_nber.py`, alle gates bestaaet
+      (+33,2% log-loss / +33,6% Brier vs teknisk +19,1%; 2001 fanges med max p 76%;
+      embargo-spaend L=12/18/24 kun 1,7pp; PROMOVERET — weights.json er nu NBER-onset,
+      teknisk baseline gemt som weights_trin1_teknisk.json; resultat: ablation2_resultat.json)
 - [ ] 3. Frekvens-ablation (maanedlig vs kvartal, numerisk gate −1pp)
 - [ ] 4. Feature-genforsvar + laaste udfordrere (Sahm, claims, permits) + ACM-testen
 - [ ] 5. ALFRED vintage-audit
