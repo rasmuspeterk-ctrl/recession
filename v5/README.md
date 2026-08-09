@@ -83,5 +83,24 @@ er acceptancetestens reelle formaal, og DEN er bestaaet.
       d_infl marginale men under demotions-gaten. ACM-substitution: −77,9pp fuld-sti
       (pre-1961-straffen + kort faelleshistorik) — raa kurve bestaar, 2023 forbliver
       dokumenteret fejlmode. Resultat: ablation4_resultat.json
-- [ ] 5. ALFRED vintage-audit
-- [ ] 6. Output/dom-ombygning (baand, sprogregler, benchmark-tabel)
+- [x] **5. ALFRED vintage-audit** — `audit5_alfred.py`: AUDIT FROSSET, ingen pipeline.
+      CPI-revisioner maalt paa 52 vintages/312 obs: gns |d|=0,003pp, max 0,12pp;
+      worst-case skill-udsving 0,11pp << 2pp-graensen. 2022 H1-vintage-flippet
+      dokumenteret (advance −1,6/−0,9 fyrer; revideret −1,0/+0,6 fyrer ikke).
+      Resultat: audit5_resultat.json
+- [x] **6. Output/dom-ombygning** — `finalize6.py` + nyt `motor.py`: GATEN BED.
+      Curve-only (+34,3% LL) slaar fuldmodellen (+33,2%) paa NBER-onset-labelen;
+      forhaandsforpligtet fallback eksekveret: OPERATIONEL MODEL = CURVE-ONLY-
+      PROBIT, fuldmodellen printes ved siden af som "testet, ikke bestaaet mod
+      benchmark" (LL-forskel 1,1pp < stoejgulv ~4pp; Brier gaar modsat — kontekst
+      printes, dommen aendres ikke). Foerste laesning: P=20,1% [14,4-29,2%] vs
+      basisrate 18,2% — IKKE SKELNELIG FRA BASISRATEN.
+
+## v5.0 ER KOMPLET — alle 6 trin gennemfoert 2026-08-09
+
+Rekalibreringskaede (sjaelden): `fetch.py` → `ablation2_nber.py --promote` →
+`finalize6.py`. Maanedligt ritual uaendret: `fetch.py` + manual.json + `motor.py`.
+
+Aaben, IKKE-koert idee til evt. praeregistreret v5.1 (kraever Rasmus' godkendelse
+FOER koersel; den er data-foreslaaet og vil baere det stempel): curve+cape_pct-
+subsettet, antydet af trin 4-drop-analysen og trin 6-benchmarken.
