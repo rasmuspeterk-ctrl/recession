@@ -1,0 +1,128 @@
+{
+ "retrieved_utc": "2026-08-09T16:16:30+00:00",
+ "series": {
+  "GS10": {
+   "rows": 880,
+   "first": "1953-04-01",
+   "last": "2026-07-01",
+   "last_value": "4.60",
+   "sha256": "a875d88b7ed6a413f697ddb6332f13e61ac58ac7ae0ef52d66a62174995ec6f7",
+   "purpose": "10-aarig statsrente, maanedlig (feature: curve/realrate)"
+  },
+  "TB3MS": {
+   "rows": 1111,
+   "first": "1934-01-01",
+   "last": "2026-07-01",
+   "last_value": "3.73",
+   "sha256": "a44dc72332a838dac7a9f1fc0731e4927a7b3217431b3e012bd88dff4b6986fa",
+   "purpose": "3-mdr T-bill, maanedlig (feature: curve)"
+  },
+  "CPIAUCNS": {
+   "rows": 1361,
+   "first": "1913-01-01",
+   "last": "2026-06-01",
+   "last_value": "333.952",
+   "sha256": "3d61f656df56ff3b738a066ce87fb086945bd7d19f6fedd2c0d16e352273440d",
+   "purpose": "CPI NSA (inflations-features; Shiller-konsistent)"
+  },
+  "CPIAUCSL": {
+   "rows": 953,
+   "first": "1947-01-01",
+   "last": "2026-06-01",
+   "last_value": "332.568",
+   "sha256": "2efffad3305f5adef58e84b06f268811123534805d5d7358f633cdb7e8c1aedb",
+   "purpose": "CPI SA (reserve/diagnostik)"
+  },
+  "UNRATE": {
+   "rows": 942,
+   "first": "1948-01-01",
+   "last": "2026-07-01",
+   "last_value": "4.1",
+   "sha256": "b671b94c9381e263cafeb2c24f035b49829d805ee2650498c8eb08a33b156f60",
+   "purpose": "ledighed (Sahm-transform-kandidat, trin 4)"
+  },
+  "SAHMREALTIME": {
+   "rows": 799,
+   "first": "1959-12-01",
+   "last": "2026-07-01",
+   "last_value": "-0.03",
+   "sha256": "ba5e67096738bfd055c91fe0564d28e32816422a21175d8bb1abd77e24eaf296",
+   "purpose": "Sahm-reglen realtid (monitor + benchmark)"
+  },
+  "ICSA": {
+   "rows": 3109,
+   "first": "1967-01-07",
+   "last": "2026-08-01",
+   "last_value": "199000",
+   "sha256": "00ad85a6d1c461011420cc0c66743c22f6ea4feaf112a9605767c0535290075a",
+   "purpose": "initial claims, ugentlig (kandidat, trin 4)"
+  },
+  "PERMIT": {
+   "rows": 798,
+   "first": "1960-01-01",
+   "last": "2026-06-01",
+   "last_value": "1374",
+   "sha256": "2fcb24783e0ca27a5c9b7fc47fb6a3758cc7a5fafb4b8c593911a9cf0a98b1c0",
+   "purpose": "byggetilladelser (kandidat, trin 4)"
+  },
+  "BAMLH0A0HYM2": {
+   "rows": 787,
+   "first": "2023-08-08",
+   "last": "2026-08-06",
+   "last_value": "2.71",
+   "sha256": "2bb008786d3a3a50c139db3f251eeccf497cd2038dbc0512a090b2a4a77817cf",
+   "purpose": "HY OAS, daglig (monitor \u2014 ineligible som feature)"
+  },
+  "USREC": {
+   "rows": 2060,
+   "first": "1854-12-01",
+   "last": "2026-07-01",
+   "last_value": "0",
+   "sha256": "50a6d6f351c2a190f0ddc926956afbba791ee69b86c70bda4fdcbbe28bf16feb",
+   "purpose": "NBER-recessionsmaaneder (label fra trin 2)"
+  },
+  "A191RL1Q225SBEA": {
+   "rows": 317,
+   "first": "1947-04-01",
+   "last": "2026-04-01",
+   "last_value": "1.5",
+   "sha256": "b5afe31ad962ea5e5de0c67491f557e8fde93efbadadcb03e13c12d055db9d28",
+   "purpose": "real BNP %-aendring ann. (teknisk label + advance-diagnostik)"
+  },
+  "GDPC1": {
+   "rows": 318,
+   "first": "1947-01-01",
+   "last": "2026-04-01",
+   "last_value": "24270.599",
+   "sha256": "f7cfe97b773eef3bd354aa722fd632bcae10b30f43e5aefcc3de89b5e251c346",
+   "purpose": "real BNP niveau (reserve)"
+  },
+  "FEDFUNDS": {
+   "rows": 865,
+   "first": "1954-07-01",
+   "last": "2026-07-01",
+   "last_value": "3.63",
+   "sha256": "8c320a5e17fc8f0b41a42b537309f261371f7926563f829411af4a9358a4db44",
+   "purpose": "effektiv fed funds (market conditions: realt kontantafkast)"
+  },
+  "PCEPI": {
+   "rows": 810,
+   "first": "1959-01-01",
+   "last": "2026-06-01",
+   "last_value": "131.392",
+   "sha256": "0d37320b25ed0cc6296fc8662fc04819d469bd6bcb02986a45e8a678a0d5c794",
+   "purpose": "PCE-prisindeks (market conditions: realt kontantafkast)"
+  }
+ },
+ "manual": {
+  "shiller.csv": {
+   "sha256": "6a9e3211af879205ee725dcac3e130e8bb6f5daaa20896dd6896aff435cf5f77",
+   "bytes": 87008
+  },
+  "manual.json": {
+   "sha256": "57976b6eb1bdc007ba0d1017a52f416fdc6dcad4ab4bba2ab0d8c8707fd63d4c",
+   "bytes": 388
+  }
+ },
+ "snapshot_sha256": "8881590d6748cd7106ed6897fa4e7ae5fe4c9375f41c135e9d20deaed48d09d5"
+}

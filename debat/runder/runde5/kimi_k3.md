@@ -1,0 +1,11 @@
+VOTE: APPROVE
+
+Three reservations for the record; none block.
+
+**1. Onset-label scoring loophole (Section 1).** In-recession months are excluded from *estimation*, but the blueprint is silent on walk-forward *evaluation* origins. An origin inside an ongoing NBER recession has a censored onset target — a new onset is impossible until the current recession ends (1980→1981 is the boundary case, trough to next onset exactly 12 months). Scoring those origins inflates skill with near-mechanical negatives across ≈14% of post-war quarters. One sentence fixes it: origins inside an NBER recession, as dated at the snapshot, are excluded from scoring as well as from fitting. Without this, the purged walk-forward number is biased upward by construction.
+
+**2. Unspecified failure path (Section 8).** "Must beat intercept and curve-only probit" is a release gate, but nothing says what ships if the re-arbitrated model fails it — a live possibility, since purging plus the declaration-lag embargo will mechanically shrink the old +22.9%, which was computed with neither. Specify the fallback now, in advance: publish the best specification that passes the gate (even if that is curve-only), label the full model "tested, not passed," and print both. Pre-committing the fallback is the only protection against a motivated carve-out the first time the gate actually bites.
+
+**3. Residual look-ahead in the shipped tool (Section 9).** MOTOR.py's `cape_percentil()` uses fixed knots fit to the full 1881–2026 distribution, while curve.py calibrates on expanding-window percentiles — train/serve skew plus a hand-copied constant. The "refuses hand-copied constants" rule should explicitly cover these knots: the live percentile must be computed from the snapshot's own expanding history, not from a table that embeds 2026 information.
+
+The rest — purged walk-forward as the sole skill claim, the announcement-date table, the dual-metric admission gate with bootstrap persistence printed, the retired +22.9% — I stand behind. Build it.

@@ -1,0 +1,10 @@
+# hemmeligheder — MAA ALDRIG committes
+.env
+MiroFish/.env
+
+# MiroFish er sit eget upstream-repo (klonet), holdes ude af dette
+MiroFish/
+
+# python-stoej
+__pycache__/
+*.pyc

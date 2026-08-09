@@ -1,0 +1,9 @@
+VOTE: APPROVE
+
+Reservation 1 — the frequency gate is underpowered; print that number. With ~12 episodes, the monthly-vs-quarterly non-inferiority comparison has a minimum detectable skill difference on the order of ±5–8pp relative log-loss. "Non-inferior" is the near-certain verdict under that noise floor. The calibration report must state the detectable-effect size next to the gate result, and any switch to monthly must be framed as a timeliness decision, not demonstrated equivalence. Otherwise the gate is theater.
+
+Reservation 2 — admission needs bootstrap persistence, at minimum reported. A ≥2% mean log-loss gain across 12 episodes can be manufactured by two or three quarters inside a single episode. The LOEO sign-stability and no-single-rescuing-episode conditions catch most of this, but for every challenger — admitted or not — print the sign frequency of its improvement across the ~1000 episode-bootstrap resamples. A challenger passing the gate with <60% bootstrap persistence carries that fact next to its number in the output.
+
+Reservation 3 — the NBER target is partially unknowable exactly when it matters most. Median peak-declaration lag is ~8 months (2020: 4 months; 2001 trough: 20 months). Two consequences. First, the 6-quarter embargo must be an automatic floor with mechanical extension while any window month is undeclarable — not a judgment call at refit time. Second, the live output must state explicitly that P is conditional on NBER dating as of the snapshot date. The advance-estimate diagnostic is the only real-time bridge across that gap: keep it visible, keep it labeled unvalidated, and never let it feed the probability.
+
+None of this blocks. The draft honors the philosophy mechanically — preregistration, published failures, the language rule tying verdict words to the band — which is the part that actually matters.

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(env)",
+      "Bash(grep -iE \"^\\\\.env|env$|apikey|api_key|secrets\")",
+      "Bash(curl --version)",
+      "Bash(curl -s --max-time 60 https://openrouter.ai/api/v1/models -o \"C:/Users/Machine/AppData/Local/Temp/claude/C--Users-Machine-recession/d2baa6dc-a1ba-44a3-b5f4-1a894720a795/scratchpad/openrouter_models.json\")"
+    ]
+  }
+}

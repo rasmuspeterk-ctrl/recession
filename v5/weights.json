@@ -1,0 +1,158 @@
+{
+ "protocol_version": "5.0-trin1",
+ "created_utc": "2026-08-09T16:17:15+00:00",
+ "snapshot": "2026-08-09",
+ "snapshot_sha256": "8881590d6748cd7106ed6897fa4e7ae5fe4c9375f41c135e9d20deaed48d09d5",
+ "acceptance_bestaaet": false,
+ "n_obs": 305,
+ "n_episoder": 11,
+ "episoder": [
+  "1947Q3",
+  "1949Q2",
+  "1953Q4",
+  "1958Q1",
+  "1970Q1",
+  "1974Q4",
+  "1980Q3",
+  "1982Q1",
+  "1991Q1",
+  "2008Q4",
+  "2020Q2"
+ ],
+ "base_rate": 0.1475,
+ "features": [
+  "curve",
+  "realrate",
+  "dd",
+  "d_infl",
+  "cape_pct"
+ ],
+ "mu": {
+  "curve": 1.3923,
+  "realrate": 1.7104,
+  "dd": -0.0468,
+  "d_infl": -0.1025,
+  "cape_pct": 0.6141
+ },
+ "sd": {
+  "curve": 1.1387,
+  "realrate": 2.9742,
+  "dd": 0.0728,
+  "d_infl": 2.836,
+  "cape_pct": 0.2926
+ },
+ "w": [
+  -2.3759,
+  -0.7888,
+  -0.4164,
+  -0.7438,
+  -0.0638,
+  -0.6253
+ ],
+ "wf_table": {
+  "1: KURVEN alene": {
+   "features": [
+    "curve"
+   ],
+   "logloss": 0.3583,
+   "base": 0.3797,
+   "improvement": 5.65,
+   "brier_skill": 5.81,
+   "n_test": 245
+  },
+  "1b: kurve 12m-min": {
+   "features": [
+    "curve_min12"
+   ],
+   "logloss": 0.3078,
+   "base": 0.3797,
+   "improvement": 18.93,
+   "brier_skill": 18.24,
+   "n_test": 245
+  },
+  "2: kurve + realrente": {
+   "features": [
+    "curve",
+    "realrate"
+   ],
+   "logloss": 0.3437,
+   "base": 0.3797,
+   "improvement": 9.48,
+   "brier_skill": 8.26,
+   "n_test": 245
+  },
+  "3: + drawdown": {
+   "features": [
+    "curve",
+    "realrate",
+    "dd"
+   ],
+   "logloss": 0.3179,
+   "base": 0.3797,
+   "improvement": 16.29,
+   "brier_skill": 11.18,
+   "n_test": 245
+  },
+  "4: + inflation": {
+   "features": [
+    "curve",
+    "realrate",
+    "dd",
+    "d_infl"
+   ],
+   "logloss": 0.3179,
+   "base": 0.3797,
+   "improvement": 16.29,
+   "brier_skill": 11.55,
+   "n_test": 245
+  },
+  "5: + CAPE": {
+   "features": [
+    "curve",
+    "realrate",
+    "dd",
+    "d_infl",
+    "cape_pct"
+   ],
+   "logloss": 0.3073,
+   "base": 0.3797,
+   "improvement": 19.08,
+   "brier_skill": 15.66,
+   "n_test": 245
+  },
+  "6: alle 10": {
+   "features": [
+    "curve",
+    "curve_min12",
+    "realrate",
+    "d_rate",
+    "dd",
+    "mom12",
+    "infl",
+    "d_infl",
+    "cape_pct",
+    "g"
+   ],
+   "logloss": 0.2946,
+   "base": 0.3797,
+   "improvement": 22.41,
+   "brier_skill": 17.44,
+   "n_test": 245
+  },
+  "kontrol: uden kurve": {
+   "features": [
+    "realrate",
+    "d_rate",
+    "dd",
+    "d_infl",
+    "cape_pct"
+   ],
+   "logloss": 0.3291,
+   "base": 0.3797,
+   "improvement": 13.33,
+   "brier_skill": 11.5,
+   "n_test": 245
+  }
+ },
+ "periode": "1947Q2-2023Q2"
+}

@@ -1,0 +1,13 @@
+event,cycle_month,announcement_date,source
+peak_1980,1980-01,1980-06-03,nber.org/cycles (Business Cycle Dating Committee announcement)
+trough_1980,1980-07,1981-07-08,nber.org/cycles
+peak_1981,1981-07,1982-01-06,nber.org/cycles
+trough_1982,1982-11,1983-07-08,nber.org/cycles
+peak_1990,1990-07,1991-04-25,nber.org/cycles
+trough_1991,1991-03,1992-12-22,nber.org/cycles
+peak_2001,2001-03,2001-11-26,nber.org/cycles
+trough_2001,2001-11,2003-07-17,nber.org/cycles
+peak_2007,2007-12,2008-12-01,nber.org/cycles
+trough_2009,2009-06,2010-09-20,nber.org/cycles
+peak_2020,2020-02,2020-06-08,nber.org/cycles
+trough_2020,2020-04,2021-07-19,nber.org/cycles

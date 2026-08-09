@@ -1,0 +1,19 @@
+# KIMI K3 — ROUND 3: FINAL POSITIONS
+
+**D1 — Label.** Final: NBER/USREC, 2001 in, embargo the most recent ~6 quarters where declaration is pending. The target of a 12-month forecast need not be contemporaneously knowable; training labels must be final — the technical rule fails this (2022 H1 was revised away). Compromise: a "two consecutive negative advance prints" line in the real-time checklist, labeled unvalidated — covers Nemotron/Gemma's evaluability concern without contaminating the label. **VETO** on the technical rule as primary label. Change my mind: evidence the embargo traps a live episode undeclarable for >24 months; then I accept a hybrid.
+
+**D2 — Frequency.** Final: monthly direct-12m. Episode count is unchanged (~12); T3's episode-blocked scoring neutralizes the overlap-inflation objection. Compromise: Sol's package — monthly model, all published metrics episode-blocked, quarterly-thinned robustness score printed beside them. If the minority holds out, I can live with the secretariat fallback (quarterly v5.0, monthly as preregistered v5.1), but it is second-best. No veto.
+
+**D3 — Feature budget.** Final: no immunity; all five incumbents re-arbitrated under pre-1990-select / post-1990-one-shot (T7); hard cap 6; locked challengers {Sahm transform, claims, permits} plus the D4 substitution; admission requires log-loss AND Brier improvement, ≥2% relative log-loss, sign stability in ≥80% of LOEO folds, no single-episode rescue; all failures published. Compromise: threshold band 2–3%, exact number fixed once and preregistered after the re-derivation shows the noise floor — I'll accept 3%. **VETO** on any admission path without preregistered thresholds (GPT-OSS's 1% forward selection is a garden of forking paths with a gate sign). Change my mind: a block-bootstrap simulation of selection noise at n=12 justifying a different floor.
+
+**D4 — ACM curve.** Final: exactly one locked substitution test, judged on full-path walk-forward plus episode stability, explicitly not on 2023 repair; pre-1961 truncation cost reported in the result. Compromise: if ambiguous, raw curve stays and the test is published as failed. Gemini's refusal is noted, but a single boxed test is not fishing. No veto. Change my mind: evidence that ACM estimates are themselves materially revised in real time.
+
+**D5 — ALFRED.** Final: I concede to the conditional pipeline. The one-time audit is step one; any series showing >2pp log-loss materiality gets a permanent vintage layer in the calibration script only. The live tool never touches ALFRED. This is my position with a binding trigger — no veto.
+
+**D6 — LAG 3.** Final: accept the on-the-table structure — recession-relevant flags (Sahm, claims, HY OAS, drawdown) become protocol candidates, admitted or published as "tested, not passed"; valuation/debasement flags move to a separated "market conditions — not recession evidence" section; counts never produce probability or action language. **VETO** on Nemotron's BMA sub-model — three weight-estimation problems on 12 events is the vibes-backdoor with machinery. Change my mind: a preregistered identifiability simulation showing BMA weights are recoverable at n≈12. I don't believe one exists.
+
+**D7 — Engine.** Final: L2 logit. L2 with Gaussian penalty *is* the Bayesian MAP; the only real difference is the band, and the episode bootstrap (T3) respects dependence that a posterior over i.i.d. quarters would miss. Compromise: Bayesian variant as a labeled, preregistered v5.1 experiment. No veto.
+
+**Secretariat notes.** S1 ratify — weights.json + data hash + 40-day staleness refusal kills hand-copied constants. S2 ratify — order: label → frequency → features → vintage, one ablation each. S3 ratify — calibrate.py / fetch.py / MOTOR.py, stdlib+numpy.
+
+**Vetoes, summary:** (1) technical-rule primary label; (2) BMA/flag sub-model; (3) unpreregistered feature admission. Everything else negotiable within the stated bands.

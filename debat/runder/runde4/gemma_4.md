@@ -1,0 +1,9 @@
+VOTE: APPROVE
+
+**Reservations for the record:**
+
+1. **The "Advance-Estimate Diagnostic" Risk:** While I support the "honesty firewall," providing a real-time GDP diagnostic (two negative advance estimates) in the output—even if labeled unvalidated—creates a psychological "backdoor" for the user. There is a high risk that a user will treat this diagnostic as a proxy for the model's probability, effectively re-introducing the "vibes" the architecture seeks to kill. I recommend this be moved to a strictly separate "Data Quality/Volatility" section to prevent cognitive leakage into the probability assessment.
+
+2. **The "Estimation-Sensitivity Range" Naming:** While I accept the name change from "predictive interval" to "estimation-sensitivity range" to satisfy Sol, we must be extremely careful with the documentation. If the user interprets this as a measure of *market volatility* or *error variance* rather than *parameter uncertainty* (due to the small $n$ of episodes), the model's utility for risk management collapses. The distinction between "the model is uncertain" and "the economy is volatile" must be mathematically and linguistically airtight.
+
+3. **The ACM Term-Premium Substitution:** I accept the "one boxed test" approach, but I hold a reservation regarding the "pre-1961 truncation" penalty. If the term-premium series is significantly more stable or has a different distribution than the raw curve in the 1940s-50s, the penalty might be mathematically unfair. However, given the "radical simplicity" and "no complexity without proof" constraints, I concede this to maintain the build order.
