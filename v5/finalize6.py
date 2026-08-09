@@ -6,7 +6,7 @@ BLUEPRINT-KRAVET (Section 8) BED: paa NBER-onset-labelen slaar curve-only
 (+34,3% wf log-loss) fuldmodellen (+33,2%). Den forhaandsforpligtede fallback
 (Kimi R5 / Sol R6, nedskrevet i RAADETS_KONSENSUS foer nogen test var koert)
 eksekveres derfor mekanisk:
-  - OPERATIONEL v5.0-model = curve-only NBER-onset-probit (NY Fed-stil)
+  - OPERATIONEL v5.0-model = curve-only NBER-onset-LOGIT (NY Fed-stil-benchmark; samme L2-logit-motor som alt andet)
   - Fuldmodellen (5 features) printes ved siden af, maerket
     "testet, ikke bestaaet mod benchmark" — med noten at forskellen (1,1pp)
     ligger under stoejgulvet (~4pp MDE fra trin 3) og at Brier gaar modsat

@@ -108,7 +108,7 @@ def main():
     # ---------------------------------------------------------------- output
     print("=" * 74)
     print(f" MOTOR v5.0   snapshot {snap.name} (hash {meta['snapshot_sha256'][:10]}...)")
-    print(f" operationel model: {'CURVE-ONLY-PROBIT' if W['operationel']=='curve_only' else 'FULDMODEL'} "
+    print(f" operationel model: {'CURVE-ONLY-LOGIT' if W['operationel']=='curve_only' else 'FULDMODEL'} "
           f"paa {W['label_tekst']}")
     print(f" kalibreret {W['created_utc'][:10]} paa {W['n_obs']} kvartaler / {W['n_episoder']} onsets")
     print("=" * 74)
@@ -136,7 +136,7 @@ def main():
     print("\n3) BENCHMARK-TABEL (printes ogsaa naar den er usmigrende):")
     print(f"   {'model':<34}{'wf-skill':>10}{'live-P':>9}")
     print(f"   {'intercept (basisrate)':<34}{'+0.0%':>10}{base*100:>8.1f}%")
-    print(f"   {'curve-only-probit (NY Fed-stil)':<34}{'+'+format(W['benchmarks']['curve_only']['wf_improvement'],'.1f')+'%':>10}{p_curve*100:>8.1f}%"
+    print(f"   {'curve-only-logit (NY Fed-stil-bm.)':<34}{'+'+format(W['benchmarks']['curve_only']['wf_improvement'],'.1f')+'%':>10}{p_curve*100:>8.1f}%"
           + ("   <- OPERATIONEL" if W["operationel"] == "curve_only" else ""))
     print(f"   {'fuldmodel (5 features)':<34}{'+'+format(fm['wf_improvement'],'.1f')+'%':>10}{p_full*100:>8.1f}%"
           f"   [{fm['status']}]")
@@ -149,6 +149,12 @@ def main():
     print(f"   {'Chauvet-Piger nowcast':<34}{'':>10}{cp[1]:>8.1f}%   [coincident, "
           f"{cp[0][0]}-{cp[0][1]:02d}, publiceringslag — anden disciplin]")
     print(f"   Note: {fm['note']}")
+    print(f"   MODEL-DIVERGENS: operationel {p_op*100:.1f}% vs fuldmodel {p_full*100:.1f}% "
+          f"(delta {abs(p_op-p_full)*100:.1f}pp).")
+    zc_cape = (x['cape_pct'] - fm['mu']['cape_pct']) / fm['sd']['cape_pct']
+    zc_dd = (x['dd'] - fm['mu']['dd']) / fm['sd']['dd']
+    print(f"   Divergensen drives af fuldmodellens ekstra led (CAPE z={zc_cape:+.2f}, dd z={zc_dd:+.2f});"
+          f"\n   modellerne er statistisk uadskillelige paa skill — den simple vandt paa regel (raadsreview 2026-08).")
 
     print("\n4) MONITORS   [individuelle linjer, ingen taellinger, ingen indflydelse paa P]")
     mon = [
@@ -187,6 +193,10 @@ def main():
     print(f"   P er betinget af NBER-datering pr. {snap.name}. 2023-fejlalarmen "
           f"(76,9% uden recession)\n   staar permanent: kurveregime-risiko gaelder begge veje. "
           f"Eksogene chok kan ikke forudsiges.")
+    print("   STI-ADVARSEL (raadsreview 2026-08, enstemmig): modellen laeser kurvens NIVEAU;"
+          "\n   +0,87pp efter en netop afsluttet dyb inversion behandles som +0,87pp uden"
+          "\n   forhistorie. Historiske onsets er ofte sket i re-steepening-fasen; balance-"
+          "\n   sheet-drevne recessioner uden frisk inversion er usynlige for modellen.")
 
 if __name__ == "__main__":
     main()
