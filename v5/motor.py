@@ -165,11 +165,28 @@ def main():
         ("Sahm > 0,50", sahm[1] > 0.50, f"{sahm[1]:.2f} ({sahm[0][0]}-{sahm[0][1]:02d})", "testet, ikke bestaaet (trin 4)"),
         ("Claims-momentum", None, "se ICSA i snapshot", "testet, ikke bestaaet (trin 4)"),
         ("Permits y/y", None, "se PERMIT i snapshot", "testet, ikke bestaaet (trin 4)"),
-        ("HY OAS > 600bp", oas_bp > 600, f"{oas_bp:.0f}bp ({oas_d[0]}-{oas_d[1]:02d})", "ineligible (historik 1997-)"),
+        ("HY OAS > 600bp", oas_bp > 600, f"{oas_bp:.0f}bp ({oas_d[0]}-{oas_d[1]:02d})", "ineligible (historik 1997-); svaerm-zone 350-450bp"),
         ("S&P drawdown > 20%", x["dd"] < -0.20, f"{x['dd']*100:+.0f}%", "fuldmodel-feature"),
         ("Advance-estimat: 2 neg. BNP-print", len(adv2) == 2 and all(v < 0 for v in adv2),
          f"{adv2[0]:+.1f}%, {adv2[1]:+.1f}%", "uvalideret realtidsdiagnostik (vintage-flip dokumenteret, trin 5)"),
         ("Inversionsnote", None, inv_note, "uvalideret kontekst"),
+    ]
+    # svaerm-tripwires (trigger-atlas 2026-08; scenarie-baserede, uvaliderede)
+    cp_d, cp_r = latest(C.read_fred(snap, "RIFSPPFAAD90NB"))
+    tb_d, tb_r = latest(C.read_fred(snap, "DTB3"))
+    cp_spread_bp = (cp_r - tb_r) * 100
+    mg_d, mg = latest(C.read_fred(snap, "MORTGAGE30US"))
+    acm_f = snap / "acm.csv"
+    tp_txt = ""
+    if acm_f.exists():
+        import csv as _csv
+        rows = list(_csv.DictReader(acm_f.open(encoding="utf-8-sig")))
+        tp_txt = f" / ACM TP {float(rows[-1]['ACMTP10']):+.2f}pp"
+    mon += [
+        ("CP-spaend 3m > 75bp", cp_spread_bp > 75,
+         f"{cp_spread_bp:.0f}bp ({cp_d[0]}-{cp_d[1]:02d})", "svaerm-tripwire: funding-stress foer kreditspaend"),
+        ("10Y > 5,25%", y10 > 5.25, f"{y10:.2f}%{tp_txt}", "svaerm-tripwire: fiskal/term-praemie-kanalen"),
+        ("Realkredit 30Y > 7,8%", mg > 7.8, f"{mg:.2f}% ({mg_d[0]}-{mg_d[1]:02d})", "svaerm-tripwire: boligkanalen"),
     ]
     for navn, aktiv, vaerdi, status in mon:
         boks = "[X]" if aktiv else ("[ ]" if aktiv is not None else "[-]")

@@ -1,8 +1,8 @@
 {
  "protocol_version": "5.0-trin2-nber",
- "created_utc": "2026-08-10T07:48:19+00:00",
+ "created_utc": "2026-08-10T21:02:25+00:00",
  "snapshot": "2026-08-10",
- "snapshot_sha256": "c2d1c3fc226e787c9c6af2d9c1d8b69084cd16eb26b391e230b4a709db771146",
+ "snapshot_sha256": "b40e574c7c0dc38fc46c065cbdc694c9ddc36f1c2c08c331379bed6142cfcf98",
  "gates": {
   "G1": true,
   "G2": true,

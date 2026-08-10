@@ -1,0 +1,26 @@
+{
+ "Q1": {
+  "prompt": "The simulation has concluded. From YOUR perspective and role: what was the decisive trigger chain? Answer stepwise: trigger -> transmission -> real-economy impact. Be specific.",
+  "svar": {
+   "success": false,
+   "http": 400,
+   "body": "{\"error\":\"模拟环境未运行或已关闭。请确保模拟已完成并进入等待命令模式。\",\"success\":false}\n"
+  }
+ },
+ "Q2": {
+  "prompt": "What was the EARLIEST OBSERVABLE warning - name the specific data series and the threshold value - that signaled this path had become active, visible BEFORE the real economy broke?",
+  "svar": {
+   "success": false,
+   "http": 400,
+   "body": "{\"error\":\"模拟环境未运行或已关闭。请确保模拟已完成并进入等待命令模式。\",\"success\":false}\n"
+  }
+ },
+ "Q3": {
+  "prompt": "What could have PREVENTED or falsified this path (policy action, data surprise)? And give your realistic timeline in months from trigger to recession onset.",
+  "svar": {
+   "success": false,
+   "http": 400,
+   "body": "{\"error\":\"模拟环境未运行或已关闭。请确保模拟已完成并进入等待命令模式。\",\"success\":false}\n"
+  }
+ }
+}

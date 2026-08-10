@@ -1,5 +1,5 @@
 {
- "retrieved_utc": "2026-08-10T07:47:59+00:00",
+ "retrieved_utc": "2026-08-10T21:01:37+00:00",
  "series": {
   "GS10": {
    "rows": 880,
@@ -66,11 +66,11 @@
    "purpose": "byggetilladelser (kandidat, trin 4)"
   },
   "BAMLH0A0HYM2": {
-   "rows": 787,
-   "first": "2023-08-08",
-   "last": "2026-08-06",
-   "last_value": "2.71",
-   "sha256": "2bb008786d3a3a50c139db3f251eeccf497cd2038dbc0512a090b2a4a77817cf",
+   "rows": 785,
+   "first": "2023-08-11",
+   "last": "2026-08-07",
+   "last_value": "2.70",
+   "sha256": "df52dcc4dd99f0eb09496755fc3455bf0a0626bdc86dde1048ffa274ae463f14",
    "purpose": "HY OAS, daglig (monitor \u2014 ineligible som feature)"
   },
   "USREC": {
@@ -136,6 +136,30 @@
    "last_value": "41.7",
    "sha256": "ae18e24efc27f7f487edb831950c639ad14795ad8c2b0fde49598eab79169341",
    "purpose": "ugentlige arbejdstimer, industri, 1939+ (trin: sidste praeregistrerede feature-skud)"
+  },
+  "RIFSPPFAAD90NB": {
+   "rows": 6730,
+   "first": "1997-01-02",
+   "last": "2026-08-07",
+   "last_value": "3.84",
+   "sha256": "69e43fa1720db3d6c748ec58d9304931f54683c87d97252695a61580f2b20d18",
+   "purpose": "90-dages AA finansiel commercial paper-rente (svaerm-tripwire: funding-spaend)"
+  },
+  "DTB3": {
+   "rows": 18141,
+   "first": "1954-01-04",
+   "last": "2026-08-07",
+   "last_value": "3.72",
+   "sha256": "2f13f113e0ee117e1e629ca4768a729e2bb7c990f1f293161cd1ea0f531c9eb8",
+   "purpose": "3-mdr T-bill sekundaermarked, daglig (til CP-spaendet)"
+  },
+  "MORTGAGE30US": {
+   "rows": 2889,
+   "first": "1971-04-02",
+   "last": "2026-08-06",
+   "last_value": "6.69",
+   "sha256": "0e220974e42c26e1c20e0deec3396ecedb4dc6d7634cc0c56d202ac7ed82c84e",
+   "purpose": "30-aars realkreditrente, ugentlig (svaerm-tripwire: fiskal/term-praemie-kanalen)"
   }
  },
  "manual": {
@@ -152,5 +176,5 @@
    "bytes": 14190
   }
  },
- "snapshot_sha256": "c2d1c3fc226e787c9c6af2d9c1d8b69084cd16eb26b391e230b4a709db771146"
+ "snapshot_sha256": "b40e574c7c0dc38fc46c065cbdc694c9ddc36f1c2c08c331379bed6142cfcf98"
 }
