@@ -4089,6 +4089,11 @@
    "wf_improvement": 33.87,
    "wf_brier": 32.55,
    "status": "testet, ikke bestaaet (sidste skud; soegning lukket)"
+  },
+  "curve_cape": {
+   "wf_improvement": 36.81,
+   "wf_brier": 34.32,
+   "status": "testet, ikke bestaaet (data-foreslaaet)"
   }
  },
  "fallback_note": "Forhaandsforpligtet i RAADETS_KONSENSUS (Kimi R5/Sol R6) FOER foerste test."

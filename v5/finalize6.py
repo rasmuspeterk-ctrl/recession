@@ -120,7 +120,13 @@ def main():
                                                w=[round(float(v), 4) for v in wc]),
                                cp_serie="RECPROUSM156N"),
                fallback_note="Forhaandsforpligtet i RAADETS_KONSENSUS (Kimi R5/Sol R6) FOER foerste test.")
-    (HERE / "weights.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
+    old_f = HERE / "weights.json"
+    if old_f.exists():          # permanente benchmark-linjer (v5.1/v5.2) overlever genbyg
+        prev = json.loads(old_f.read_text(encoding="utf-8"))
+        for k in ("curve_cape", "curve_awh"):
+            if k in prev.get("benchmarks", {}):
+                out["benchmarks"][k] = prev["benchmarks"][k]
+    old_f.write_text(json.dumps(out, indent=1), encoding="utf-8")
     print("weights.json (5.0-final) skrevet.")
 
 if __name__ == "__main__":
