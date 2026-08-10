@@ -1,0 +1,39 @@
+{
+ "protocol_version": "5.2-awhman",
+ "created_utc": "2026-08-10T07:50:02+00:00",
+ "snapshot": "2026-08-10",
+ "snapshot_sha256": "c2d1c3fc226e787c9c6af2d9c1d8b69084cd16eb26b391e230b4a709db771146",
+ "spec": "awh(m)=((AWHMAN[m-1]/AWHMAN[m-7])^2-1)*100; forseglet af GPT-5.6 Sol, review runde B",
+ "gates": {
+  "G1": true,
+  "A1": false,
+  "A2": false,
+  "A3": true,
+  "OPTAGET": false
+ },
+ "curve_awh": {
+  "improvement": 33.87,
+  "brier": 32.55
+ },
+ "curve_only": {
+  "improvement": 34.32,
+  "brier": 32.85
+ },
+ "dLL": -0.44,
+ "dBrier": -0.29,
+ "n_parret": 195,
+ "folds_niveau_pct": 0.0,
+ "alle_folds_positive": false,
+ "persistens_pct": 43.1,
+ "mde_pp": 3.25,
+ "awh_koef_fuldfit": -0.2205,
+ "fortegn_neg_pct": 100.0,
+ "fortegn_folds": 35,
+ "aera_pre1990_dLL": 0.98,
+ "aera_post1990_dLL": -1.81,
+ "sekundaer_f5": {
+  "dLL": 0.04,
+  "dBrier": 0.09,
+  "n": 195
+ }
+}

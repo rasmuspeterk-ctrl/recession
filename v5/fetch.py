@@ -44,6 +44,7 @@ SERIES = {
     "PCEPI":           "PCE-prisindeks (market conditions: realt kontantafkast)",
     "THREEFYTP10":     "ACM 10-aars term-praemie, FRED-spejl 1990+ (trin 4: substitutionstest)",
     "RECPROUSM156N":   "Chauvet-Piger glattet recessionssandsynlighed (benchmark, coincident nowcast)",
+    "AWHMAN":          "ugentlige arbejdstimer, industri, 1939+ (trin: sidste praeregistrerede feature-skud)",
 }
 
 def fetch_series(sid):

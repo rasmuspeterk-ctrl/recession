@@ -143,6 +143,9 @@ def main():
     cc = W["benchmarks"].get("curve_cape")
     if cc:
         print(f"   {'curve+cape (praereg. v5.1-test)':<34}{'+'+format(cc['wf_improvement'],'.1f')+'%':>10}{'':>9}   [{cc['status']}]")
+    ca = W["benchmarks"].get("curve_awh")
+    if ca:
+        print(f"   {'curve+awh (praereg. v5.2-test)':<34}{'+'+format(ca['wf_improvement'],'.1f')+'%':>10}{'':>9}   [{ca['status']}]")
     if p_arv is not None:
         print(f"   {'v4-arv (teknisk label)':<34}{'':>10}{p_arv*100:>8.1f}%   [andet maal — arv]")
     print(f"   {'realtids-Sahm (trigger 0,50)':<34}{'':>10}{sahm[1]:>8.2f}    [naerhorisont-signal]")

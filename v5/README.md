@@ -101,6 +101,18 @@ er acceptancetestens reelle formaal, og DEN er bestaaet.
 Rekalibreringskaede (sjaelden): `fetch.py` → `ablation2_nber.py --promote` →
 `finalize6.py`. Maanedligt ritual uaendret: `fetch.py` + manual.json + `motor.py`.
 
+## v5.2-testen: AWHMAN — TESTET, IKKE BESTAAET; INFORMATIONSSOEGNINGEN LUKKET
+
+Koert 2026-08-10 efter grand review (6-5-splittet raad) og Rasmus' go.
+`ablation8_awhman.py`, Sols forseglede spec (6m annualiseret aendring, lagget,
+negativt fortegn). Resultat: dLL −0,44pp (goer modellen DAARLIGERE), persistens
+43,1%, aera-split vender (+0,98 pre-1990 / −1,81 post-1990); fortegnet var
+korrekt og 100% stabilt — oekonomien er aegte, men informationen ligger allerede
+i kurven ved 12m-horisonten (DeepSeeks forudsigelse ordret). Sekundaer F5+awh:
++0,04pp ≈ nul. HERMED ER FEATURE-SOEGNINGEN LUKKET: sahm, claims, permits, ACM,
+curve+cape og AWHMAN — alle testet, alle publiceret, alle afvist. Kurven staar
+alene, og hver fremtidig maanedslaesning er den egentlige eksamen.
+
 ## v5.1-testen: curve+cape — TESTET, IKKE BESTAAET (data-foreslaaet)
 
 Koert 2026-08-09 efter Rasmus' godkendelse (`ablation7_curvecape.py`, een koersel).

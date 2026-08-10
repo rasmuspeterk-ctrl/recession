@@ -1,8 +1,8 @@
 {
  "protocol_version": "5.0-final",
- "created_utc": "2026-08-10T07:48:35+00:00",
- "snapshot": "2026-08-10",
- "snapshot_sha256": "c2d1c3fc226e787c9c6af2d9c1d8b69084cd16eb26b391e230b4a709db771146",
+ "created_utc": "2026-08-09T21:35:31+00:00",
+ "snapshot": "2026-08-09",
+ "snapshot_sha256": "6677ea30d166872b7d10098f292af4b8a0dc59119758ff403654c357be931ac6",
  "label": "nber-onset",
  "label_tekst": "NBER-onset inden 4 kvartaler",
  "frekvens": "kvartal",
@@ -4085,10 +4085,10 @@
    ]
   },
   "cp_serie": "RECPROUSM156N",
-  "curve_awh": {
-   "wf_improvement": 33.87,
-   "wf_brier": 32.55,
-   "status": "testet, ikke bestaaet (sidste skud; soegning lukket)"
+  "curve_cape": {
+   "wf_improvement": 36.81,
+   "wf_brier": 34.32,
+   "status": "testet, ikke bestaaet (data-foreslaaet)"
   }
  },
  "fallback_note": "Forhaandsforpligtet i RAADETS_KONSENSUS (Kimi R5/Sol R6) FOER foerste test."
