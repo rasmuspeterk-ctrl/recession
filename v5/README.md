@@ -19,8 +19,11 @@ walk-forward som v4 — men reproducerbart og uden haandkopierede konstanter.
 ```
 python fetch.py        # hent + diff-tjek med oejnene
 # opdater manual/manual.json (3 tal) og evt. manual/shiller.csv
-python motor.py        # aflaesning
+python ablation2_nber.py --promote && python finalize6.py   # genanker vaegte paa dagens snapshot (~1 min, deterministisk)
+python motor.py --log  # aflaesning + prospektiv logfoering i ../LOG.md
 ```
+Hovedbogen (`../LOG.md`) er den eneste aegte out-of-sample-eksamen: een raekke
+pr. maaned, skrevet FOER udfaldet kendes; historiske raekker roeres aldrig.
 
 Genkalibrering (sjaeldnere, efter dataopdateringer): `python calibrate.py --check`
 

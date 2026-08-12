@@ -1,0 +1,12 @@
+{
+  "spx_vs_hi": 0.00,
+  "cape": 42.0,
+  "margin_yoy": 51.5,
+  "as_of": "2026-08-08",
+  "_kilder": {
+    "spx_vs_hi": "S&P 500 vs 12-mdr hoejde, decimal (0.00 = paa toppen, -0.15 = 15% under)",
+    "cape": "multpl.com/shiller-pe",
+    "margin_yoy": "FINRA margin statistics, aar/aar %",
+    "_note": "Vaerdier overtaget fra v4's INPUT-blok (8. aug 2026). Opdater ved hver koersel."
+  }
+}

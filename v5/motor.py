@@ -218,5 +218,41 @@ def main():
           "\n   forhistorie. Historiske onsets er ofte sket i re-steepening-fasen; balance-"
           "\n   sheet-drevne recessioner uden frisk inversion er usynlige for modellen.")
 
+    # ---- 7) hovedbogen: diff mod sidste log + evt. --log-append ----
+    logf = HERE.parent / "LOG.md"
+    aktive = [navn for navn, aktiv, _, _ in mon if aktiv]
+    dom_ord = ("under basisraten" if (band_excludes_base and p_op < base)
+               else "over basisraten" if band_excludes_base else "ikke skelnelig")
+    rows = []
+    if logf.exists():
+        for ln in logf.read_text(encoding="utf-8").splitlines():
+            if ln.startswith("| 2"):
+                c = [x.strip() for x in ln.split("|")]
+                rows.append(dict(logget=c[1], P=c[3], kurve=c[7]))
+    print("\n7) HOVEDBOG (LOG.md)")
+    if rows:
+        last = rows[-1]
+        try:
+            dP = p_op * 100 - float(last["P"].rstrip("%"))
+            dK = x["curve"] - float(last["kurve"])
+            print(f"   Sidste log {last['logget']}: P {last['P']}, kurve {last['kurve']}")
+            print(f"   AENDRING SIDEN SIDST: P {dP:+.1f}pp, kurve {dK:+.2f}pp")
+        except ValueError:
+            print(f"   Sidste log {last['logget']} (kunne ikke parse diff)")
+    else:
+        print("   Foerste laesning — ingen historik endnu.")
+    if "--log" in sys.argv:
+        idag = date.today().isoformat()
+        if rows and rows[-1]["logget"][:7] == idag[:7]:
+            print(f"   --log AFVIST: {idag[:7]} er allerede logget ({rows[-1]['logget']}). "
+                  "Historiske raekker roeres ikke.")
+        else:
+            linje = (f"| {idag} | {snap.name} | {p_op*100:.1f}% | {lo*100:.1f}-{hi*100:.1f}% | "
+                     f"{base*100:.1f}% | {dom_ord} | {x['curve']:+.2f} | "
+                     f"{', '.join(aktive) if aktive else 'ingen'} |  |")
+            with logf.open("a", encoding="utf-8") as fh:
+                fh.write(linje + "\n")
+            print(f"   LOGGET som raekke {len(rows) + 1}: {idag}, P {p_op*100:.1f}%, dom '{dom_ord}'.")
+
 if __name__ == "__main__":
     main()
