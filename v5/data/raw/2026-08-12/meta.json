@@ -164,17 +164,25 @@
  },
  "manual": {
   "shiller.csv": {
-   "sha256": "6a9e3211af879205ee725dcac3e130e8bb6f5daaa20896dd6896aff435cf5f77",
-   "bytes": 87008
+   "sha256": "264da56238073ef40b6f417f35448c1ebc68b9719f3bd9767632501eb89e637f",
+   "bytes": 85174
   },
   "manual.json": {
    "sha256": "57976b6eb1bdc007ba0d1017a52f416fdc6dcad4ab4bba2ab0d8c8707fd63d4c",
    "bytes": 388
   },
   "acm.csv": {
-   "sha256": "91f7aa97d4504e49cf0868907f6f51984e34a03e4a69cd4c5c68ee3be59d252e",
-   "bytes": 14190
+   "sha256": "bc6dae6898ae43ec143d9cf78ca60763e13b04b047e155134100525319b55593",
+   "bytes": 13407
   }
  },
- "snapshot_sha256": "f5b35e3273493f25ba41cc352e7302ddf6cd61808d125374e4ca88da83e9f0f4"
+ "snapshot_sha256": "ec8feb2dd13413ac1e6a111b46869c7197586c0ddd222772ccfe6d7a6402fe0b",
+ "hash_repareret": {
+  "dato": "2026-09-09",
+  "filer": [
+   "shiller.csv",
+   "acm.csv"
+  ],
+  "aarsag": "LF-normalisering 2026-09-08 aendrede filbytes; hash genberegnet fra disk"
+ }
 }

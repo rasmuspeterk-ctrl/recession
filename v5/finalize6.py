@@ -28,6 +28,42 @@ PROTOCOL = "5.0-final"
 SEED = 42
 NDRAW = 1000
 
+# Permanente benchmark-linjer (v5.1/v5.2) bygges fra de committede resultatfiler, IKKE fra den
+# gamle weights.json: `ablation2 --promote` overskriver den foer finalize6 koerer, saa linjerne
+# gik lydloest tabt ved hvert maanedsritual (fundet ved kode-review 2026-09-08).
+PERMANENTE = [
+    # weights-noegle, resultatfil,           resultat-noegle, bestaaet-flag, status hvis ikke bestaaet
+    ("curve_cape", "ablation7_resultat.json", "curvecape", "promoveret", "testet, ikke bestaaet (data-foreslaaet)"),
+    ("curve_awh",  "ablation8_resultat.json", "curve_awh", "OPTAGET",    "testet, ikke bestaaet (sidste skud; soegning lukket)"),
+]
+
+def permanente_linjer():
+    lines = {}
+    for key, fname, rkey, gate, status_nej in PERMANENTE:
+        f = HERE / fname
+        if not f.exists():
+            print(f"ADVARSEL: {fname} mangler — benchmark-linjen '{key}' udelades af weights.json.")
+            continue
+        r = json.loads(f.read_text(encoding="utf-8"))
+        blok = r.get(rkey)
+        if not isinstance(blok, dict) or "improvement" not in blok or "brier" not in blok:
+            print(f"ADVARSEL: {fname} har ingen '{rkey}'-blok med improvement/brier — linjen '{key}' udelades.")
+            continue
+        gates = r.get("gates", {})
+        if gate not in gates:
+            print(f"ADVARSEL: {fname} har ingen gate '{gate}' — status for '{key}' saettes til ukendt.")
+            status = f"gate-status ukendt (se {fname})"
+        else:
+            status = "bestaaet (se resultatfil)" if bool(gates[gate]) else status_nej
+        lines[key] = dict(wf_improvement=blok["improvement"], wf_brier=blok["brier"],
+                          status=status, kilde=f"{fname} (snapshot {r.get('snapshot', '?')})")
+    return lines
+
+def vaerste_fejlalarm(res):
+    """Hoejeste wf-sandsynlighed blandt scorede origins UDEN onset i vinduet: beregnet, ikke haandkopieret."""
+    y, q, p, _ = max((r for r in res if r[3] == 0.0), key=lambda r: r[2])
+    return dict(p=round(p, 4), origin=f"{y}Q{q}")
+
 def boot_weights(Z, y, qend_fit, eps, ndraw):
     rng = np.random.default_rng(SEED)
     grp = np.array([next((k for k, (o, _) in enumerate(eps) if o >= qe), len(eps))
@@ -52,7 +88,8 @@ def main():
     eps = A2.episodes_from_usrec(usrec)
     avail = A2.load_announcements(eps)
     D = A2.build_dataset(snap)
-    Y, _, in_rec = A2.nber_labels(D, eps, usrec)
+    Y, win_onsets, in_rec = A2.nber_labels(D, eps, usrec)
+    n_onsets = len({o for wo in win_onsets for o in wo})   # onsets i mindst eet samplevindue (foer: haardkodet 12)
     fitm = ~in_rec
     X5, y = D["F"][fitm], Y[fitm]
 
@@ -63,11 +100,25 @@ def main():
     resc, _, _ = A2.wf_nber(Dc, eps, avail, usrec, A2.L_EMBARGO)
     _, _, impc, brc = C.metrics(resc)
     print(f"fuldmodel: +{imp5:.1f}%/+{br5:.1f}%   curve-only: +{impc:.1f}%/+{brc:.1f}%")
+    fa5, fac = vaerste_fejlalarm(res5), vaerste_fejlalarm(resc)
+    print(f"vaerste fejlalarm i wf: fuldmodel {fa5['p']*100:.1f}% ({fa5['origin']}), "
+          f"curve-only {fac['p']*100:.1f}% ({fac['origin']})")
 
     full_beats = imp5 > 0 and imp5 > impc
     operational = "fuldmodel" if full_beats else "curve_only"
     print(f"Section 8-krav: fuldmodel {'slaar' if full_beats else 'SLAAR IKKE'} curve-only "
           f"-> operationel model = {operational} (forhaandsforpligtet fallback)")
+
+    # En one-shot-promotion (fx ablation7 --promote -> operationel="curve_cape") maa ikke
+    # reverteres af maanedsgenbygget: den bevares indtil det promoverende script koeres igen.
+    prev_w = {}
+    if (HERE / "weights.json").exists():
+        try:
+            prev_w = json.loads((HERE / "weights.json").read_text(encoding="utf-8"))
+        except ValueError:
+            prev_w = {}
+    promoveret = (prev_w.get("operationel")
+                  if prev_w.get("operationel") not in (None, "curve_only", "fuldmodel") else None)
 
     # fuldmodel-fit (til ved-siden-af-linjen)
     mu5, sd5 = X5.mean(0), X5.std(0, ddof=1); sd5[sd5 == 0] = 1
@@ -78,55 +129,72 @@ def main():
     Zc = (Xc - muc) / sdc
     wc = C.fit(Zc, y)
 
-    if operational == "curve_only":
-        W, ngrp = boot_weights(Zc, y, D["qend"][fitm], eps, NDRAW)
-        op = dict(features=["curve"], mu={"curve": round(float(muc[0]), 4)},
-                  sd={"curve": round(float(sdc[0]), 4)},
-                  w=[round(float(v), 4) for v in wc],
-                  wf_improvement=round(impc, 2), wf_brier=round(brc, 2))
+    if promoveret:
+        operational, op, band = promoveret, prev_w["op"], prev_w["band"]
+        print(f"BEVARET: promoveret operationel model '{promoveret}' (weights fra "
+              f"{prev_w.get('created_utc', '?')[:10]}) roeres ikke af maanedsgenbygget — "
+              "genkoer det promoverende ablation-script for at opdatere den.")
     else:
-        Z5 = (X5 - mu5) / sd5
-        W, ngrp = boot_weights(Z5, y, D["qend"][fitm], eps, NDRAW)
-        op = dict(features=C.F5,
-                  mu={f: round(float(m), 4) for f, m in zip(C.F5, mu5)},
-                  sd={f: round(float(s), 4) for f, s in zip(C.F5, sd5)},
-                  w=[round(float(v), 4) for v in w5],
-                  wf_improvement=round(imp5, 2), wf_brier=round(br5, 2))
-    print(f"bootstrap: {len(W)} traek (seed {SEED}, {ngrp} episodeblokke) for {operational}")
+        if operational == "curve_only":
+            W, ngrp = boot_weights(Zc, y, D["qend"][fitm], eps, NDRAW)
+            op = dict(features=["curve"], mu={"curve": round(float(muc[0]), 4)},
+                      sd={"curve": round(float(sdc[0]), 4)},
+                      w=[round(float(v), 4) for v in wc],
+                      wf_improvement=round(impc, 2), wf_brier=round(brc, 2),
+                      vaerste_fejlalarm=fac)
+        else:
+            Z5 = (X5 - mu5) / sd5
+            W, ngrp = boot_weights(Z5, y, D["qend"][fitm], eps, NDRAW)
+            op = dict(features=C.F5,
+                      mu={f: round(float(m), 4) for f, m in zip(C.F5, mu5)},
+                      sd={f: round(float(s), 4) for f, s in zip(C.F5, sd5)},
+                      w=[round(float(v), 4) for v in w5],
+                      wf_improvement=round(imp5, 2), wf_brier=round(br5, 2),
+                      vaerste_fejlalarm=fa5)
+        band = dict(metode="episode-blok-bootstrap af vaegte, fast standardisering",
+                    fodnote="Not a predictive interval; reflects weight sensitivity to episode composition",
+                    seed=SEED, n_draws=len(W), W=W)
+        print(f"bootstrap: {len(W)} traek (seed {SEED}, {ngrp} episodeblokke) for {operational}")
+
+    # fuldmodel-noten beregnes (foer: haandskrevne tal). Stoejgulv = trin 3's MDE fra resultatfilen.
+    f3 = HERE / "ablation3_resultat.json"
+    mde3 = json.loads(f3.read_text(encoding="utf-8")).get("mde_pp") if f3.exists() else None
+    gap = abs(imp5 - impc)
+    gulv = (f"{'<' if gap < mde3 else '>='} stoejgulv {mde3:.1f}pp (trin 3-MDE)" if mde3 is not None
+            else "(stoejgulv ukendt: ablation3_resultat.json mangler)")
+    brier_retning = "modsat" if (br5 > brc) != (imp5 > impc) else "samme vej"
+    note = f"LL-forskel {gap:.1f}pp {gulv}; Brier gaar {brier_retning}. Gaten er mekanisk."
 
     out = dict(protocol_version=PROTOCOL,
                created_utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),
                snapshot=snap.name, snapshot_sha256=meta["snapshot_sha256"],
                label="nber-onset", label_tekst="NBER-onset inden 4 kvartaler",
                frekvens="kvartal",
-               n_obs=int(fitm.sum()), n_episoder=12,
+               n_obs=int(fitm.sum()), n_episoder=n_onsets,
                base_rate=round(float(y.mean()), 4),
                operationel=operational,
                op=op,
-               band=dict(metode="episode-blok-bootstrap af vaegte, fast standardisering",
-                         fodnote="Not a predictive interval; reflects weight sensitivity to episode composition",
-                         seed=SEED, n_draws=len(W), W=W),
+               band=band,
                fuldmodel=dict(features=C.F5,
                               mu={f: round(float(m), 4) for f, m in zip(C.F5, mu5)},
                               sd={f: round(float(s), 4) for f, s in zip(C.F5, sd5)},
                               w=[round(float(v), 4) for v in w5],
                               wf_improvement=round(imp5, 2), wf_brier=round(br5, 2),
+                              vaerste_fejlalarm=fa5,
                               status=("operationel" if full_beats else
                                       "testet, ikke bestaaet mod benchmark (trin 6)"),
-                              note="LL-forskel 1,1pp < stoejgulv ~4pp (trin 3-MDE); Brier gaar modsat. Gaten er mekanisk."),
+                              note=note),
                benchmarks=dict(intercept=dict(wf_improvement=0.0),
                                curve_only=dict(wf_improvement=round(impc, 2), wf_brier=round(brc, 2),
                                                mu=round(float(muc[0]), 4), sd=round(float(sdc[0]), 4),
-                                               w=[round(float(v), 4) for v in wc]),
+                                               w=[round(float(v), 4) for v in wc],
+                                               vaerste_fejlalarm=fac),
                                cp_serie="RECPROUSM156N"),
                fallback_note="Forhaandsforpligtet i RAADETS_KONSENSUS (Kimi R5/Sol R6) FOER foerste test.")
-    old_f = HERE / "weights.json"
-    if old_f.exists():          # permanente benchmark-linjer (v5.1/v5.2) overlever genbyg
-        prev = json.loads(old_f.read_text(encoding="utf-8"))
-        for k in ("curve_cape", "curve_awh"):
-            if k in prev.get("benchmarks", {}):
-                out["benchmarks"][k] = prev["benchmarks"][k]
-    old_f.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    out["benchmarks"].update(permanente_linjer())      # v5.1/v5.2-linjerne, fra resultatfilerne
+    if promoveret and promoveret in prev_w.get("benchmarks", {}):
+        out["benchmarks"][promoveret]["status"] = prev_w["benchmarks"][promoveret]["status"]
+    (HERE / "weights.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
     print("weights.json (5.0-final) skrevet.")
 
 if __name__ == "__main__":

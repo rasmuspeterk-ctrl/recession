@@ -1,8 +1,8 @@
 {
  "protocol_version": "5.0-final",
- "created_utc": "2026-08-12T16:36:19+00:00",
+ "created_utc": "2026-09-08T22:48:12+00:00",
  "snapshot": "2026-08-12",
- "snapshot_sha256": "f5b35e3273493f25ba41cc352e7302ddf6cd61808d125374e4ca88da83e9f0f4",
+ "snapshot_sha256": "ec8feb2dd13413ac1e6a111b46869c7197586c0ddd222772ccfe6d7a6402fe0b",
  "label": "nber-onset",
  "label_tekst": "NBER-onset inden 4 kvartaler",
  "frekvens": "kvartal",
@@ -25,7 +25,11 @@
    -1.6907
   ],
   "wf_improvement": 34.32,
-  "wf_brier": 32.85
+  "wf_brier": 32.85,
+  "vaerste_fejlalarm": {
+   "p": 0.9383,
+   "origin": "2023Q2"
+  }
  },
  "band": {
   "metode": "episode-blok-bootstrap af vaegte, fast standardisering",
@@ -4067,8 +4071,12 @@
   ],
   "wf_improvement": 33.23,
   "wf_brier": 33.6,
+  "vaerste_fejlalarm": {
+   "p": 0.9874,
+   "origin": "2023Q2"
+  },
   "status": "testet, ikke bestaaet mod benchmark (trin 6)",
-  "note": "LL-forskel 1,1pp < stoejgulv ~4pp (trin 3-MDE); Brier gaar modsat. Gaten er mekanisk."
+  "note": "LL-forskel 1.1pp < stoejgulv 4.4pp (trin 3-MDE); Brier gaar modsat. Gaten er mekanisk."
  },
  "benchmarks": {
   "intercept": {
@@ -4082,9 +4090,25 @@
    "w": [
     -2.1755,
     -1.6907
-   ]
+   ],
+   "vaerste_fejlalarm": {
+    "p": 0.9383,
+    "origin": "2023Q2"
+   }
   },
-  "cp_serie": "RECPROUSM156N"
+  "cp_serie": "RECPROUSM156N",
+  "curve_cape": {
+   "wf_improvement": 36.81,
+   "wf_brier": 34.32,
+   "status": "testet, ikke bestaaet (data-foreslaaet)",
+   "kilde": "ablation7_resultat.json (snapshot 2026-08-09)"
+  },
+  "curve_awh": {
+   "wf_improvement": 33.87,
+   "wf_brier": 32.55,
+   "status": "testet, ikke bestaaet (sidste skud; soegning lukket)",
+   "kilde": "ablation8_resultat.json (snapshot 2026-08-10)"
+  }
  },
  "fallback_note": "Forhaandsforpligtet i RAADETS_KONSENSUS (Kimi R5/Sol R6) FOER foerste test."
 }

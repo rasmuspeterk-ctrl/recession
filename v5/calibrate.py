@@ -43,14 +43,39 @@ SETS = {
 }
 
 # ---------------------------------------------------------------- indlaesning
+# Alt ritualkaeden (calibrate/ablation2/finalize6/motor) laeser fra et snapshot. Aeldre snapshots
+# uden de senere tilfoejede serier var "komplette" for deres tid, men er ubrugelige for motor.
+KRAEVEDE = ["GS10", "TB3MS", "CPIAUCNS", "USREC", "A191RL1Q225SBEA", "SAHMREALTIME", "BAMLH0A0HYM2",
+            "FEDFUNDS", "PCEPI", "RECPROUSM156N", "RIFSPPFAAD90NB", "DTB3", "MORTGAGE30US"]
+KRAEVEDE_FILER = ["shiller.csv", "manual.json"]
+
+def snapshot_complete(d):
+    """Et snapshot taeller kun hvis meta.json findes, ikke er maerket ukomplet (fetch.py saetter
+    "complete": false naar en kraevet serie fejlede) OG indeholder alle filer kaeden laeser."""
+    m = d / "meta.json"
+    if not m.exists():
+        return False
+    try:
+        if not json.loads(m.read_text(encoding="utf-8")).get("complete", True):
+            return False
+    except ValueError:
+        return False
+    return (all((d / f"{s}.csv").exists() for s in KRAEVEDE)
+            and all((d / f).exists() for f in KRAEVEDE_FILER))
+
 def find_snapshot(argv):
     if "--snapshot" in argv:
         p = Path(argv[argv.index("--snapshot") + 1])
         return p if p.is_absolute() else HERE / p
-    dirs = sorted(d for d in RAW.iterdir() if d.is_dir()) if RAW.exists() else []
+    alle = sorted(d for d in RAW.iterdir() if d.is_dir()) if RAW.exists() else []
+    dirs = [d for d in alle if snapshot_complete(d)]
     if not dirs:
-        sys.exit("FEJL: intet snapshot. Koer foerst: python fetch.py")
-    return dirs[-1]
+        sys.exit("FEJL: intet komplet snapshot. Koer foerst: python fetch.py")
+    valgt = dirs[-1]
+    if alle[-1] != valgt:
+        print(f"ADVARSEL: nyeste snapshot-mappe {alle[-1].name} er ukomplet/ubrugelig — bruger {valgt.name} "
+              "i stedet. Koer fetch.py igen foer aflaesning og logfoering.", flush=True)
+    return valgt
 
 def read_fred(snap, sid):
     """FRED-csv -> dict {(aar, maaned): vaerdi} (maanedlige/kvartalsvise serier)."""
@@ -60,8 +85,7 @@ def read_fred(snap, sid):
     out = {}
     with f.open(encoding="utf-8-sig") as fh:
         for row in csv.DictReader(fh):
-            d = row["observation_date"]
-            v = list(row.values())[1]
+            d, v = list(row.values())[:2]      # FRED har skiftet kolonnenavn foer (DATE/observation_date): brug positionen
             if v in (".", ""):
                 continue
             y, m = int(d[:4]), int(d[5:7])
@@ -199,7 +223,11 @@ def make_labels(cols):
     return rec_now, Y
 
 # ------------------------------------------------------------------- model
-def fit(X, y, l2=1.0, it=300):
+def fit(X, y, l2=1.0, it=300, tol=1e-12):
+    """L2-logit via Newton. Stopper naar Newton-skridtet er < tol (typisk 7-8 iterationer);
+    `it` er kun et loft. Stopkriteriet giver bit-identiske resultatfiler i forhold til de
+    tidligere faste 300 iterationer (verificeret paa ablation2/3/4/7/8 + finalize6, 2026-09-08)
+    og goer kaeden 12-25x hurtigere."""
     X = np.c_[np.ones(len(X)), X]
     w = np.zeros(X.shape[1])
     for _ in range(it):
@@ -208,8 +236,11 @@ def fit(X, y, l2=1.0, it=300):
         H = X.T @ (X * (p * (1 - p))[:, None]) + l2 * np.eye(X.shape[1])
         H[0, 0] -= l2
         try:
-            w -= np.linalg.solve(H + 1e-6 * np.eye(len(w)), gr)
+            step = np.linalg.solve(H + 1e-6 * np.eye(len(w)), gr)
         except np.linalg.LinAlgError:
+            break
+        w -= step
+        if np.max(np.abs(step)) < tol:
             break
     return w
 

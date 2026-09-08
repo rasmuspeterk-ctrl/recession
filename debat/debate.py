@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Raadets debat-orkestrator. Kalder 7 modeller via OpenRouter, runde for runde.
 
-Brug:  python debate.py round1|round2|round3|round4|round5
+Brug:  python debate.py round1|round2|round3|round4|round5|round6 [--only slug]
 Kraever OPENROUTER_API_KEY i miljoeet eller i C:/Users/Machine/recession/.env
-Runde 3-5 kraever en sekretaer-fil (skrives af Claude mellem runderne):
-  secretary/round3_matrix.md, secretary/round4_draft.md, secretary/round5_draft.md
+Runde 3-6 kraever en sekretaer-fil (skrives af Claude mellem runderne):
+  sekretaer/round3_matrix.md, sekretaer/round4_draft.md, sekretaer/round5_draft.md, ...
+Svar gemmes i runder/runde<N>/<slug>.md (+ _ALL.md): samme layout som arkivet.
 """
 import json, os, sys, time, re
 import urllib.request, urllib.error
@@ -103,7 +104,7 @@ def call_model(m, user_prompt, temperature, max_tokens):
                 prompt_tokens=0, completion_tokens=0, raw=None)
 
 def read_round(n):
-    d = HERE / "rounds" / f"round{n}"
+    d = HERE / "runder" / f"runde{n}"        # arkivets layout: runder/runde1..runde6
     out = {}
     for m in MODELS:
         f = d / f"{m['slug']}.md"
@@ -121,7 +122,7 @@ def joined(texts, heading):
     return "\n\n---\n\n".join(parts)
 
 def secretary(fname):
-    f = HERE / "secretary" / fname
+    f = HERE / "sekretaer" / fname
     if not f.exists():
         sys.exit(f"FEJL: mangler sekretaer-fil {f}")
     return f.read_text(encoding="utf-8")
@@ -140,6 +141,8 @@ def build_prompt(round_name, m):
             "Hard limit: about 700 words.")
     if round_name == "round2":
         r1 = read_round(1)
+        if not r1:
+            sys.exit("FEJL: runder/runde1 er tom — ingen forslag at kritisere (koer round1 foerst).")
         return BRIEF + "\n\n# ROUND 1 - ALL SEVEN PROPOSALS\n\n" + joined(r1, "PROPOSAL") + (
             "\n\n# YOUR TASK - ROUND 2, CRITIQUE AND REVISE\n"
             f"You are {m['name']}. 1) Attack: name the specific councillors you disagree with, quote "
@@ -151,6 +154,8 @@ def build_prompt(round_name, m):
     if round_name == "round3":
         matrix = secretary("round3_matrix.md")
         r2 = read_round(2)
+        if not r2:
+            sys.exit("FEJL: runder/runde2 er tom — ingen positioner at konvergere paa (koer round2 foerst).")
         return BRIEF + "\n\n# SECRETARY'S DISAGREEMENT MATRIX (state of the debate)\n\n" + matrix + \
             "\n\n# ROUND 2 - ALL POSITIONS\n\n" + joined(r2, "POSITION") + (
             "\n\n# YOUR TASK - ROUND 3, CONVERGE\n"
@@ -171,13 +176,13 @@ def build_prompt(round_name, m):
 def main():
     round_name = sys.argv[1] if len(sys.argv) > 1 else ""
     if round_name not in ("round1", "round2", "round3", "round4", "round5", "round6"):
-        sys.exit("brug: python debate.py round1|round2|round3|round4|round5 [--only slug]")
+        sys.exit("brug: python debate.py round1|round2|round3|round4|round5|round6 [--only slug]")
     only = sys.argv[sys.argv.index("--only") + 1] if "--only" in sys.argv else None
     active = [m for m in MODELS if only is None or m["slug"] == only]
     if not active:
         sys.exit(f"ukendt slug: {only}")
     temperature = 0.7 if round_name == "round1" else 0.4
-    outdir = HERE / "rounds" / round_name
+    outdir = HERE / "runder" / f"runde{round_name[len('round'):]}"   # samme mappe read_round laeser
     outdir.mkdir(parents=True, exist_ok=True)
 
     t0 = time.time()

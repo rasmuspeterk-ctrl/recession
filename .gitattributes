@@ -1,0 +1,4 @@
+# Data-snapshots og manuelle inputs hashes byte-for-byte (fetch.py -> meta.json):
+# ingen linjeskift-konvertering, saa hash paa disk == hash i repo paa alle maskiner.
+v5/data/** -text
+v5/manual/** -text

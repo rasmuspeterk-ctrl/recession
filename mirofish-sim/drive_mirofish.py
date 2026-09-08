@@ -7,7 +7,7 @@ from pathlib import Path
 
 BASE = "http://localhost:5001/api"
 HERE = Path(__file__).parent
-SEED = HERE / "us_macro_seed_aug2026.md"
+SEED = HERE / "seed.md"
 STATE_F = HERE / "state.json"
 
 SIM_REQ = (

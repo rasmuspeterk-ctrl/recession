@@ -8,7 +8,7 @@ walk-forward som v4 — men reproducerbart og uden haandkopierede konstanter.
 
 | Fil | Rolle |
 |---|---|
-| `fetch.py` | Henter 14 FRED-serier noeglefrit, skriver hashet snapshot i `data/raw/<dato>/`, printer diff mod forrige snapshot |
+| `fetch.py` | Henter 20 FRED-serier noeglefrit (parallelt), skriver byte-eksakt hashet snapshot i `data/raw/<dato>/`, printer diff mod forrige snapshot (ny obs / aendret vaerdi / revideret historik) |
 | `calibrate.py` | Genopbygger v4's kalibrering fra snapshottet, skriver `weights.json` (vaegte + datahash + protokolversion). `--check` koerer determinisme-test. Indbygget acceptancetest mod v4's konstanter |
 | `motor.py` | Maanedlig aflaesning: laeser weights.json + snapshot + manual.json. Naegter snapshots >40 dage (`--allow-stale` for at overstyre). CAPE-percentil beregnes af snapshottets egen historik — ingen 2026-knuder |
 | `nber_announcements.csv` | Committet tabel over NBERs annonceringsdatoer (til trin 2's mekaniske label-regel) |
@@ -19,7 +19,7 @@ walk-forward som v4 — men reproducerbart og uden haandkopierede konstanter.
 ```
 python fetch.py        # hent + diff-tjek med oejnene
 # opdater manual/manual.json (3 tal) og evt. manual/shiller.csv
-python ablation2_nber.py --promote && python finalize6.py   # genanker vaegte paa dagens snapshot (~1 min, deterministisk)
+python ablation2_nber.py --promote && python finalize6.py   # genanker vaegte paa dagens snapshot (~2 s, deterministisk)
 python motor.py --log  # aflaesning + prospektiv logfoering i ../LOG.md
 ```
 Hovedbogen (`../LOG.md`) er den eneste aegte out-of-sample-eksamen: een raekke
@@ -125,3 +125,44 @@ fordelen findes KUN post-1990 (+5,31pp); pre-1990 er subsettet DAARLIGERE (−0,
 Selektionsforureningens signatur. MDE 12,3pp. Linjen staar permanent i benchmark-
 tabellen; delmaengde-jagten er LUKKET — ingen ny subset-hypotese uden ny oekonomisk
 begrundelse (praeregistreret i ablation7's header). Resultat: ablation7_resultat.json
+
+## Vedligehold 2026-09-08 (kode-review, ingen modelaendring)
+
+- `finalize6.py` bygger de permanente benchmark-linjer (curve+cape, curve+awh) fra
+  `ablation7_resultat.json`/`ablation8_resultat.json` i stedet for fra den gamle weights.json:
+  `ablation2 --promote` overskrev den foer finalize6 laeste den, saa linjerne forsvandt ved
+  hvert maanedsritual (vaek siden 2026-08-12). `n_episoder` og fuldmodel-noten beregnes nu i
+  stedet for at vaere haandskrevne, og den operationelle models vaerste walk-forward-fejlalarm
+  gemmes i weights.json og printes i dommen (foer: v4's 76,9% som fast tekst).
+- `fetch.py` henter parallelt, skriver raa bytes (hash i meta.json = filens hash paa disk;
+  foer hashedes LF-tekst mens Windows skrev CRLF, 20/20 mismatch), flagger ny obs / aendret
+  sidste vaerdi / revideret historik, og maerker snapshots med fejlede serier
+  `"complete": false` (ignoreres af calibrate/motor).
+- `.gitattributes`: `v5/data/**` og `v5/manual/**` er `-text` (ingen linjeskift-konvertering),
+  saa hashene holder paa tvaers af checkouts. Eksisterende snapshotfiler er normaliseret til
+  LF i arbejdskopien; git-indholdet er uaendret.
+- `calibrate.fit` stopper ved konvergens (7-8 Newton-skridt) i stedet for altid 300: kaeden
+  `ablation2 --promote` + `finalize6` tager ~2 s i stedet for ~33 s. Verificeret bit-identisk
+  paa ablation2/3/4/7/8-resultatfilerne og weights.json.
+
+## Vedligehold 2026-09-09 (kode-review af 09-08-fixene, ingen modelaendring)
+
+- `fetch.py` bygger nu i `data/raw/<dato>.ny` og flytter foerst paa plads ved fuld succes; et
+  fejlet forsoeg gemmes som `<dato>.ukomplet` og roerer aldrig et eksisterende komplet
+  dagssnapshot. Skrivning/diff ligger igen inde i per-serie-try'en; 429 og misdannede svar
+  retries; reserveserierne (GDPC1/CPIAUCSL/THREEFYTP10, ingen forbrugere) nedlaegger ikke
+  veto; manglende shiller.csv/manual.json goer snapshottet ukomplet; diff-baselinen er det
+  nyeste KOMPLETTE snapshot.
+- `calibrate.find_snapshot` advarer hoejlydt naar det nyeste snapshot springes over, og
+  `snapshot_complete` kraever nu ogsaa alle serier/filer kaeden laeser (aeldre snapshots uden
+  de senere serier er ubrugelige). `motor.py --log` naegter at logfoere paa andet end det
+  nyeste snapshot; motor kraever `op.vaerste_fejlalarm` (ingen 76,9%-fallback) og guard'er
+  manual.json.
+- `finalize6.py` bevarer en promoveret one-shot-model (fx curve_cape) i stedet for at
+  revertere til curve_only, advarer i stedet for at tie naar en resultatfil/gate mangler, og
+  `benchmarks.curve_only` baerer nu ogsaa `vaerste_fejlalarm`.
+- `debat/debate.py` laeser/skriver `runder/runde<N>` (arkivets layout) og fejler hoejlydt
+  paa tomme runder.
+- Datareparation: LF-normaliseringen 09-08 aendrede shiller.csv/acm.csv-bytes i de gamle
+  snapshots uden at opdatere meta.json; hashene (+ snapshot_sha256) er genberegnet fra
+  filerne paa disk (markeret `hash_repareret` i meta), og weights.json er genankret.

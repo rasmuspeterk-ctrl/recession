@@ -8,7 +8,7 @@ curve-only, realtids-Sahm, Chauvet-Piger separat, v4-arv), monitors uden
 taellinger, market conditions-sektion, skabelon-genereret dom der aldrig
 overstiger tallene. Sprogregler (Section 6) haandhaeves mekanisk.
 
-Koer:  python motor.py [--allow-stale]
+Koer:  python motor.py [--allow-stale] [--log]
 """
 import json, sys
 from datetime import date
@@ -42,7 +42,11 @@ def main():
     if W["snapshot_sha256"] != meta["snapshot_sha256"]:
         print("ADVARSEL: weights kalibreret paa andet snapshot — koer finalize6.py igen.")
 
-    man = json.loads((snap / "manual.json").read_text(encoding="utf-8"))
+    manual_f = snap / "manual.json"
+    if not manual_f.exists():
+        sys.exit("FEJL: manual.json mangler i snapshottet (spx_vs_hi, cape, margin_yoy). "
+                 "Laeg den i manual/ og koer fetch.py igen.")
+    man = json.loads(manual_f.read_text(encoding="utf-8"))
     gs10 = C.read_fred(snap, "GS10"); tb3 = C.read_fred(snap, "TB3MS")
     cpi = C.read_fred(snap, "CPIAUCNS")
     (d_y10, y10) = latest(gs10); (d_tb, tb3m) = latest(tb3)
@@ -63,8 +67,6 @@ def main():
 
     op = W["op"]
     p_op = float(p_of(x, op["features"], op["mu"], op["sd"], op["w"]))
-    zc = (x["curve"] - op["mu"].get("curve", W["fuldmodel"]["mu"]["curve"])) / \
-         op["sd"].get("curve", W["fuldmodel"]["sd"]["curve"])
     band_ps = []
     for wb in W["band"]["W"]:
         band_ps.append(float(p_of(x, op["features"], op["mu"], op["sd"], wb)))
@@ -210,13 +212,16 @@ def main():
                f"[{lo*100:.1f}-{hi*100:.1f}%] indeholder basisraten: "
                f"IKKE SKELNELIG FRA BASISRATEN.")
     print(f"   {dom}")
-    print(f"   P er betinget af NBER-datering pr. {snap.name}. 2023-fejlalarmen "
-          f"(76,9% uden recession)\n   staar permanent: kurveregime-risiko gaelder begge veje. "
-          f"Eksogene chok kan ikke forudsiges.")
-    print("   STI-ADVARSEL (raadsreview 2026-08, enstemmig): modellen laeser kurvens NIVEAU;"
-          "\n   +0,87pp efter en netop afsluttet dyb inversion behandles som +0,87pp uden"
-          "\n   forhistorie. Historiske onsets er ofte sket i re-steepening-fasen; balance-"
-          "\n   sheet-drevne recessioner uden frisk inversion er usynlige for modellen.")
+    fa = op.get("vaerste_fejlalarm")
+    if not fa:
+        sys.exit("FEJL: weights.json mangler op.vaerste_fejlalarm (aeldre/backup-vaegte?) — koer finalize6.py igen.")
+    fa_txt = f"Vaerste fejlalarm i walk-forward: {fa['p']*100:.1f}% ({fa['origin']}) uden onset"
+    print(f"   P er betinget af NBER-datering pr. {snap.name}. {fa_txt}\n   staar permanent: "
+          "kurveregime-risiko gaelder begge veje. Eksogene chok kan ikke forudsiges.")
+    print(f"   STI-ADVARSEL (raadsreview 2026-08, enstemmig): modellen laeser kurvens NIVEAU; {x['curve']:+.2f}pp"
+          f"\n   behandles som {x['curve']:+.2f}pp uden forhistorie. Seneste inversion: {inv_note}."
+          "\n   Historiske onsets er ofte sket i re-steepening-fasen; balance-sheet-drevne"
+          "\n   recessioner uden frisk inversion er usynlige for modellen.")
 
     # ---- 7) hovedbogen: diff mod sidste log + evt. --log-append ----
     logf = HERE.parent / "LOG.md"
@@ -243,14 +248,18 @@ def main():
         print("   Foerste laesning — ingen historik endnu.")
     if "--log" in sys.argv:
         idag = date.today().isoformat()
-        if rows and rows[-1]["logget"][:7] == idag[:7]:
+        nyeste = sorted(d for d in C.RAW.iterdir() if d.is_dir())[-1]
+        if nyeste != snap:
+            print(f"   --log AFVIST: laesningen bygger paa {snap.name}, men nyeste snapshot-mappe er "
+                  f"{nyeste.name} (ukomplet/ubrugelig). Hovedbogen faar kun friske data — koer fetch.py igen.")
+        elif rows and rows[-1]["logget"][:7] == idag[:7]:
             print(f"   --log AFVIST: {idag[:7]} er allerede logget ({rows[-1]['logget']}). "
                   "Historiske raekker roeres ikke.")
         else:
             linje = (f"| {idag} | {snap.name} | {p_op*100:.1f}% | {lo*100:.1f}-{hi*100:.1f}% | "
                      f"{base*100:.1f}% | {dom_ord} | {x['curve']:+.2f} | "
                      f"{', '.join(aktive) if aktive else 'ingen'} |  |")
-            with logf.open("a", encoding="utf-8") as fh:
+            with logf.open("a", encoding="utf-8", newline="\n") as fh:
                 fh.write(linje + "\n")
             print(f"   LOGGET som raekke {len(rows) + 1}: {idag}, P {p_op*100:.1f}%, dom '{dom_ord}'.")
 

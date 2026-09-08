@@ -286,10 +286,12 @@ def promote(snap, meta, res):
     w = C.fit((X - mu) / sd, y)
 
     old = HERE / "weights.json"
+    bk_txt = "ingen gammel weights.json at gemme"
     if old.exists():
         prev = json.loads(old.read_text(encoding="utf-8"))
         bk = HERE / f"weights_backup_{prev.get('protocol_version','ukendt')}.json"
         bk.write_text(old.read_text(encoding="utf-8"), encoding="utf-8")
+        bk_txt = f"gammel gemt som {bk.name}"
     out = dict(protocol_version=PROTOCOL,
                created_utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),
                snapshot=snap.name, snapshot_sha256=meta["snapshot_sha256"],
@@ -304,7 +306,7 @@ def promote(snap, meta, res):
                wf_improvement=res["improvement"], wf_brier=res["brier"],
                wf_note="purged expanding-origin wf, L=18-embargo, censurerede origins; se ablation2_resultat.json")
     old.write_text(json.dumps(out, indent=1), encoding="utf-8")
-    print("PROMOVERET: weights.json er nu NBER-onset (gammel gemt som weights_trin1_teknisk.json).")
+    print(f"PROMOVERET: weights.json er nu NBER-onset ({bk_txt}).")
 
 if __name__ == "__main__":
     main()
