@@ -27,6 +27,11 @@ pr. maaned, skrevet FOER udfaldet kendes; historiske raekker roeres aldrig.
 
 Genkalibrering (sjaeldnere, efter dataopdateringer): `python calibrate.py --check`
 
+Test (stdlib unittest, ingen netvaerk, ~3 s): `cd v5 && python -m unittest -v test_v5`
+— daekker snapshot-livscyklussen (.ny/.ukomplet, retry, diff-markering), komplethedsgaten,
+finalize6's permanente linjer og promotion-bevaring, motor's --log-guards og debate.py's
+arkiv-layout. Koer den efter enhver kodeaendring, foer maanedsritualet.
+
 ## MANGLER FOER ACCEPTANCETESTEN KAN KOERES: manual/shiller.csv
 
 v4's kalibrering brugte Shiller-historikken 1871+ (data/spx.csv), som ikke fulgte

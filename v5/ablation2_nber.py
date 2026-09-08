@@ -65,7 +65,8 @@ def load_announcements(eps):
     onsets uden raekke: trough + PRE1979_TROUGH_LAG."""
     avail = {}
     f = HERE / "nber_announcements.csv"
-    rows = list(csv.DictReader(f.open(encoding="utf-8-sig")))
+    with f.open(encoding="utf-8-sig") as fh:
+        rows = list(csv.DictReader(fh))
     for r in rows:
         if not r["event"].startswith("peak"):
             continue

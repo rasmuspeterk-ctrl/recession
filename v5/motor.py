@@ -182,7 +182,8 @@ def main():
     tp_txt = ""
     if acm_f.exists():
         import csv as _csv
-        rows = list(_csv.DictReader(acm_f.open(encoding="utf-8-sig")))
+        with acm_f.open(encoding="utf-8-sig") as fh:
+            rows = list(_csv.DictReader(fh))
         tp_txt = f" / ACM TP {float(rows[-1]['ACMTP10']):+.2f}pp"
     mon += [
         ("CP-spaend 3m > 75bp", cp_spread_bp > 75,
