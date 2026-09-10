@@ -1,8 +1,8 @@
 {
  "protocol_version": "5.0-final",
- "created_utc": "2026-09-08T23:44:59+00:00",
- "snapshot": "2026-09-09",
- "snapshot_sha256": "a9351c5f3adad0ecb9e777d943b50a2c931ac2d68f206c1f58633b6385a09249",
+ "created_utc": "2026-09-10T20:37:59+00:00",
+ "snapshot": "2026-09-10",
+ "snapshot_sha256": "a5021bdb711a0377f28c11df0ac5b45b923b2ff24bec1a6c07c1cb4e329c408b",
  "label": "nber-onset",
  "label_tekst": "NBER-onset inden 4 kvartaler",
  "frekvens": "kvartal",

@@ -1,0 +1,181 @@
+{
+ "retrieved_utc": "2026-09-10T20:32:31+00:00",
+ "series": {
+  "GS10": {
+   "rows": 881,
+   "first": "1953-04-01",
+   "last": "2026-08-01",
+   "last_value": "4.68",
+   "sha256": "e22128f6caa50e4e7fed03a1c2d323a517bad452a2c69eab89277450fb59bc5c",
+   "purpose": "10-aarig statsrente, maanedlig (feature: curve/realrate)"
+  },
+  "TB3MS": {
+   "rows": 1112,
+   "first": "1934-01-01",
+   "last": "2026-08-01",
+   "last_value": "3.72",
+   "sha256": "ebf04b1ae5bc5729ba3bb2b35dbb0e0c5e22dace36bea0c02632782d625ae6ab",
+   "purpose": "3-mdr T-bill, maanedlig (feature: curve)"
+  },
+  "CPIAUCNS": {
+   "rows": 1362,
+   "first": "1913-01-01",
+   "last": "2026-07-01",
+   "last_value": "333.918",
+   "sha256": "ff0e1a1bb2af9364c1975f373cbac514f4f537fea9515c83c8b6994e8aa9a8a1",
+   "purpose": "CPI NSA (inflations-features; Shiller-konsistent)"
+  },
+  "CPIAUCSL": {
+   "rows": 954,
+   "first": "1947-01-01",
+   "last": "2026-07-01",
+   "last_value": "332.813",
+   "sha256": "5a102ceb6a4c5fe5a2e0319d6feca89b55dde6199e51de0760f42791a949cdaa",
+   "purpose": "CPI SA (reserve/diagnostik)"
+  },
+  "UNRATE": {
+   "rows": 943,
+   "first": "1948-01-01",
+   "last": "2026-08-01",
+   "last_value": "4.1",
+   "sha256": "ffe86c903f6944ebc8281e5474a15fc4ceaac61059bc51ec86a7241391d8713d",
+   "purpose": "ledighed (Sahm-transform-kandidat, trin 4)"
+  },
+  "SAHMREALTIME": {
+   "rows": 800,
+   "first": "1959-12-01",
+   "last": "2026-08-01",
+   "last_value": "-0.07",
+   "sha256": "4da0144adced98f11f79b131e7bff40c54572137c11e1003d507632476a7608b",
+   "purpose": "Sahm-reglen realtid (monitor + benchmark)"
+  },
+  "ICSA": {
+   "rows": 3114,
+   "first": "1967-01-07",
+   "last": "2026-09-05",
+   "last_value": "206000",
+   "sha256": "185cc45bd72b3d58aeef8682a6f9873c7dc0225c94318e79520b95646b0cafa0",
+   "purpose": "initial claims, ugentlig (kandidat, trin 4)"
+  },
+  "PERMIT": {
+   "rows": 799,
+   "first": "1960-01-01",
+   "last": "2026-07-01",
+   "last_value": "1433",
+   "sha256": "e5fd9fa7ab5a83b3da1f3caf8fde3439e7fa8019aa7196ce0fd08078b34d443c",
+   "purpose": "byggetilladelser (kandidat, trin 4)"
+  },
+  "BAMLH0A0HYM2": {
+   "rows": 787,
+   "first": "2023-09-11",
+   "last": "2026-09-09",
+   "last_value": "2.71",
+   "sha256": "8c16caf79c761d0e624dc741e7002d88b0d357635e4646c69cd12b0bb19f0e57",
+   "purpose": "HY OAS, daglig (monitor \u2014 ineligible som feature)"
+  },
+  "USREC": {
+   "rows": 2061,
+   "first": "1854-12-01",
+   "last": "2026-08-01",
+   "last_value": "0",
+   "sha256": "de2b859e0cd8cb1c56f74bbc2b16b1f8bab4f882e5b8a9d83dfb58c3aa10dad9",
+   "purpose": "NBER-recessionsmaaneder (label fra trin 2)"
+  },
+  "A191RL1Q225SBEA": {
+   "rows": 317,
+   "first": "1947-04-01",
+   "last": "2026-04-01",
+   "last_value": "1.5",
+   "sha256": "b5afe31ad962ea5e5de0c67491f557e8fde93efbadadcb03e13c12d055db9d28",
+   "purpose": "real BNP %-aendring ann. (teknisk label + advance-diagnostik)"
+  },
+  "GDPC1": {
+   "rows": 318,
+   "first": "1947-01-01",
+   "last": "2026-04-01",
+   "last_value": "24269.613",
+   "sha256": "519d65c05941022da119fdcbc95976d6865e94b9cc4a8248239e20d7b898e5fc",
+   "purpose": "real BNP niveau (reserve)"
+  },
+  "FEDFUNDS": {
+   "rows": 866,
+   "first": "1954-07-01",
+   "last": "2026-08-01",
+   "last_value": "3.63",
+   "sha256": "4c3a0f601abf9db0a8298f9e972ae6627876c4232cda79b0bc43d3230aa0450d",
+   "purpose": "effektiv fed funds (market conditions: realt kontantafkast)"
+  },
+  "PCEPI": {
+   "rows": 811,
+   "first": "1959-01-01",
+   "last": "2026-07-01",
+   "last_value": "131.659",
+   "sha256": "02580549b5894c8d530e35a5ab9a23a15a64d94d6f37b8a077d23c3a66fafcb8",
+   "purpose": "PCE-prisindeks (market conditions: realt kontantafkast)"
+  },
+  "THREEFYTP10": {
+   "rows": 9156,
+   "first": "1990-01-02",
+   "last": "2026-09-04",
+   "last_value": "0.8892",
+   "sha256": "68a77ae88f61dc565b2d7c30defc317519e7467dd1aed294d262e8324595cbfd",
+   "purpose": "ACM 10-aars term-praemie, FRED-spejl 1990+ (trin 4: substitutionstest)"
+  },
+  "RECPROUSM156N": {
+   "rows": 710,
+   "first": "1967-06-01",
+   "last": "2026-07-01",
+   "last_value": "0.76",
+   "sha256": "0260a6033cfbd188771a48cdeea623f269926f69d5b58963b1de9d9c67e4b48d",
+   "purpose": "Chauvet-Piger glattet recessionssandsynlighed (benchmark, coincident nowcast)"
+  },
+  "AWHMAN": {
+   "rows": 1052,
+   "first": "1939-01-01",
+   "last": "2026-08-01",
+   "last_value": "41.7",
+   "sha256": "f8bca392429bfdffb682eb4b222a56158e1016faea5e6d9d0e506a986b100a68",
+   "purpose": "ugentlige arbejdstimer, industri, 1939+ (trin: sidste praeregistrerede feature-skud)"
+  },
+  "RIFSPPFAAD90NB": {
+   "rows": 6745,
+   "first": "1997-01-02",
+   "last": "2026-09-09",
+   "last_value": "3.84",
+   "sha256": "8d1b445ee3951a6c0cbe7bd231d7954836aa55f12a86419cb7b5ce2002628742",
+   "purpose": "90-dages AA finansiel commercial paper-rente (svaerm-tripwire: funding-spaend)"
+  },
+  "DTB3": {
+   "rows": 18163,
+   "first": "1954-01-04",
+   "last": "2026-09-09",
+   "last_value": "3.81",
+   "sha256": "25686640cb5cdd02242a5f6a4d0662748f17db605248f3bc76bc773c1c0cb424",
+   "purpose": "3-mdr T-bill sekundaermarked, daglig (til CP-spaendet)"
+  },
+  "MORTGAGE30US": {
+   "rows": 2894,
+   "first": "1971-04-02",
+   "last": "2026-09-10",
+   "last_value": "6.76",
+   "sha256": "e2fbb4422a47ac0a7bb33dc199e9a41705154d9399c231e6d3b6476c74a57f74",
+   "purpose": "30-aars realkreditrente, ugentlig (svaerm-tripwire: fiskal/term-praemie-kanalen)"
+  }
+ },
+ "manual": {
+  "shiller.csv": {
+   "sha256": "264da56238073ef40b6f417f35448c1ebc68b9719f3bd9767632501eb89e637f",
+   "bytes": 85174
+  },
+  "manual.json": {
+   "sha256": "a00a3140413b9c11a009937befdd422f2b36b458245ba5e52d034e6f5e53b692",
+   "bytes": 528
+  },
+  "acm.csv": {
+   "sha256": "bc6dae6898ae43ec143d9cf78ca60763e13b04b047e155134100525319b55593",
+   "bytes": 13407
+  }
+ },
+ "complete": true,
+ "snapshot_sha256": "a5021bdb711a0377f28c11df0ac5b45b923b2ff24bec1a6c07c1cb4e329c408b"
+}

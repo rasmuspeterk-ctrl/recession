@@ -171,3 +171,34 @@ begrundelse (praeregistreret i ablation7's header). Resultat: ablation7_resultat
 - Datareparation: LF-normaliseringen 09-08 aendrede shiller.csv/acm.csv-bytes i de gamle
   snapshots uden at opdatere meta.json; hashene (+ snapshot_sha256) er genberegnet fra
   filerne paa disk (markeret `hash_repareret` i meta), og weights.json er genankret.
+
+## Vedligehold 2026-09-10 (udfyldte monitor-pladser + pengepolitik/inflation som kontekst)
+
+- De to tomme monitor-pladser er udfyldt. `Claims-momentum` viser nu 4-ugers niveau
+  (atlassets 200-220k-zone) og 12m %-aendring paa sidste KOMPLETTE maaned (trin 4's
+  definition); `Permits y/y` viser niveau + 12m %-aendring. Begge beholder `aktiv=None`
+  ([-]), saa hovedbogens antaendings-kolonne er uaendret og raekkerne forbliver
+  sammenlignelige paa tvaers af maaneder.
+- Ny firewallet blok i Section 5: PENGEPOLITIK & INFLATION — Fed funds, realt
+  kontantafkast, 3m-bill minus Fed funds (markedets Fed-prissaetning), PCE- og CPI-momentum
+  3m/6m/12m annualiseret, samt 10y opdelt i term-praemie + forventet rente. INGEN
+  indflydelse paa P, ikke i hovedbogen — samme firewall som atlassets svaerm-tripwires.
+- Hvorfor kontekst og ikke features: rente og inflation ER allerede i modellen. Kurven
+  (10y-3m) er den operationelle feature, og realrate (10y-CPI) + d_infl er to af
+  fuldmodellens fem. Fuldmodellen blev testet i trin 6 og tabte til curve-only
+  (+33,2% mod +34,3%). At tilfoeje dem igen ville ikke vaere en ny hypotese, men en
+  gentagelse af en afgjort test. FEATURE-SOEGNINGEN ER FORTSAT LUKKET: en aendring af P
+  kraever ny oekonomisk begrundelse + raads-mandat + praeregistrering, som ved v5.1/v5.2.
+- Momentum-linjerne bruger KUN saesonkorrigerede serier (PCEPI, CPIAUCSL). Modellens egen
+  `cpi_yoy` bruger CPIAUCNS, hvilket er korrekt for y/y (saesonen gaar ud over 12 mdr),
+  men ville vaere forkert for 3m/6m.
+- Nye helpers i `motor.py`, daekket af tests (42 i alt): `read_fred_raw` (noedvendig fordi
+  `C.read_fred` kollapser ugeserier til maanedens sidste obs og derfor ikke kan give et
+  4-ugers snit) og `ann_rate`.
+
+**BEMAERKET, IKKE RETTET:** `ablation4_features.monthly_mean` er reelt en no-op —
+`C.read_fred` har allerede kollapset ICSA til een vaerdi pr. maaned, saa der er kun eet
+element pr. gruppe at tage middel af. Trin 4's `claims_mom` blev derfor testet paa
+maanedens SIDSTE uge, ikke paa maanedsmidlen som modulets header angiver. Afvisningen var
+-61,9pp, saa konklusionen staar uanfaegtet, men specifikation og kode er uenige. En
+rettelse ville aendre et publiceret trin 4-resultat og kraever derfor eksplicit mandat.

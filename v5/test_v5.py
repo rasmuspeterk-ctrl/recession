@@ -406,6 +406,44 @@ class TestMotor(unittest.TestCase):
 
 
 # ============================================================== debate.py
+class TestMotorHelpers(unittest.TestCase):
+    """read_fred_raw + ann_rate — indfoert da claims/permits-pladserne blev udfyldt."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+
+    def _skriv(self, navn, raekker):
+        nl = chr(10)
+        (self.tmp / navn).write_text(
+            "observation_date,V" + nl + "".join(f"{d},{v}{nl}" for d, v in raekker),
+            encoding="utf-8")
+
+    def test_raw_bevarer_alle_ugeobs(self):
+        """C.read_fred kollapser ugedata til maanedens sidste obs; raw maa ikke."""
+        uger = [("2026-08-01", "200000"), ("2026-08-08", "212000"),
+                ("2026-08-15", "207000"), ("2026-08-22", "204000")]
+        self._skriv("ICSA.csv", uger)
+        raw = M.read_fred_raw(self.tmp, "ICSA")
+        self.assertEqual(len(raw), 4)
+        self.assertEqual(raw[0], ("2026-08-01", 200000.0))
+        self.assertEqual(sum(v for _, v in raw) / 4, 205750.0)
+        # kontrasten der begrunder helperen:
+        self.assertEqual(len(C.read_fred(self.tmp, "ICSA")), 1)
+
+    def test_raw_springer_punktum_over(self):
+        self._skriv("X.csv", [("2026-08-01", "1.0"), ("2026-08-08", "."), ("2026-08-15", "3.0")])
+        self.assertEqual([v for _, v in M.read_fred_raw(self.tmp, "X")], [1.0, 3.0])
+
+    def test_ann_rate_annualiserer(self):
+        # 1% pr. maaned i 3 maaneder -> (1,01^3)^4 - 1 = 12,68%
+        s = {(2026, m): 100 * 1.01 ** (m - 1) for m in range(1, 5)}
+        self.assertAlmostEqual(M.ann_rate(s, 3), ((1.01 ** 3) ** 4 - 1) * 100, places=6)
+
+    def test_ann_rate_for_kort_serie_giver_nan(self):
+        self.assertTrue(np.isnan(M.ann_rate({(2026, 1): 100.0}, 3)))
+
+
 class TestDebate(unittest.TestCase):
     def test_read_round_laeser_arkivets_runde_mapper(self):
         r1 = D.read_round(1)

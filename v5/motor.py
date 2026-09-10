@@ -23,6 +23,26 @@ STALE_DAYS = 40
 def latest(series, n=1):
     return sorted(series.items())[-n]
 
+def read_fred_raw(snap, sid):
+    """FRED-csv -> [(dato, vaerdi)] i filens raekkefoelge. Noedvendig for ugeserier:
+    C.read_fred kollapser til (aar, maaned) og beholder kun maanedens sidste obs."""
+    import csv as _csv
+    out = []
+    with (snap / f"{sid}.csv").open(encoding="utf-8-sig") as fh:
+        for row in _csv.DictReader(fh):
+            d, v = list(row.values())[:2]
+            if v not in (".", ""):
+                out.append((d, float(v)))
+    return out
+
+def ann_rate(series, n):
+    """Annualiseret aendring over n maaneder. Kun paa SAESONKORRIGEREDE serier."""
+    ks = sorted(series)
+    if len(ks) < n + 1:
+        return float("nan")
+    return ((series[ks[-1]] / series[ks[-1 - n]]) ** (12 / n) - 1) * 100
+
+
 def p_of(x, feats, mu, sd, w):
     z = [(x[f] - mu[f]) / sd[f] for f in feats]
     return 1 / (1 + np.exp(-np.clip(w[0] + sum(w[i + 1] * z[i] for i in range(len(feats))), -30, 30)))
@@ -161,12 +181,36 @@ def main():
     print(f"   Divergensen drives af fuldmodellens ekstra led (CAPE z={zc_cape:+.2f}, dd z={zc_dd:+.2f});"
           f"\n   modellerne er statistisk uadskillelige paa skill — den simple vandt paa regel (raadsreview 2026-08).")
 
+    # claims/permits: samme definition som trin 4 (12m %-aendring paa maanedens
+    # sidste obs) + atlassets 4-ugers niveau. Delvis sidste maaned springes over.
+    icsa_raw = read_fred_raw(snap, "ICSA")
+    claims_4w = sum(v for _, v in icsa_raw[-4:]) / 4
+    mcount = {}
+    for _d, _ in icsa_raw:
+        mcount[_d[:7]] = mcount.get(_d[:7], 0) + 1
+    _mk = sorted(mcount)
+    full = _mk[-1] if mcount[_mk[-1]] >= 4 else _mk[-2]
+    def _last_in(key):
+        vals = [v for _d, v in icsa_raw if _d[:7] == key]
+        return vals[-1] if vals else None
+    c_now, c_prev = _last_in(full), _last_in(f"{int(full[:4]) - 1}{full[4:]}")
+    claims_12m = (c_now / c_prev - 1) * 100 if c_now and c_prev else float("nan")
+
+    pmt = C.read_fred(snap, "PERMIT")
+    pmk = sorted(pmt)[-1]
+    pm_prev = pmt.get((pmk[0] - 1, pmk[1]))
+    permits_yoy = (pmt[pmk] / pm_prev - 1) * 100 if pm_prev else float("nan")
+
     print("\n4) MONITORS   [individuelle linjer, ingen taellinger, ingen indflydelse paa P]")
     mon = [
         ("Kurven inverteret", x["curve"] < 0, f"{x['curve']:+.2f}pp", "operationel feature"),
         ("Sahm > 0,50", sahm[1] > 0.50, f"{sahm[1]:.2f} ({sahm[0][0]}-{sahm[0][1]:02d})", "testet, ikke bestaaet (trin 4)"),
-        ("Claims-momentum", None, "se ICSA i snapshot", "testet, ikke bestaaet (trin 4)"),
-        ("Permits y/y", None, "se PERMIT i snapshot", "testet, ikke bestaaet (trin 4)"),
+        ("Claims-momentum", None,
+         f"4u-snit {claims_4w/1000:.0f}k; 12m {claims_12m:+.1f}% ({full})",
+         "testet, ikke bestaaet (trin 4)"),
+        ("Permits y/y", None,
+         f"{pmt[pmk]:.0f} ({pmk[0]}-{pmk[1]:02d}); 12m {permits_yoy:+.1f}%",
+         "testet, ikke bestaaet (trin 4)"),
         ("HY OAS > 600bp", oas_bp > 600, f"{oas_bp:.0f}bp ({oas_d[0]}-{oas_d[1]:02d})", "ineligible (historik 1997-); svaerm-zone 350-450bp"),
         ("S&P drawdown > 20%", x["dd"] < -0.20, f"{x['dd']*100:+.0f}%", "fuldmodel-feature"),
         ("Advance-estimat: 2 neg. BNP-print", len(adv2) == 2 and all(v < 0 for v in adv2),
@@ -195,13 +239,36 @@ def main():
         boks = "[X]" if aktiv else ("[ ]" if aktiv is not None else "[-]")
         print(f"   {boks} {navn:<36}{vaerdi:<48}{status}")
 
-    print("\n5) MARKET CONDITIONS — not recession evidence   [kvalitativ]")
+    print()
+    print("5) MARKET CONDITIONS — not recession evidence   [kvalitativ]")
     erp = 100 / cape_live - y10
     for navn, vaerdi in [("CAPE-percentil (expanding)", f"{cape_pct*100:.1f}. pct"),
                          ("Aktierisikopraemie 1/CAPE - y10", f"{erp:+.2f}pp"),
-                         ("Marginlaan y/y", f"{float(man['margin_yoy']):+.1f}% (manual, {man.get('as_of','?')})"),
-                         ("Realt kontantafkast FF - PCE", f"{ff[1]-pce_yoy:+.2f}pp")]:
+                         ("Marginlaan y/y", f"{float(man['margin_yoy']):+.1f}% (manual, {man.get('as_of','?')})")]:
         print(f"       {navn:<34}{vaerdi}")
+
+    # ---- pengepolitik & inflation: KONTEKST, firewallet som atlassets tripwires ----
+    # Momentum kun paa saesonkorrigerede serier (PCEPI, CPIAUCSL). Modellens egen
+    # cpi_yoy bruger CPIAUCNS — korrekt for y/y, forkert for 3m/6m.
+    pol = [("Fed funds (effektiv)", f"{ff[1]:.2f}% ({ff[0][0]}-{ff[0][1]:02d})"),
+           ("Realt kontantafkast FF - PCE", f"{ff[1] - pce_yoy:+.2f}pp"),
+           ("3m-bill minus Fed funds", f"{(tb_r - ff[1]) * 100:+.0f}bp ({tb_d[0]}-{tb_d[1]:02d}, diskonto)"),
+           ("PCE-infl. 3m/6m/12m ann.", f"{ann_rate(pce, 3):.1f} / {ann_rate(pce, 6):.1f} / {pce_yoy:.1f}%")]
+    if (snap / "CPIAUCSL.csv").exists():
+        cpi_sa = C.read_fred(snap, "CPIAUCSL")
+        pol.append(("CPI (SA) 3m/6m/12m ann.",
+                    f"{ann_rate(cpi_sa, 3):.1f} / {ann_rate(cpi_sa, 6):.1f} / {ann_rate(cpi_sa, 12):.1f}%"))
+    if (snap / "THREEFYTP10.csv").exists():
+        _tp = C.read_fred(snap, "THREEFYTP10")
+        tp10 = _tp[sorted(_tp)[-1]]
+        pol.append(("10y = term-praemie + forventet", f"{y10:.2f} = {tp10:.2f} + {y10 - tp10:.2f}"))
+    print()
+    print("   PENGEPOLITIK & INFLATION   [kontekst — ingen indflydelse paa P]")
+    for navn, vaerdi in pol:
+        print(f"       {navn:<34}{vaerdi}")
+    print("       Rente og inflation indgaar i P via kurven (operationel feature) og via")
+    print("       realrate/d_infl i fuldmodellen — testet, ikke bestaaet (trin 6). Linjerne")
+    print("       her er kontekst: hverken i P eller i hovedbogens antaendings-kolonne.")
 
     print("\n6) DOM (skabelon-genereret — overstiger aldrig tallene)")
     if band_excludes_base:

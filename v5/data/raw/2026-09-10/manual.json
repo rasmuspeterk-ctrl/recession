@@ -1,0 +1,12 @@
+{
+  "spx_vs_hi": -0.0103,
+  "cape": 41.18,
+  "margin_yoy": 38.6,
+  "as_of": "2026-09-09",
+  "_kilder": {
+    "spx_vs_hi": "FRED SP500 close 2026-09-04 (7718.60) vs 12m-hoej 2026-08-13 (7798.99): -1.03%",
+    "cape": "multpl.com/shiller-pe, 2026-09-08 16:00 EDT: 41.18",
+    "margin_yoy": "FINRA margin statistics: debit balances jul-26 $1,417,225M vs jul-25 $1,022,548M = +38.6% (jun-26: $1,502,072M)",
+    "_note": "Opdateret 2026-09-09 ved september-laesningen. Foer: 0.00 / 42.0 / 51.5 (as_of 2026-08-08)."
+  }
+}
