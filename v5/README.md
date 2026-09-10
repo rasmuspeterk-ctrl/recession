@@ -21,6 +21,7 @@ python fetch.py        # hent + diff-tjek med oejnene
 # opdater manual/manual.json (3 tal) og evt. manual/shiller.csv
 python ablation2_nber.py --promote && python finalize6.py   # genanker vaegte paa dagens snapshot (~2 s, deterministisk)
 python motor.py --log  # aflaesning + prospektiv logfoering i ../LOG.md
+python motor.py --json # samme tal som maskinlaesbar dashboard.json
 ```
 Hovedbogen (`../LOG.md`) er den eneste aegte out-of-sample-eksamen: een raekke
 pr. maaned, skrevet FOER udfaldet kendes; historiske raekker roeres aldrig.
@@ -202,3 +203,17 @@ element pr. gruppe at tage middel af. Trin 4's `claims_mom` blev derfor testet p
 maanedens SIDSTE uge, ikke paa maanedsmidlen som modulets header angiver. Afvisningen var
 -61,9pp, saa konklusionen staar uanfaegtet, men specifikation og kode er uenige. En
 rettelse ville aendre et publiceret trin 4-resultat og kraever derfor eksplicit mandat.
+
+## Dashboard
+
+`python motor.py --json [sti]` skriver hele laesningen som JSON (default
+`../dashboard.json`): P, baand, basisrate, `baand_udelukker_basisrate`/`ratio`,
+dommen ordret, de fem inputs med z-scores, hele benchmark-tabellen, monitorerne med
+`tilstand` (aktiv/inaktiv/kontekst) og klasse, market conditions, pengepolitik-blokken,
+de staaende advarsler og hele hovedbogen med baade tekst- og talfelter.
+
+Designbriefen ligger i `../DASHBOARD-BRIEF.md` og indeholder datakontrakten plus de
+ufravigelige designregler: P aldrig uden baand og basisrate, ratio kun naar baandet
+udelukker basisraten, ingen speedometre, ingen farvekodning af fare, ingen sammentaelling
+af monitorer, benchmark-tabellen altid synlig, dommen gengivet ordret. Reglerne findes
+for at et dashboard ikke kan komme til at love mere end modellen kan holde.

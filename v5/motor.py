@@ -35,6 +35,29 @@ def read_fred_raw(snap, sid):
                 out.append((d, float(v)))
     return out
 
+def laes_hovedbog(logf):
+    """LOG.md-tabellen -> [dict] med alle kolonner. P/kurve beholder tekstformen;
+    dashboardet faar tal via tal_af()."""
+    kol = ("logget", "snapshot", "P", "baand", "basisrate", "dom", "kurve", "antaending", "note")
+    ud = []
+    if not logf.exists():
+        return ud
+    for ln in logf.read_text(encoding="utf-8").splitlines():
+        if ln.startswith("| 2"):
+            c = [f.strip() for f in ln.split("|")]
+            ud.append(dict(zip(kol, c[1:1 + len(kol)])))
+    return ud
+
+
+def tal_af(txt, faktor=1.0):
+    """"18.0%" -> 0.18 ved faktor 0.01. Uparsbart -> None."""
+    try:
+        return round(float(str(txt).rstrip("%").replace(",", ".")) * faktor, 6)
+    except (TypeError, ValueError):
+        return None
+
+
+
 def ann_rate(series, n):
     """Annualiseret aendring over n maaneder. Kun paa SAESONKORRIGEREDE serier."""
     ks = sorted(series)
@@ -296,12 +319,7 @@ def main():
     aktive = [navn for navn, aktiv, _, _ in mon if aktiv]
     dom_ord = ("under basisraten" if (band_excludes_base and p_op < base)
                else "over basisraten" if band_excludes_base else "ikke skelnelig")
-    rows = []
-    if logf.exists():
-        for ln in logf.read_text(encoding="utf-8").splitlines():
-            if ln.startswith("| 2"):
-                c = [x.strip() for x in ln.split("|")]
-                rows.append(dict(logget=c[1], P=c[3], kurve=c[7]))
+    rows = laes_hovedbog(logf)
     print("\n7) HOVEDBOG (LOG.md)")
     if rows:
         last = rows[-1]
@@ -330,6 +348,74 @@ def main():
             with logf.open("a", encoding="utf-8", newline="\n") as fh:
                 fh.write(linje + "\n")
             print(f"   LOGGET som raekke {len(rows) + 1}: {idag}, P {p_op*100:.1f}%, dom '{dom_ord}'.")
+
+    if "--json" in sys.argv:
+        k = sys.argv.index("--json")
+        har_sti = len(sys.argv) > k + 1 and not sys.argv[k + 1].startswith("-")
+        ud = Path(sys.argv[k + 1]) if har_sti else HERE.parent / "dashboard.json"
+
+        bm = [dict(navn="intercept (basisrate)", wf=0.0, live_p=round(base, 6), status=None),
+              dict(navn="curve-only-logit (NY Fed-stil-bm.)",
+                   wf=W["benchmarks"]["curve_only"]["wf_improvement"], live_p=round(p_curve, 6),
+                   status="OPERATIONEL" if W["operationel"] == "curve_only" else None),
+              dict(navn="fuldmodel (5 features)", wf=fm["wf_improvement"],
+                   live_p=round(p_full, 6), status=fm["status"])]
+        for navn, blok in (("curve+cape (praereg. v5.1-test)", cc), ("curve+awh (praereg. v5.2-test)", ca)):
+            if blok:
+                bm.append(dict(navn=navn, wf=blok["wf_improvement"], live_p=None, status=blok["status"]))
+        if p_arv is not None:
+            bm.append(dict(navn="v4-arv (teknisk label)", wf=None, live_p=round(p_arv, 6),
+                           status="andet maal - arv"))
+        bm.append(dict(navn="realtids-Sahm (trigger 0,50)", wf=None, live_p=None,
+                       vaerdi=sahm[1], status="naerhorisont-signal"))
+        bm.append(dict(navn="Chauvet-Piger nowcast", wf=None, live_p=round(cp[1] / 100, 6),
+                       status="coincident, publiceringslag - anden disciplin"))
+
+        mc = [("CAPE-percentil (expanding)", f"{cape_pct*100:.1f}. pct"),
+              ("Aktierisikopraemie 1/CAPE - y10", f"{erp:+.2f}pp"),
+              ("Marginlaan y/y", f"{float(man['margin_yoy']):+.1f}% (manual, {man.get('as_of','?')})")]
+
+        hb = laes_hovedbog(logf)
+        for r in hb:
+            b = [tal_af(v, 0.01) for v in r.get("baand", "").split("-")]
+            r["p_tal"] = tal_af(r.get("P"), 0.01)
+            r["baand_tal"] = b if len(b) == 2 and None not in b else None
+            r["basisrate_tal"] = tal_af(r.get("basisrate"), 0.01)
+            r["kurve_tal"] = tal_af(r.get("kurve"))
+
+        sti = ("Modellen laeser kurvens NIVEAU; "
+               f"{x['curve']:+.2f}pp behandles som {x['curve']:+.2f}pp uden forhistorie. "
+               f"Seneste inversion: {inv_note}. Historiske onsets er ofte sket i "
+               "re-steepening-fasen; balance-sheet-drevne recessioner uden frisk "
+               "inversion er usynlige for modellen.")
+
+        data = dict(
+            snapshot=snap.name, snapshot_hash=meta["snapshot_sha256"][:10],
+            model="curve-only-logit" if W["operationel"] == "curve_only" else "fuldmodel",
+            label=W["label_tekst"], kalibreret=W["created_utc"][:10],
+            n_obs=W["n_obs"], n_episoder=W["n_episoder"],
+            wf_log_loss=op["wf_improvement"], wf_brier=op["wf_brier"],
+            p=round(p_op, 6), baand=[round(float(lo), 6), round(float(hi), 6)],
+            basisrate=base, baand_udelukker_basisrate=bool(band_excludes_base),
+            ratio=round(p_op / base, 4) if band_excludes_base else None,
+            baand_fodnote=W["band"]["fodnote"], dom=dom,
+            inputs=[dict(navn=NAVN[f], vaerdi=round(x[f], 4),
+                         z=round((x[f] - fm["mu"][f]) / fm["sd"][f], 4),
+                         operationel=f in op["features"]) for f in fm["features"]],
+            benchmarks=bm,
+            monitors=[dict(navn=n,
+                           tilstand="aktiv" if a else ("inaktiv" if a is not None else "kontekst"),
+                           vaerdi=v, klasse=s) for n, a, v, s in mon],
+            market_conditions=[dict(navn=n, vaerdi=v) for n, v in mc],
+            pengepolitik=[dict(navn=n, vaerdi=v) for n, v in pol],
+            advarsler=dict(vaerste_fejlalarm=fa, sti_advarsel=sti,
+                           eksogen="Eksogene chok kan ikke forudsiges."),
+            hovedbog=hb,
+        )
+        ud.write_text(json.dumps(data, indent=2, ensure_ascii=False) + chr(10), encoding="utf-8")
+        print(f"{chr(10)}   JSON skrevet: {ud}  ({len(hb)} hovedbogsraekker)")
+
+
 
 if __name__ == "__main__":
     main()

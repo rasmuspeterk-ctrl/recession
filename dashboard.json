@@ -1,0 +1,258 @@
+{
+  "snapshot": "2026-09-10",
+  "snapshot_hash": "a5021bdb71",
+  "model": "curve-only-logit",
+  "label": "NBER-onset inden 4 kvartaler",
+  "kalibreret": "2026-09-10",
+  "n_obs": 264,
+  "n_episoder": 12,
+  "wf_log_loss": 34.32,
+  "wf_brier": 32.85,
+  "p": 0.180445,
+  "baand": [
+    0.126749,
+    0.263045
+  ],
+  "basisrate": 0.1818,
+  "baand_udelukker_basisrate": false,
+  "ratio": null,
+  "baand_fodnote": "Not a predictive interval; reflects weight sensitivity to episode composition",
+  "dom": "P er 18.0% mod basisraten 18.2%, men baandet [12.7-26.3%] indeholder basisraten: IKKE SKELNELIG FRA BASISRATEN.",
+  "inputs": [
+    {
+      "navn": "Rentekurve 10y-3m",
+      "vaerdi": 0.96,
+      "z": -0.3917,
+      "operationel": true
+    },
+    {
+      "navn": "Realrente 10y-CPI",
+      "vaerdi": 1.3152,
+      "z": -0.16,
+      "operationel": false
+    },
+    {
+      "navn": "S&P vs 12-mdr hoejde",
+      "vaerdi": -0.0103,
+      "z": 0.4065,
+      "operationel": false
+    },
+    {
+      "navn": "Aendring i inflation",
+      "vaerdi": 0.6599,
+      "z": 0.26,
+      "operationel": false
+    },
+    {
+      "navn": "CAPE-percentil (expanding)",
+      "vaerdi": 0.9242,
+      "z": 0.9817,
+      "operationel": false
+    }
+  ],
+  "benchmarks": [
+    {
+      "navn": "intercept (basisrate)",
+      "wf": 0.0,
+      "live_p": 0.1818,
+      "status": null
+    },
+    {
+      "navn": "curve-only-logit (NY Fed-stil-bm.)",
+      "wf": 34.32,
+      "live_p": 0.180445,
+      "status": "OPERATIONEL"
+    },
+    {
+      "navn": "fuldmodel (5 features)",
+      "wf": 33.23,
+      "live_p": 0.09007,
+      "status": "testet, ikke bestaaet mod benchmark (trin 6)"
+    },
+    {
+      "navn": "curve+cape (praereg. v5.1-test)",
+      "wf": 36.81,
+      "live_p": null,
+      "status": "testet, ikke bestaaet (data-foreslaaet)"
+    },
+    {
+      "navn": "curve+awh (praereg. v5.2-test)",
+      "wf": 33.87,
+      "live_p": null,
+      "status": "testet, ikke bestaaet (sidste skud; soegning lukket)"
+    },
+    {
+      "navn": "v4-arv (teknisk label)",
+      "wf": null,
+      "live_p": 0.044197,
+      "status": "andet maal - arv"
+    },
+    {
+      "navn": "realtids-Sahm (trigger 0,50)",
+      "wf": null,
+      "live_p": null,
+      "vaerdi": -0.07,
+      "status": "naerhorisont-signal"
+    },
+    {
+      "navn": "Chauvet-Piger nowcast",
+      "wf": null,
+      "live_p": 0.0076,
+      "status": "coincident, publiceringslag - anden disciplin"
+    }
+  ],
+  "monitors": [
+    {
+      "navn": "Kurven inverteret",
+      "tilstand": "inaktiv",
+      "vaerdi": "+0.96pp",
+      "klasse": "operationel feature"
+    },
+    {
+      "navn": "Sahm > 0,50",
+      "tilstand": "inaktiv",
+      "vaerdi": "-0.07 (2026-08)",
+      "klasse": "testet, ikke bestaaet (trin 4)"
+    },
+    {
+      "navn": "Claims-momentum",
+      "tilstand": "kontekst",
+      "vaerdi": "4u-snit 206k; 12m -12.3% (2026-08)",
+      "klasse": "testet, ikke bestaaet (trin 4)"
+    },
+    {
+      "navn": "Permits y/y",
+      "tilstand": "kontekst",
+      "vaerdi": "1433 (2026-07); 12m +2.4%",
+      "klasse": "testet, ikke bestaaet (trin 4)"
+    },
+    {
+      "navn": "HY OAS > 600bp",
+      "tilstand": "inaktiv",
+      "vaerdi": "271bp (2026-09)",
+      "klasse": "ineligible (historik 1997-); svaerm-zone 350-450bp"
+    },
+    {
+      "navn": "S&P drawdown > 20%",
+      "tilstand": "inaktiv",
+      "vaerdi": "-1%",
+      "klasse": "fuldmodel-feature"
+    },
+    {
+      "navn": "Advance-estimat: 2 neg. BNP-print",
+      "tilstand": "inaktiv",
+      "vaerdi": "+2.1%, +1.5%",
+      "klasse": "uvalideret realtidsdiagnostik (vintage-flip dokumenteret, trin 5)"
+    },
+    {
+      "navn": "Inversionsnote",
+      "tilstand": "kontekst",
+      "vaerdi": "sluttede 2024-11 (21 mdr siden), dybde -1.57pp",
+      "klasse": "uvalideret kontekst"
+    },
+    {
+      "navn": "CP-spaend 3m > 75bp",
+      "tilstand": "inaktiv",
+      "vaerdi": "3bp (2026-09)",
+      "klasse": "svaerm-tripwire: funding-stress foer kreditspaend"
+    },
+    {
+      "navn": "10Y > 5,25%",
+      "tilstand": "inaktiv",
+      "vaerdi": "4.68% / ACM TP +0.84pp",
+      "klasse": "svaerm-tripwire: fiskal/term-praemie-kanalen"
+    },
+    {
+      "navn": "Realkredit 30Y > 7,8%",
+      "tilstand": "inaktiv",
+      "vaerdi": "6.76% (2026-09)",
+      "klasse": "svaerm-tripwire: boligkanalen"
+    }
+  ],
+  "market_conditions": [
+    {
+      "navn": "CAPE-percentil (expanding)",
+      "vaerdi": "92.4. pct"
+    },
+    {
+      "navn": "Aktierisikopraemie 1/CAPE - y10",
+      "vaerdi": "-2.25pp"
+    },
+    {
+      "navn": "Marginlaan y/y",
+      "vaerdi": "+38.6% (manual, 2026-09-09)"
+    }
+  ],
+  "pengepolitik": [
+    {
+      "navn": "Fed funds (effektiv)",
+      "vaerdi": "3.63% (2026-08)"
+    },
+    {
+      "navn": "Realt kontantafkast FF - PCE",
+      "vaerdi": "-0.07pp"
+    },
+    {
+      "navn": "3m-bill minus Fed funds",
+      "vaerdi": "+18bp (2026-09, diskonto)"
+    },
+    {
+      "navn": "PCE-infl. 3m/6m/12m ann.",
+      "vaerdi": "2.2 / 4.1 / 3.7%"
+    },
+    {
+      "navn": "CPI (SA) 3m/6m/12m ann.",
+      "vaerdi": "0.5 / 3.8 / 3.5%"
+    },
+    {
+      "navn": "10y = term-praemie + forventet",
+      "vaerdi": "4.68 = 0.89 + 3.79"
+    }
+  ],
+  "advarsler": {
+    "vaerste_fejlalarm": {
+      "p": 0.9383,
+      "origin": "2023Q2"
+    },
+    "sti_advarsel": "Modellen laeser kurvens NIVEAU; +0.96pp behandles som +0.96pp uden forhistorie. Seneste inversion: sluttede 2024-11 (21 mdr siden), dybde -1.57pp. Historiske onsets er ofte sket i re-steepening-fasen; balance-sheet-drevne recessioner uden frisk inversion er usynlige for modellen.",
+    "eksogen": "Eksogene chok kan ikke forudsiges."
+  },
+  "hovedbog": [
+    {
+      "logget": "2026-08-12",
+      "snapshot": "2026-08-12",
+      "P": "20.1%",
+      "baand": "14.4-29.2%",
+      "basisrate": "18.2%",
+      "dom": "ikke skelnelig",
+      "kurve": "+0.87",
+      "antaending": "ingen",
+      "note": "",
+      "p_tal": 0.201,
+      "baand_tal": [
+        0.144,
+        0.292
+      ],
+      "basisrate_tal": 0.182,
+      "kurve_tal": 0.87
+    },
+    {
+      "logget": "2026-09-09",
+      "snapshot": "2026-09-09",
+      "P": "18.0%",
+      "baand": "12.7-26.3%",
+      "basisrate": "18.2%",
+      "dom": "ikke skelnelig",
+      "kurve": "+0.96",
+      "antaending": "ingen",
+      "note": "",
+      "p_tal": 0.18,
+      "baand_tal": [
+        0.127,
+        0.263
+      ],
+      "basisrate_tal": 0.182,
+      "kurve_tal": 0.96
+    }
+  ]
+}

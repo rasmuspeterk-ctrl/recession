@@ -395,6 +395,38 @@ class TestMotor(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 self._motor([], raw=raw)
 
+    def test_json_dump_har_dashboard_kontrakten(self):
+        logf = self.here.parent / "LOG.md"
+        logf.write_text(
+            "| logget | snapshot | P | baand | basisrate | dom | kurve | antaending | note |" + chr(10)
+            + "|---|" + chr(10)
+            + "| 2026-08-12 | 2026-08-12 | 20.1% | 14.4-29.2% | 18.2% | ikke skelnelig | +0.87 | ingen |  |"
+            + chr(10), encoding="utf-8")
+        ud = self.here.parent / "dash.json"
+        self._motor(["--json", str(ud)])
+        d = json.loads(ud.read_text(encoding="utf-8"))
+        for n in ("p", "baand", "basisrate", "baand_udelukker_basisrate", "ratio",
+                  "dom", "inputs", "benchmarks", "monitors", "pengepolitik",
+                  "advarsler", "hovedbog"):
+            self.assertIn(n, d)
+        self.assertEqual(len(d["baand"]), 2)
+        self.assertLess(d["baand"][0], d["p"])
+        self.assertLess(d["p"], d["baand"][1])
+        # Section 6-reglen: ratio kun naar baandet udelukker basisraten
+        self.assertEqual(d["ratio"] is None, not d["baand_udelukker_basisrate"])
+        self.assertEqual({m["tilstand"] for m in d["monitors"]} - {"aktiv", "inaktiv", "kontekst"}, set())
+        self.assertEqual(len(d["hovedbog"]), 1)
+        self.assertEqual(d["hovedbog"][0]["p_tal"], 0.201)
+        self.assertEqual(d["hovedbog"][0]["baand_tal"], [0.144, 0.292])
+        self.assertEqual(d["hovedbog"][0]["kurve_tal"], 0.87)
+
+    def test_json_default_sti_er_repo_roden(self):
+        ud = self.here.parent / "dashboard.json"
+        if ud.exists():
+            ud.unlink()
+        self._motor(["--json"])
+        self.assertTrue(ud.exists())
+
     def test_vaegte_uden_fejlalarm_stopper_hoejlydt(self):
         with tempfile.TemporaryDirectory() as t:
             here = Path(t) / "v5"; shutil.copytree(self.here, here)
@@ -434,6 +466,33 @@ class TestMotorHelpers(unittest.TestCase):
     def test_raw_springer_punktum_over(self):
         self._skriv("X.csv", [("2026-08-01", "1.0"), ("2026-08-08", "."), ("2026-08-15", "3.0")])
         self.assertEqual([v for _, v in M.read_fred_raw(self.tmp, "X")], [1.0, 3.0])
+
+    def test_tal_af_parser_og_fejler_stille(self):
+        self.assertEqual(M.tal_af("18.0%", 0.01), 0.18)
+        self.assertEqual(M.tal_af("+0.87"), 0.87)
+        self.assertEqual(M.tal_af("14,4%", 0.01), 0.144)
+        for skidt in ("", "ingen", None, "ikke skelnelig"):
+            self.assertIsNone(M.tal_af(skidt))
+
+    def test_laes_hovedbog_tager_alle_kolonner_og_springer_resten_over(self):
+        nl = chr(10)
+        logf = self.tmp / "LOG.md"
+        logf.write_text(
+            "# HOVEDBOG" + nl
+            + "| logget | snapshot | P | baand | basisrate | dom | kurve | antaending | note |" + nl
+            + "|---|---|" + nl
+            + "| 2026-08-12 | 2026-08-12 | 20.1% | 14.4-29.2% | 18.2% | ikke skelnelig | +0.87 | ingen |  |" + nl
+            + "| 2026-09-09 | 2026-09-09 | 18.0% | 12.7-26.3% | 18.2% | ikke skelnelig | +0.96 | ingen | note her |" + nl,
+            encoding="utf-8")
+        hb = M.laes_hovedbog(logf)
+        self.assertEqual(len(hb), 2)
+        self.assertEqual(hb[0]["logget"], "2026-08-12")
+        self.assertEqual(hb[0]["note"], "")
+        self.assertEqual(hb[1]["note"], "note her")
+        self.assertEqual(hb[1]["kurve"], "+0.96")
+
+    def test_laes_hovedbog_uden_fil_giver_tom_liste(self):
+        self.assertEqual(M.laes_hovedbog(self.tmp / "findes-ikke.md"), [])
 
     def test_ann_rate_annualiserer(self):
         # 1% pr. maaned i 3 maaneder -> (1,01^3)^4 - 1 = 12,68%
