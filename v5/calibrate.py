@@ -47,7 +47,9 @@ SETS = {
 # uden de senere tilfoejede serier var "komplette" for deres tid, men er ubrugelige for motor.
 KRAEVEDE = ["GS10", "TB3MS", "CPIAUCNS", "USREC", "A191RL1Q225SBEA", "SAHMREALTIME", "BAMLH0A0HYM2",
             "FEDFUNDS", "PCEPI", "RECPROUSM156N", "RIFSPPFAAD90NB", "DTB3", "MORTGAGE30US"]
-KRAEVEDE_FILER = ["shiller.csv", "manual.json"]
+KRAEVEDE_FILER = ["manual.json"]
+SPINE_FILER = ("spine.csv", "shiller.csv")     # komposit (v5.0.1) foretraekkes; ren Shiller = legacy
+START_QK = (1947, 2)      # RAADETS_V501 §2: raekkeuniversets start er en protokolkonstant
 
 def snapshot_complete(d):
     """Et snapshot taeller kun hvis meta.json findes, ikke er maerket ukomplet (fetch.py saetter
@@ -61,7 +63,8 @@ def snapshot_complete(d):
     except ValueError:
         return False
     return (all((d / f"{s}.csv").exists() for s in KRAEVEDE)
-            and all((d / f).exists() for f in KRAEVEDE_FILER))
+            and all((d / f).exists() for f in KRAEVEDE_FILER)
+            and any((d / f).exists() for f in SPINE_FILER))
 
 def find_snapshot(argv):
     if "--snapshot" in argv:
@@ -92,13 +95,17 @@ def read_fred(snap, sid):
             out[(y, m)] = float(v)
     return out
 
-def read_shiller(snap):
-    f = snap / "shiller.csv"
+def read_shiller(snap, fname=None):
+    """Den maanedlige rygrad: spine.csv (komposit, v5.0.1 §1) hvis den findes, ellers shiller.csv
+    (ren Yale = legacy). `fname` tvinger en bestemt fil (legacy-replay, §1.5a). En evt.
+    proveniens-kolonne (Kilde) ignoreres her."""
+    if fname:
+        f = snap / fname
+    else:
+        f = next((snap / n for n in SPINE_FILER if (snap / n).exists()), snap / SPINE_FILER[0])
     if not f.exists():
-        sys.exit("FEJL: shiller.csv mangler i snapshottet.\n"
-                 "Laeg Shiller-historikken i manual/shiller.csv (format: Date,SP500,CPI,LTR,CAPE;\n"
-                 "Date=YYYY-MM, maanedlig fra 1871) og koer fetch.py + calibrate.py igen.\n"
-                 "Kilde: ie_data.xls fra www.econ.yale.edu/~shiller/data.htm — eller v4's data/spx.csv.")
+        sys.exit(f"FEJL: rygraden ({' eller '.join(SPINE_FILER)}) mangler i snapshottet.\n"
+                 "fetch.py bygger spine.csv fra manual/shiller_yale_2023-09.csv + FRED SP500/CPIAUCNS/GS10 + multpl.")
     rows = []
     with f.open(encoding="utf-8-sig") as fh:
         for row in csv.DictReader(fh):

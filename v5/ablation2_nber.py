@@ -81,9 +81,13 @@ def load_announcements(eps):
             avail[onset] = trough + PRE1979_TROUGH_LAG
     return avail
 
-def build_dataset(snap):
-    """Genbruger trin 1's feature-univers uraendret; bytter kun labelen."""
-    shiller = C.read_shiller(snap)
+def build_dataset(snap, feats=None, spine_file=None):
+    """Raekkeuniverset (RAADETS_V501 §2): start = protokolkonstanten C.START_QK, teknisk label
+    defineret (trin 1's univers), og modellens EGNE features ikke-NaN — foer: alle BASE10, hvilket
+    gjorde curve-only til gidsel for CAPE-kilden. `feats` default = F5 (fuldmodellen);
+    `spine_file` tvinger en rygrad (legacy-replay: 'shiller_yale_2023-09.csv')."""
+    feats = list(feats or C.F5)
+    shiller = C.read_shiller(snap, spine_file)
     gs10 = C.read_fred(snap, "GS10")
     tb3ms = C.read_fred(snap, "TB3MS")
     gdp_g = C.read_fred(snap, "A191RL1Q225SBEA")
@@ -91,12 +95,14 @@ def build_dataset(snap):
     qkeys, cols = C.to_quarterly(keys, M, gdp_g)
     rec_now, Y_tek = C.make_labels(cols)          # teknisk label til diagnostik
 
-    mask = ~np.isnan(Y_tek)                        # SAMME raekkeunivers som trin 1
-    for f in C.BASE10:
+    mask = ~np.isnan(Y_tek)                        # trin 1's univers ...
+    mask &= np.array([qk >= C.START_QK for qk in qkeys])   # ... med eksplicit start (§2)
+    for f in feats:                                # ... og egne features (§2)
         mask &= ~np.isnan(cols[f])
     keep = [i for i in range(len(qkeys)) if mask[i]]
     D = dict(
-        F=np.stack([cols[f][mask] for f in C.F5], axis=1),
+        F=np.stack([cols[f][mask] for f in feats], axis=1),
+        feats=feats,
         Y_tek=Y_tek[mask],
         qk=[qkeys[i] for i in keep],
     )
@@ -124,6 +130,46 @@ def episode_of(idx, eps):
         if onset <= idx <= trough:
             return (onset, trough)
     return None
+
+def eligible_fit(D, eps, avail, usrec, R, L=L_EMBARGO):
+    """Traeningsberettigede origins ved refit-maaned R (RAADETS_V501 §3.5): samme regel som
+    walk-forward'en — vinduets slut + L <= R (18-mdr-gulvet: umodne origins er UDE, aldrig nul),
+    og ikke inde i en recession der var annonceret pr. R. Returnerer (maske, labels pr. R)."""
+    Y_final, win_onsets, _ = nber_labels(D, eps, usrec)
+    n = len(D["qend"])
+    elig = np.zeros(n, bool)
+    yR = np.zeros(n)
+    for j in range(n):
+        if D["qend"][j] + 12 + L > R:
+            continue
+        ep = episode_of(int(D["qend"][j]), eps)
+        if ep and avail[ep[0]] <= R:
+            continue
+        elig[j] = True
+        yR[j] = 1.0 if any(avail[o] <= R for o in win_onsets[j]) else 0.0
+    return elig, yR
+
+def origins_liste(D, elig, yR):
+    """[(aar, kvartal, label)] for de berettigede origins — manifestets origin-liste."""
+    return [[int(D["qk"][j][0]), int(D["qk"][j][1]), int(yR[j])] for j in range(len(elig)) if elig[j]]
+
+def origin_audit(forrige, nye):
+    """Fortegnsbevidst audit (RAADETS_V501 §3.5, Astra/Kimi R4): tilfoejede, fjernede og
+    om-labelede origins med identiteten n_ny = n_gl + tilfoejede - fjernede. Uforklaret
+    aendring = fejl. `forrige`/`nye` er origin-lister [[aar, kvt, label], ...]."""
+    fo = {(y, q): l for y, q, l in (forrige or [])}
+    ny = {(y, q): l for y, q, l in nye}
+    tilf = sorted(k for k in ny if k not in fo)
+    fjern = sorted(k for k in fo if k not in ny)
+    relab = sorted(k for k in ny if k in fo and fo[k] != ny[k])
+    identitet = len(ny) == len(fo) + len(tilf) - len(fjern)
+    return dict(n_forrige=len(fo), n_ny=len(ny),
+                tilfoejede=[f"{y}Q{q}" for y, q in tilf], fjernede=[f"{y}Q{q}" for y, q in fjern],
+                omlabelede=[f"{y}Q{q}" for y, q in relab], identitet_ok=identitet)
+
+def samme_origins(D1, D2):
+    """Gate-assertion (§2): to modellers origin-identiteter skal matche — ikke blot antal."""
+    return list(D1["qk"]) == list(D2["qk"])
 
 def wf_nber(D, eps, avail, usrec, L, start=1960, collect_flips=False):
     Y_final, win_onsets, in_rec_final = nber_labels(D, eps, usrec)
@@ -277,11 +323,12 @@ def promote(snap, meta, res):
     forudsiges kun uden for recession). Gammel weights backes op."""
     usrec = load_usrec(snap)
     eps = episodes_from_usrec(usrec)
+    avail = load_announcements(eps)
     D = build_dataset(snap)
-    Y_final, _, in_rec_final = nber_labels(D, eps, usrec)
-    fit_mask = ~in_rec_final
+    R = midx(int(snap.name[:4]), int(snap.name[5:7]))       # refit-maaned = snapshotdato
+    fit_mask, y_all = eligible_fit(D, eps, avail, usrec, R)  # §3.5: gulv + annonceret recession
     X = D["F"][fit_mask]
-    y = Y_final[fit_mask]
+    y = y_all[fit_mask]
     mu, sd = X.mean(0), X.std(0, ddof=1)
     sd[sd == 0] = 1
     w = C.fit((X - mu) / sd, y)

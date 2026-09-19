@@ -26,6 +26,8 @@ import calibrate as C
 import finalize6 as F6
 import motor as M
 import debate as D
+import spine as S
+import ablation2_nber as A2
 
 REAL_SNAP = sorted(d for d in C.RAW.iterdir() if d.is_dir() and C.snapshot_complete(d))[-1]
 
@@ -501,6 +503,167 @@ class TestMotorHelpers(unittest.TestCase):
 
     def test_ann_rate_for_kort_serie_giver_nan(self):
         self.assertTrue(np.isnan(M.ann_rate({(2026, 1): 100.0}, 3)))
+
+
+class TestSpine(unittest.TestCase):
+    """RAADETS_V501 §1 + §1.7: rygrad-guards. Defekt-fixture = den frosne Yale-fil."""
+
+    def _multpl_html(self, n_maaneder, foerste=(1871, 2), live=True):
+        MON = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()
+        y, m = foerste
+        rows = []
+        for i in range(n_maaneder):
+            rows.append(f"<tr><td>{MON[m-1]} 1, {y}</td> <td> &#x2002; {10 + (i % 30) * 0.5:.2f} </td></tr>")
+            m += 1
+            if m > 12:
+                y, m = y + 1, 1
+        rows.reverse()
+        if live:
+            rows.insert(0, f"<tr><td>{MON[m-1]} 18, {y}</td> <td> &#x2002; 99.99 </td></tr>")
+        return "<table id='datatable'>" + "".join(rows) + "</table>"
+
+    def test_parse_multpl_udelader_live_raekke_og_aaben_maaned(self):
+        html = self._multpl_html(1870)
+        out = S.parse_multpl(html, today=date(2026, 9, 19))
+        self.assertEqual(min(out), "1871-02")
+        self.assertNotIn("2026-09", out)          # loebende maaned er ikke lukket
+        self.assertTrue(all(v < 99 for v in out.values()))
+
+    def test_parse_multpl_fejler_haardt_ved_format_drift(self):
+        with self.assertRaisesRegex(RuntimeError, "raekker"):
+            S.parse_multpl(self._multpl_html(500), today=date(2026, 9, 19))
+        with self.assertRaisesRegex(RuntimeError, "foerste maaned"):
+            S.parse_multpl(self._multpl_html(1870, foerste=(1880, 1)), today=date(2026, 9, 19))
+
+    def test_monthly_mean_aggregerer_uger_til_middel(self):
+        rows = [("2026-08-01", "200000"), ("2026-08-08", "212000"), ("2026-08-15", "."),
+                ("2026-08-22", "204000"), ("2026-09-05", "206000")]
+        m = S.monthly_mean(rows)
+        self.assertEqual(m["2026-08"], 205333.33333333334)
+        self.assertEqual(m["2026-09"], 206000.0)
+
+    def test_overlap_check_bestaar_paa_identiske_og_fejler_paa_skaeve(self):
+        sh = {f"2016-{m:02d}": (2000.0 + m, 240.0, 2.0, 25.0) for m in range(1, 13)}
+        sh.update({f"1995-{m:02d}": (500.0, 150.0, 6.0, 20.0) for m in range(1, 13)})
+        sp = {k: v[0] * 1.0002 for k, v in sh.items()}
+        ca = {k: v[3] * 0.9999 for k, v in sh.items()}
+        r = S.overlap_check(sh, sp, ca)
+        self.assertTrue(r["bestaaet"]); self.assertEqual(r["sp500_undtagelser"], [])
+        ca_skaev = dict(ca); ca_skaev["1995-06"] = 20.0 * 1.05           # 5 % > max 1 %
+        self.assertFalse(S.overlap_check(sh, sp, ca_skaev)["bestaaet"])
+
+    def test_outlier_check_fanger_niveau_og_spring(self):
+        ok = {"2026-01": 30.0, "2026-02": 31.0, "2026-03": 30.5}
+        self.assertEqual(S.outlier_check(ok), [])
+        bad = dict(ok); bad["2026-04"] = 61.0; bad["2026-05"] = 30.0
+        probs = S.outlier_check(bad)
+        self.assertTrue(any("niveau" in p for _, p in probs))
+        self.assertTrue(any("m/m" in p for _, p in probs))
+
+    def test_build_spine_er_shiller_til_seam_og_komposit_kun_hvor_alt_findes(self):
+        sh = {"2023-06": (4200.0, 304.0, 3.8, 29.0), "2023-07": (4500.0, 305.0, 3.9, 30.9),
+              "2023-08": (4457.36, 305.98, 4.17, 30.47), "2023-09": (4515.77, 306.13, 4.09, 30.81)}
+        sp = {"2023-08": 4457.4, "2023-09": 4409.1, "2023-10": 4269.0}
+        cpi = {"2023-08": 307.0, "2023-09": 307.8, "2023-10": 307.7}
+        gs = {"2023-08": 4.17, "2023-09": 4.38, "2023-10": 4.80}
+        cape = {"2023-08": 30.09, "2023-09": 29.80}                     # ingen 2023-10 -> stop
+        rows = S.build_spine(sh, sp, cpi, gs, cape)
+        self.assertEqual([r[0] for r in rows], ["2023-06", "2023-07", "2023-08", "2023-09"])
+        self.assertEqual(rows[1][5], "shiller"); self.assertEqual(rows[2][5], "fred+multpl")
+        self.assertEqual(rows[3][1], 4409.1)                               # Shillers forloebige 4515.77 erstattet
+
+    def test_staleness_er_udgivelsesbevidst(self):
+        today = date(2026, 9, 19)
+        friske = {"GS10": "2026-08-01", "CPIAUCNS": "2026-08-01", "A191RL1Q225SBEA": "2026-04-01",
+                  "DTB3": "2026-09-17", "spine": "2026-08-01"}
+        self.assertEqual(S.staleness(friske, today), {})
+        # augustdata stemplet 1/8 er 49 dage gamle 19/9 og stadig nyeste udgivelse (Astra R4)
+        self.assertEqual(S.staleness({"GS10": "2026-08-01"}, today), {})
+        st = S.staleness({"GS10": "2026-05-01", "PERMIT": "2026-05-01"}, today)
+        self.assertTrue(st["GS10"]["kritisk"]); self.assertFalse(st["PERMIT"]["kritisk"])
+
+    def test_defekt_fixture_den_frosne_yale_fil_flages(self):
+        """Den test der ville have fanget fejlen i oktober 2023 (Kimi R1)."""
+        yale = HERE / "manual" / "shiller_yale_2023-09.csv"
+        if not yale.exists():
+            yale = HERE / "manual" / "shiller.csv"
+        sidste = [l.split(",")[0] for l in yale.read_text(encoding="utf-8").splitlines()[1:] if l][-1]
+        st = S.staleness({"spine": sidste + "-01"}, date(2023, 10, 17))    # dagen Yale sidst opdaterede
+        self.assertEqual(st, {})                                          # frisk DEN dag ...
+        st = S.staleness({"spine": sidste + "-01"}, date(2024, 1, 15))
+        self.assertIn("spine", st)                                        # ... forældet tre maaneder senere
+
+    def test_nyeste_snapshot_har_frisk_rygrad(self):
+        """RØD FØR REPARATIONEN (v5.0.1 §8): det nyeste komplette snapshots rygrad maa ikke vaere stale
+        paa hentedagen. Bevis for at guarden ville have fanget den frosne spine."""
+        snap = C.find_snapshot([])
+        meta = json.loads((snap / "meta.json").read_text(encoding="utf-8"))
+        hentet = date.fromisoformat(meta["retrieved_utc"][:10])
+        f = snap / "spine.csv" if (snap / "spine.csv").exists() else snap / "shiller.csv"
+        sidste = [l.split(",")[0] for l in f.read_text(encoding="utf-8").splitlines()[1:] if l][-1]
+        st = S.staleness({"spine": sidste + "-01"}, hentet)
+        self.assertEqual(st, {}, f"rygraden i {snap.name} slutter {sidste}: {st}")
+
+
+class TestEligibility(unittest.TestCase):
+    """RAADETS_V501 §2 (raekkeunivers, gate) + §3.5 (gulv, fortegnsbevidst audit) + §1.5a (legacy-replay)."""
+
+    def _D(self, qks):
+        return dict(qk=qks, qend=np.array([A2.qend_idx(y, q) for y, q in qks]),
+                    year=np.array([y for y, _ in qks]), F=np.zeros((len(qks), 1)), feats=["curve"])
+
+    def test_gulv_holder_umodne_origins_ude_aldrig_nul(self):
+        # een onset 2030-01 (midx), trough 2030-06; R = 2029-09: origins hvis vindue+18 rager ud over R er UDE
+        eps = [(A2.midx(2030, 1), A2.midx(2030, 6))]
+        avail = {eps[0][0]: A2.midx(2030, 7)}
+        usrec = {i: 0 for i in range(A2.midx(2020, 1), A2.midx(2031, 1))}
+        for i in range(eps[0][0], eps[0][1] + 1):
+            usrec[i] = 1
+        qks = [(y, q) for y in range(2025, 2030) for q in (1, 2, 3, 4)]
+        D = self._D(qks)
+        R = A2.midx(2029, 9)
+        elig, yR = A2.eligible_fit(D, eps, avail, usrec, R)
+        sidste_ok = max(j for j in range(len(qks)) if elig[j])
+        self.assertEqual(qks[sidste_ok], (2027, 1))             # qend 2027-03 + 12 + 18 = 2029-09 = R -> med
+        self.assertFalse(elig[sidste_ok + 1])                    # 2027Q2 rager ud over R -> ude, ikke 0
+        self.assertEqual(yR[~elig].sum(), 0.0)                   # ingen label paa ikke-berettigede
+        # samme onset annonceret FOER R: origins inde i recessionen er ude
+        R2 = A2.midx(2031, 12)
+        elig2, yR2 = A2.eligible_fit(D, eps, avail, usrec, R2)
+        # origins med onset i vinduet faar label 1 (2029Q1..2029Q4: vinduer 2029-04.. daekker 2030-01)
+        # 2029Q3/Q4 har onset i vinduet men er UMODNE ved R2 (qend + 30 mdr > R2) -> ude; sidste positive = 2029Q2
+        self.assertEqual([qks[j] for j in range(len(qks)) if elig2[j] and yR2[j] == 1.0][-1], (2029, 2))
+        self.assertFalse(elig2[qks.index((2029, 3))])
+
+    def test_origin_audit_er_fortegnsbevidst(self):
+        forrige = [[2022, 3, 0], [2022, 4, 0], [2023, 1, 0], [2023, 2, 1]]
+        nye = [[2022, 4, 0], [2023, 1, 0], [2023, 2, 0], [2023, 3, 0], [2023, 4, 0]]
+        a = A2.origin_audit(forrige, nye)
+        self.assertEqual(a["tilfoejede"], ["2023Q3", "2023Q4"])
+        self.assertEqual(a["fjernede"], ["2022Q3"])
+        self.assertEqual(a["omlabelede"], ["2023Q2"])
+        self.assertTrue(a["identitet_ok"])                       # 5 = 4 + 2 - 1
+        self.assertEqual(A2.origin_audit(None, nye)["n_forrige"], 0)
+
+    def test_gate_assertion_kraever_identiske_origin_identiteter(self):
+        D1 = self._D([(2020, 1), (2020, 2)]); D2 = self._D([(2020, 1), (2020, 3)])
+        self.assertFalse(A2.samme_origins(D1, D2))               # samme antal, forskellig identitet
+        self.assertTrue(A2.samme_origins(D1, self._D([(2020, 1), (2020, 2)])))
+
+    def test_raekkeunivers_starter_ved_protokolkonstanten(self):
+        D = A2.build_dataset(REAL_SNAP, ["curve"])
+        self.assertEqual(D["qk"][0], C.START_QK)
+
+    def test_legacy_replay_reproducerer_v50_vaegte_eksakt(self):
+        """§1.5a: den frosne Yale-rygrad gennem den nye kaede -> w = [-2.1755, -1.6907], n_obs 264."""
+        yale = "shiller_yale_2023-09.csv" if (REAL_SNAP / "shiller_yale_2023-09.csv").exists() else "shiller.csv"
+        usrec = A2.load_usrec(REAL_SNAP); eps = A2.episodes_from_usrec(usrec); avail = A2.load_announcements(eps)
+        Dc = A2.build_dataset(REAL_SNAP, ["curve"], spine_file=yale)
+        elig, yR = A2.eligible_fit(Dc, eps, avail, usrec, A2.midx(2026, 9))
+        X = Dc["F"][elig]; y = yR[elig]
+        w = C.fit((X - X.mean(0)) / X.std(0, ddof=1), y)
+        self.assertEqual([round(float(v), 4) for v in w], [-2.1755, -1.6907])
+        self.assertEqual(int(elig.sum()), 264)
 
 
 class TestDebate(unittest.TestCase):
