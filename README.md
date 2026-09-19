@@ -11,15 +11,21 @@ operationelle model er en curve-only-logit, valgt mekanisk fordi den slog fuldmo
 walk-forward (+34,3 % mod +33,2 % log-loss-forbedring over basisraten). Syv
 feature-kandidater er testet, publiceret og afvist; søgningen er lukket.
 
-**Seneste læsning (2026-09-09):** P = 18,0 % [12,7–26,3 %] mod basisrate 18,2 % —
+**Seneste logførte læsning (2026-09-09, v5.0):** P = 18,0 % [12,7–26,3 %] mod basisrate 18,2 % —
 ikke skelnelig fra basisraten. Se [LOG.md](LOG.md).
+
+**Rekalibrering v5.0.1 (2026-09-19):** kalibreringsrygraden var frosset ved 2023 (Yales Shiller-fil), så
+tre modne kvartaler manglede i fittet. Rådet ratificerede reparationen 4/4; samme inputs giver nu 17,7 %,
+walk-forward-skill +27,1 % (fra +34,3 %) fordi de tre tilføjede kvartaler er 2023–24-inversionens
+fejlalarmer. *"A lower or higher recalibrated probability is changed estimation, not changed economic
+risk."* Detaljer: [v5/README.md](v5/README.md#v501--foerste-rekalibrering-raadets_v501md-ratificeret-44-2026-09-19).
 
 ## Hvor er hvad
 
 | Fil | Indhold |
 |---|---|
 | [v5/README.md](v5/README.md) | Byggelog: acceptancetests, alle seks trin, vedligehold |
-| [v5/](v5/) | Koden: fetch → calibrate → ablation → finalize → motor. 47 tests. |
+| [v5/](v5/) | Koden: fetch → calibrate → ablation → finalize → diagnostik → motor. 66 tests. |
 | [LOG.md](LOG.md) | Hovedbogen — én række pr. måned, logført før udfaldet kendes. Redigeres aldrig. |
 | [RAADETS_KONSENSUS.md](RAADETS_KONSENSUS.md) | Blueprintet, ratificeret 7/7 af et råd af sprogmodeller efter seks debatrunder |
 | [RAADETS_REVIEW.md](RAADETS_REVIEW.md) | Grand review med 18 modeller |
@@ -44,10 +50,12 @@ cd v5
 python fetch.py                        # FRED-snapshot, hashet
 # opdatér manual/manual.json: CAPE, marginlån y/y, S&P vs 12-mdr-høj
 python fetch.py                        # igen, så snapshottet bærer de nye manuelle tal
-python ablation2_nber.py --promote && python finalize6.py   # re-anker vægtene
 python motor.py --log --json           # læsning, hovedbogsrække, dashboard.json
-python -m unittest test_v5             # 47 tests
+python -m unittest test_v5             # 66 tests
 ```
+
+Vægtene er frosne mellem rekalibreringer (hver september, eller når NBER daterer en ny top/bund):
+`python finalize6.py && python diagnostik.py`. Se [RAADETS_V501.md](RAADETS_V501.md).
 
 Kræver Python 3 og numpy. Intet andet.
 

@@ -12,21 +12,30 @@ walk-forward som v4 — men reproducerbart og uden haandkopierede konstanter.
 | `calibrate.py` | Genopbygger v4's kalibrering fra snapshottet, skriver `weights.json` (vaegte + datahash + protokolversion). `--check` koerer determinisme-test. Indbygget acceptancetest mod v4's konstanter |
 | `motor.py` | Maanedlig aflaesning: laeser weights.json + snapshot + manual.json. Naegter snapshots >40 dage (`--allow-stale` for at overstyre). CAPE-percentil beregnes af snapshottets egen historik — ingen 2026-knuder |
 | `nber_announcements.csv` | Committet tabel over NBERs annonceringsdatoer (til trin 2's mekaniske label-regel) |
-| `manual/` | Manuelle inputs: `manual.json` (spx_vs_hi, cape, margin_yoy) og `shiller.csv` (se nedenfor) |
+| `manual/` | Manuelle inputs: `manual.json` (spx_vs_hi, cape, margin_yoy), `shiller_yale_2023-09.csv` (uforanderlig Yale-kopi; rygraden `spine.csv` bygges af fetch, se v5.0.1) |
+| `kalibreringer/` | Kalibreringsmanifester (v5.0.1 §3.3): et pr. rekalibrering, index.json, legacy_mapping.json |
 
-## Maanedligt ritual (~5 min, som v4)
+## Maanedligt ritual (~5 min) — v5.0.1: ingen re-ankring
 
 ```
-python fetch.py        # hent + diff-tjek med oejnene
-# opdater manual/manual.json (3 tal) og evt. manual/shiller.csv
-python ablation2_nber.py --promote && python finalize6.py   # genanker vaegte paa dagens snapshot (~2 s, deterministisk)
-python motor.py --log  # aflaesning + prospektiv logfoering i ../LOG.md
-python motor.py --json # samme tal som maskinlaesbar dashboard.json
+python fetch.py                  # hent + rygrad + guards + diff-tjek med oejnene
+# opdater manual/manual.json (3 tal); koer fetch.py igen saa snapshottet baerer dem
+python motor.py --log --json     # aflaesning, prospektiv logfoering i ../LOG.md, dashboard.json
+python -m unittest test_v5       # 66 tests
 ```
 Hovedbogen (`../LOG.md`) er den eneste aegte out-of-sample-eksamen: een raekke
 pr. maaned, skrevet FOER udfaldet kendes; historiske raekker roeres aldrig.
 
-Genkalibrering (sjaeldnere, efter dataopdateringer): `python calibrate.py --check`
+## Rekalibrering (RAADETS_V501 §3) — hver september, eller naar nber_announcements.csv faar en ny top/bund
+
+```
+python finalize6.py      # gulv + audit mod forrige manifest + bro + nyt manifest -> weights.json
+python diagnostik.py     # §4-diagnostik -> diagnostik.json (~95 s)
+python motor.py --json   # verificer; naeste --log-raekke faar automatisk bro-noten
+```
+Vaegte, standardisering og basisrate er frosne mellem rekalibreringer. Et skift af den
+operationelle model kraever `kalibreringer/raadsbeslutning.json` (§6). Legacy-replay til
+enhver tid: `python finalize6.py --legacy` (skal give w=[-2.1755,-1.6907], n_obs 264).
 
 Test (stdlib unittest, ingen netvaerk, ~3 s): `cd v5 && python -m unittest -v test_v5`
 — daekker snapshot-livscyklussen (.ny/.ukomplet, retry, diff-markering), komplethedsgaten,
@@ -264,3 +273,40 @@ Kimi, Claude nedlagde alle veto mod det). Derfor: den publicerede definition beh
 en expanding-intercept-udgave printes som EKSTRA diagnostik i §4-tabellen. Ingen tal i broen
 aendres af dette.
 
+### RESULTAT (§7) — koert 2026-09-19/20, manifest 72c3371d (forrige: 6baeade4 = v5.0)
+
+**Forudsigelsen holdt paa alle tre punkter** (ja/ja/ja):
+
+| Trin i broen (fast input: kurve +0.96pp) | P | w (std.) | beta pr. pp | alpha | n_obs | basisrate |
+|---|---|---|---|---|---|---|
+| (i) legacy-rygrad (Yale t.o.m. 2023-09) | 18.0 % | [-2.1755, -1.6907] | -1.5016 | -0.0718 | 264 | 18.2 % |
+| (ii) korrigerede kilder, samme origins | 18.0 % | [-2.1755, -1.6907] | -1.5016 | -0.0718 | 264 | 18.2 % |
+| (iii) udvidet panel (v5.0.1) | **17.7 %** | [-2.0697, -1.4884] | **-1.2948** | -0.2915 | **267** | 18.0 % |
+
+*"A lower or higher recalibrated probability is changed estimation, not changed economic risk."* Attributionen er raekkefoelge-afhaengig (Astra).
+
+- **Origin-audit (§3.5):** 264 -> 267; tilfoejet 2023Q3, 2023Q4, 2024Q1 (alle label 0); fjernet ingen; omlabelet ingen; identitet OK. Praecis som forventet.
+- **Legacy-replay (§1.5a):** eksakt — w [-2.1755, -1.6907], n_obs 264, wf +34.32 %. **Korrektionsbro (§1.5b):** trin (ii) = trin (i) til sidste decimal; de to erstattede maaneder roerer ikke raekkeuniverset.
+- **Walk-forward publiceret to gange (§7.3):** trunkeret panel +34.32 % (195 origins); udvidet panel +27.05 % (198 origins), heraf faelles origins +34.32 % (identisk, samme traeningssaet) og tilfoejede 2023Q3 P=87 % Y=0, 2023Q4 P=92 % Y=0, 2024Q1 P=89 % Y=0. Forskellen er per konstruktion de tre tilfoejede origins: tre ~90 %-fejlalarmer koster 7.3pp.
+- **Gaten (§6):** fuldmodel +23.16 % mod curve-only +27.05 %; forskel 3.9pp < MDE 4.42pp. Curve-only forbliver operationel — mekanisk, og uanset udfald kunne den ikke have flyttet sig (raadsbeslutning kraeves). De seks andre afvisninger beholder deres tal med fodnoten "panel t.o.m. 2023Q2".
+- **Vaerste fejlalarm** staar: 93.8 % (2023Q2).
+
+**Diagnostik (§4, `diagnostik.json`, motor sektion 8):**
+
+- 4.1 Episode-tabel: 8 onset-raekker + alle negative; bidragene summerer eksakt til +27.05pp. Den negative blok efter sidste onset (2020Q2..2024Q1) bidrager -14.2pp alene — hele skill-tabet sidder i 2022-24-inversionen.
+- 4.2 LOEO: 7 blokke, median +37.51 %, min +21.06 %; ['1981-08'] udefineret (kun positive origins). Sensitivitet, aldrig co-primaer.
+- 4.3 Begge domsregler backtestet (198 origins x 1000 traek): baandreglen "skelnelig" 154, den parrede 166, uenige 12 (6.1 %). Live (sep-26): parret baand [-3.5, +3.7]pp, enig med baandreglen. **Ingen automatisk migration** — et skift er en separat raadsbeslutning mod praeregistrerede kriterier inkl. Type I-fejl paa syntetiske serier.
+- 4.4 Historisk parret loss-bootstrap: middel +0.120, 90 %-interval [-0.042, 0.2388], P(<=0) = 0.0893.
+- 4.5 Oracle-fri (censurering som af origin-datoen, modellens egen label): alle live-publicerbare 219 origins +20.37 %; ekskl. 21 *additional live-publishable origins* +27.05 % (= primaer). Max P blandt de 21: 95 %. Tolkes i tandem, citeres aldrig hver for sig. Pre-1979-onsets rekonstrueret med konventionen trough + 18 mdr.
+- §3.6: expanding-intercept-baseline giver +29.21 % mod publiceret (poolet) +27.05 %. Gaten er uaendret.
+
+**Erratum (§5):** claims_mom genkoert med korrekt maanedsmiddel paa det trunkerede panel: dLL **-72.79pp** (publiceret -61,9pp = superseded implementation result), fortegn 75 %, folds 0 % -> testet, ikke bestaaet. sahm_t og permits_yoy identiske (-1.71 / -14.53): panelet er bevist det samme. Audit af fejlklassen: kun dette ene sted aggregerede forkert. `ablation4_erratum_resultat.json`.
+
+**Hvad der aendrede sig i driften:**
+
+- Maanedsritualet er nu `fetch.py` -> manual.json -> `motor.py --log --json`. **Ingen maanedlig re-ankring.** Vaegte, standardisering og basisrate er frosne til naeste rekalibrering: hver september, eller ved hash-aendring i `nber_announcements.csv` (ny top/bund), eksekveret ved naeste maanedskoersel: `python finalize6.py && python diagnostik.py`.
+- Hovedbogen har faaet kolonnen `kalibrering` (manifest-hash) — **kun fremadrettet**. De to historiske raekker er byte-identiske; `kalibreringer/legacy_mapping.json` kobler dem til v5.0-manifestet (6baeade4). Den foerste raekke under 72c3371d (oktober) faar automatisk en bro-note med P under begge vaegtsaet ved identiske inputs.
+- Rygraden: `manual/shiller_yale_2023-09.csv` (uforanderlig) + `spine.csv` i hvert snapshot (komposit m. proveniens). Friskheds-guarden (§1.7) koerer i fetch: GS10/TB3MS/USREC nedlaegger veto, resten staar i meta. Er multpl nede, printer fuldmodel-linjen "unavailable — CAPE stale", og curve-only koerer videre.
+- Nye filer: `spine.py`, `diagnostik.py`, `kalibreringer/` (manifester + index + legacy_mapping), `manual/seam_check_2023.json`, `ablation4_erratum_resultat.json`. Tests: 66.
+
+Commit-historikken viser de fejlende tests foer reparationen (928748f -> 8165745), som §8 kraever.

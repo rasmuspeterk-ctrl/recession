@@ -43,8 +43,14 @@ Struktur:
 
 ```json
 {
-  "snapshot": "2026-09-10",
-  "snapshot_hash": "a5021bdb71",
+  "version": "5.0.1",
+  "manifest_hash": "72c3371d",
+  "forrige_manifest": "6baeade4",
+  "raa": {"beta_curve_pr_pp": -1.2948, "alpha": -0.2915},
+  "bro": {"trin": {"i_legacy_rygrad": {"P": 0.18}, "iii_udvidet_panel": {"P": 0.177}}, "saetning": "A lower or higher recalibrated probability is changed estimation, not changed economic risk."},
+  "diagnostik": {"episode_tabel": "...", "loeo": "...", "domsregler_backtest": "...", "oracle_fri": "..."},
+  "snapshot": "2026-09-19",
+  "snapshot_hash": "c8c2ffa526",
   "model": "curve-only-logit",
   "label": "NBER-onset inden 4 kvartaler",
   "kalibreret": "2026-09-10",
@@ -95,6 +101,11 @@ Struktur:
   ]
 }
 ```
+
+`version`/`manifest_hash` viser hvilken kalibrering læsningen bygger på; hovedbogsrækker fra v5.0.1 bærer
+samme hash i feltet `kalibrering` (ældre rækker har det ikke — vis dem uden). `bro` findes kun efter en
+rekalibrering og skal vises som to tal ved identiske inputs, aldrig som "før/efter-forbedring".
+`diagnostik` er valgfri kontekst: episode-tabellen må tegnes, men aldrig sammenfattes til én score.
 
 Tre felter styrer betinget visning og må ikke ignoreres:
 `baand_udelukker_basisrate`, `ratio` (kan være `null`) og `monitors[].tilstand`

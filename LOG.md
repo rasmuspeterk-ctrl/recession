@@ -9,6 +9,9 @@ antændings-klassen (kurve-inversion, Sahm, HY OAS, drawdown, advance-print, CP-
 10Y, realkredit); forudsætnings-tripwires (margin, permits, realt kontantafkast) står
 i motor-outputtets market conditions.
 
+Kolonnen `kalibrering` (manifest-hash, v5.0.1 §3.3) findes kun i rækker skrevet fra og med
+2026-09-19; de to ældre rækker er urørte og hører til v5.0-manifestet (se v5/kalibreringer/legacy_mapping.json).
+
 | logget | snapshot | P | baand 10-90 | basisrate | dom | kurve | antaending aktiv | note | kalibrering |
 |---|---|---|---|---|---|---|---|---|---|
 | 2026-08-12 | 2026-08-12 | 20.1% | 14.4-29.2% | 18.2% | ikke skelnelig | +0.87 | ingen |  |
