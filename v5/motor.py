@@ -395,7 +395,8 @@ def main():
                     gl = json.loads(fm_f.read_text(encoding="utf-8"))["modeller"]["curve_only"]
                     p_gl = float(p_of(x, gl["features"], gl["mu"], gl["sd"], gl["w"]))
                     noter.append(f"bro: P(v{gl.get('version', '?')} {W['forrige_manifest']})={p_gl*100:.1f}% / "
-                                 f"P(v{W.get('version', '?')} {kh})={p_op*100:.1f}% ved identiske inputs")
+                                 f"P(v{W.get('version', '?')} {kh})={p_op*100:.1f}% ved identiske inputs"
+                                 + (f"; trigger: {W['trigger']}" if W.get("trigger") else ""))
             ov = meta.get("spine", {}).get("outlier_override")
             if ov:
                 noter.append(f"--accept-outlier: {ov.get('begrundelse', '')} ({'; '.join(ov.get('observationer', []))})")
@@ -491,6 +492,7 @@ def main():
             version=W.get("version", "5.0"), manifest_hash=W.get("manifest_hash"),
             forrige_manifest=W.get("forrige_manifest"), raa=op.get("raa"), bro=W.get("bro"),
             gate=W.get("gate"), stale=meta.get("stale"), diagnostik=diag,
+            trigger=W.get("trigger"), delta_vs_forrige=W.get("delta_vs_forrige"),
             snapshot=snap.name, snapshot_hash=meta["snapshot_sha256"][:10],
             model="curve-only-logit" if W["operationel"] == "curve_only" else "fuldmodel",
             label=W["label_tekst"], kalibreret=W["created_utc"][:10],

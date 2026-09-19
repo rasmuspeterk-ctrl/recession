@@ -1,5 +1,7 @@
 # MOTOR v5.0 — sandsynlighed for amerikansk recessionsstart
 
+[![tests](https://github.com/rasmuspeterk-ctrl/recession/actions/workflows/tests.yml/badge.svg)](https://github.com/rasmuspeterk-ctrl/recession/actions/workflows/tests.yml)
+
 *A US recession-onset probability model: one feature (the 10y–3m yield curve), an
 L2-logit on the NBER-onset label, purged expanding-origin walk-forward validation, and a
 prospective ledger where every reading is logged before the outcome is known. Free data

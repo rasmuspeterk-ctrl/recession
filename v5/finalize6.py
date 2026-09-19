@@ -142,7 +142,8 @@ def live_x(snap):
     return {"curve": float(y10 - tb3m)}
 
 
-HASH_UDELUKKET = ("created_utc", "code_commit", "kaldt_som", "hash")   # proveniens-felter, ikke kalibreringsindhold
+HASH_UDELUKKET = ("created_utc", "code_commit", "kaldt_som", "hash",
+                  "delta_vs_forrige", "trigger")   # proveniens om aendringen, ikke kalibreringsindhold
 
 def manifest_hash(m):
     """Hash af kalibreringens INDHOLD (snapshot, rygrad, annonceringstabel, R, origins, vaegte, gate, audit):
@@ -263,6 +264,35 @@ def bro(snap, ekstra_ny, x):
                 note="attributionen er raekkefoelge-afhaengig (Astra R3)", saetning=BRO_SAETNING)
 
 
+def delta_vs_forrige(Dc, ny, gl):
+    """Kimi R5 #2: ikke kun eet inputpunkt — max|dP| og max|dw| over ALLE origins i raekkeuniverset
+    mellem to kalibreringer. Goer Geminis bekymring (kompression efter en ny bund) til et tal."""
+    xs = [{"curve": float(v)} for v in Dc["F"][:, 0]]
+    dP = np.array([p_af(ny, x) - p_af(gl, x) for x in xs])
+    k = int(np.argmax(np.abs(dP)))
+    dw = [round(a - b, 4) for a, b in zip(ny["w"], gl["w"])]
+    return dict(n_origins=len(xs), max_abs_dP=round(float(np.abs(dP).max()), 4),
+                origin_max=f"{Dc['qk'][k][0]}Q{Dc['qk'][k][1]}", dP_der=round(float(dP[k]), 4),
+                mean_abs_dP=round(float(np.abs(dP).mean()), 4),
+                andel_over_5pp=round(float(np.mean(np.abs(dP) > 0.05)), 3),
+                dw_std=dw, max_abs_dw=round(max(abs(v) for v in dw), 4),
+                d_beta_pr_pp=round(ny["raa"]["beta_curve_pr_pp"] - gl["raa"]["beta_curve_pr_pp"], 4) if ny.get("raa") and gl.get("raa") else None,
+                d_alpha=round(ny["raa"]["alpha"] - gl["raa"]["alpha"], 4) if ny.get("raa") and gl.get("raa") else None)
+
+
+def bestem_trigger(m_ny, m_gl):
+    """Hvorfor koerte rekalibreringen (§3.2)? Bestemmes af det NYE manifest mod det forrige DISTINKTE
+    manifest: NBER-datering (annonceringstabel aendret), september (aarlig), ellers manuel/reparation.
+    Foerste manifest efter legacy (v5.0) er per definition reparationen."""
+    if m_gl is None or m_gl.get("version") in (None, LEGACY_VERSION):
+        return "manuel/reparation (foerste kalibrering efter v5.0)"
+    if m_gl.get("announcement_table_sha256") != m_ny["announcement_table_sha256"]:
+        return "nber-datering (annonceringstabellen aendret)"
+    if int(m_ny["refit_maaned"][5:7]) == 9:
+        return "september (aarlig)"
+    return "manuel/reparation"
+
+
 def raadsbeslutning():
     """§6: den operationelle model skiftes KUN ved en raadsbeslutning, nedskrevet i
     kalibreringer/raadsbeslutning.json ({"operationel": ..., "reference": ..., "dato": ...}).
@@ -348,14 +378,38 @@ def main():
     # dataaendring (fx den aarlige september-koersel i et roligt aar) skaber ikke stoej.
     def _indhold(mod, origins):
         return (origins, mod["w"], mod["mu"], mod["sd"], mod["base_rate"])
+    m["trigger"] = bestem_trigger(m, forrige)
+    delta = None
     if forrige and _indhold(forrige["modeller"]["curve_only"], forrige["origins"]) == _indhold(m["modeller"]["curve_only"], m["origins"]):
         h = forrige["hash"]
         audit["forrige_hash"] = forrige["audit"].get("forrige_hash")
         audit["forrige_version"] = forrige["audit"].get("forrige_version")
+        delta = forrige.get("delta_vs_forrige")
         print(f"kalibrering UAENDRET (samme origins, labels og vaegte): manifest {h} genbruges, intet nyt skrives.")
+        # hash-udelukkede proveniensfelter skrives igennem hvis de mangler i det eksisterende manifest
+        mf = kal() / f"manifest_{h}.json"
+        if mf.exists() and (delta is None or "trigger" not in forrige):
+            gl_h = audit["forrige_hash"]
+            gl_f = kal() / f"manifest_{gl_h}.json" if gl_h else None
+            if delta is None and gl_f and gl_f.exists():
+                delta = delta_vs_forrige(ekstra["Dc"], m["modeller"]["curve_only"],
+                                         json.loads(gl_f.read_text(encoding="utf-8"))["modeller"]["curve_only"])
+            forrige["delta_vs_forrige"] = delta
+            gl_m = json.loads(gl_f.read_text(encoding="utf-8")) if gl_f and gl_f.exists() else None
+            forrige["trigger"] = bestem_trigger(forrige, gl_m)      # mod ITS forrige, ikke mod sig selv
+            mf.write_text(json.dumps(forrige, indent=1, ensure_ascii=False), encoding="utf-8")
+            print(f"manifest {h}: proveniensfelter (delta_vs_forrige, trigger) skrevet igennem — hashen er uaendret.")
+        m["trigger"] = forrige.get("trigger", m["trigger"])          # denne koersel skabte ingen ny kalibrering
     else:
+        if forrige:
+            delta = delta_vs_forrige(ekstra["Dc"], m["modeller"]["curve_only"], forrige["modeller"]["curve_only"])
+        m["delta_vs_forrige"] = delta
         h = skriv_manifest(m)
-        print(f"manifest: kalibreringer/manifest_{h}.json (v{VERSION}, refit {m['refit_maaned']}, n_obs {mc['n_obs']})")
+        print(f"manifest: kalibreringer/manifest_{h}.json (v{VERSION}, refit {m['refit_maaned']}, n_obs {mc['n_obs']}, trigger: {m['trigger']})")
+    if delta:
+        print(f"delta vs forrige kalibrering over {delta['n_origins']} origins: max|dP| {delta['max_abs_dP']*100:.1f}pp ved "
+              f"{delta['origin_max']} ({delta['dP_der']*100:+.1f}pp), middel|dP| {delta['mean_abs_dP']*100:.1f}pp, "
+              f"andel >5pp {delta['andel_over_5pp']*100:.0f} %, max|dw| {delta['max_abs_dw']}, d_beta {delta['d_beta_pr_pp']}")
 
     # ---- weights.json (samme skema som foer + version/manifest/bro/raa) ----
     fm = m["modeller"].get("fuldmodel")
@@ -366,6 +420,7 @@ def main():
     out = dict(protocol_version=PROTOCOL, version=VERSION, manifest_hash=h,
                forrige_manifest=audit["forrige_hash"],
                refit_maaned=m["refit_maaned"], announcement_table_sha256=m["announcement_table_sha256"],
+               trigger=m["trigger"], delta_vs_forrige=delta,
                created_utc=m["created_utc"], snapshot=snap.name, snapshot_sha256=m["snapshot_sha256"],
                label="nber-onset", label_tekst="NBER-onset inden 4 kvartaler", frekvens="kvartal",
                n_obs=mc["n_obs"], n_episoder=len({o for wo in A2.nber_labels(ekstra["Dc"], ekstra["eps"], ekstra["usrec"])[1] for o in wo}),

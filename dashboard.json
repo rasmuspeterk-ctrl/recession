@@ -563,6 +563,22 @@
     },
     "erklaering_36": "Publiceret baseline = poolet basisrate over scorede origins (C.metrics). Konsensustekstens 'expanding intercept' var sekretaerens fejl; expanding printes som ekstra kolonne, gaten aendres ikke."
   },
+  "trigger": "manuel/reparation (foerste kalibrering efter v5.0)",
+  "delta_vs_forrige": {
+    "n_origins": 316,
+    "max_abs_dP": 0.0779,
+    "origin_max": "1974Q1",
+    "dP_der": -0.0779,
+    "mean_abs_dP": 0.0173,
+    "andel_over_5pp": 0.104,
+    "dw_std": [
+      0.1058,
+      0.2023
+    ],
+    "max_abs_dw": 0.2023,
+    "d_beta_pr_pp": 0.2068,
+    "d_alpha": -0.2197
+  },
   "snapshot": "2026-09-19",
   "snapshot_hash": "c8c2ffa526",
   "model": "curve-only-logit",

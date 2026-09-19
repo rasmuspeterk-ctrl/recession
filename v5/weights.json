@@ -5,7 +5,23 @@
  "forrige_manifest": "6baeade4",
  "refit_maaned": "2026-09",
  "announcement_table_sha256": "17ed8d7b6b22f3f4385b2e9662c9c0bb874a7c83da521920b2ec774e7bf22084",
- "created_utc": "2026-09-19T22:36:38+00:00",
+ "trigger": "manuel/reparation (foerste kalibrering efter v5.0)",
+ "delta_vs_forrige": {
+  "n_origins": 316,
+  "max_abs_dP": 0.0779,
+  "origin_max": "1974Q1",
+  "dP_der": -0.0779,
+  "mean_abs_dP": 0.0173,
+  "andel_over_5pp": 0.104,
+  "dw_std": [
+   0.1058,
+   0.2023
+  ],
+  "max_abs_dw": 0.2023,
+  "d_beta_pr_pp": 0.2068,
+  "d_alpha": -0.2197
+ },
+ "created_utc": "2026-09-19T22:41:22+00:00",
  "snapshot": "2026-09-19",
  "snapshot_sha256": "c8c2ffa5261c480de8d9aeb7ccca6f7f88de2044d15e6fdc018535c514f0bbca",
  "label": "nber-onset",
