@@ -385,6 +385,47 @@ def main():
                 fh.write(linje + "\n")
             print(f"   LOGGET som raekke {len(rows) + 1}: {idag}, P {p_op*100:.1f}%, dom '{dom_ord}'.")
 
+    # ---- 8) diagnostik (RAADETS_V501 §4): printes, aendrer intet ----
+    diag = None
+    df = HERE / "diagnostik.json"
+    if df.exists():
+        try:
+            diag = json.loads(df.read_text(encoding="utf-8"))
+        except ValueError:
+            diag = None
+    print("\n8) DIAGNOSTIK (RAADETS_V501 §4 — printes ved siden af, aendrer hverken gate, vaegte eller dom)")
+    if not diag:
+        print("   diagnostik.json mangler — koer python diagnostik.py efter rekalibrering.")
+    else:
+        if diag.get("manifest_hash") != W.get("manifest_hash"):
+            print(f"   ADVARSEL: diagnostik.json er fra kalibrering {diag.get('manifest_hash')}, vaegtene er {W.get('manifest_hash')} — koer diagnostik.py igen.")
+        pr = diag["primaer"]
+        print(f"   4.1 Episode-tabel (curve-only wf, {pr['n']} origins; bidrag summerer til +{diag['episode_tabel']['sum_bidrag_pp']}pp):")
+        print(f"       {'episode':<24}{'n':>4}{'pos':>5}{'bidrag':>9}{'max P':>8}")
+        for r in diag["episode_tabel"]["raekker"]:
+            print(f"       {r['episode']:<24}{r['n']:>4}{r['n_pos']:>5}{r['bidrag_pp']:>+8.2f}p{r['max_p']*100:>7.1f}%")
+        nb = diag["episode_tabel"]["negative_pr_blok"]
+        print("       negative pr. blok (op til onset): " + "; ".join(f"{b['blok']} {b['origins']} {b['bidrag_pp']:+.2f}pp (max {b['max_p']*100:.0f}%)" for b in nb))
+        lo8 = diag["loeo"]
+        print(f"   4.2 LOEO (sensitivitet): {len(lo8['blokke'])} blokke, median {lo8['median']:+.1f}%, min {lo8['min']:+.1f}%"
+              + (f", udefineret {lo8['udefinerede']}" if lo8.get("udefinerede") else "") + " — aldrig co-primaer")
+        bt = diag["domsregler_backtest"]
+        print(f"   4.3 Domsregler backtestet ({bt['n_origins']} origins x {bt['n_draws']} traek): baandreglen skelnelig {bt['baand_skelnelig']}, "
+              f"parret {bt['parret_skelnelig']}, uenige {bt['uenige']} ({bt['uenighedsrate']*100:.1f} %)"
+              + (": " + ", ".join(u["origin"] for u in bt["uenige_origins"][:6]) + (" ..." if len(bt["uenige_origins"]) > 6 else "") if bt["uenige"] else ""))
+        print("       Ingen automatisk migration af domsreglen: et skift er en separat raadsbeslutning mod praeregistrerede kriterier.")
+        pl = diag["parret_loss_bootstrap"]
+        print(f"   4.4 Historisk parret loss-bootstrap: middel {pl['middel_pp']:+.3f}, 90 %-interval [{pl['interval_90'][0]:+.3f}, {pl['interval_90'][1]:+.3f}], "
+              f"P(<=0) = {pl['andel_ikke_positiv']:.3f}  (skill-diagnostik ved siden af MDE)")
+        oc = diag["oracle_fri"]; a = oc["additional_live_publishable"]
+        print(f"   4.5 Oracle-fri (censurering som af origin-datoen, modellens egen label): alle live-publicerbare "
+              f"{oc['alle_live_publicerbare']['n']} origins +{oc['alle_live_publicerbare']['improvement']}% | ekskl. {a['n']} additional "
+              f"live-publishable origins +{oc['ekskl_additional']['improvement']}% (max P blandt dem {a['max_p']*100:.0f}%). Tolkes i tandem.")
+        s73 = diag["skill_73"]
+        print(f"   §7.3 Trunkeret panel +{s73['trunkeret_panel']['improvement'] if s73.get('trunkeret_panel') else '?'}% | udvidet: faelles origins "
+              f"+{s73['udvidet_faelles_origins']['improvement']}%, tilfoejede " + ", ".join(f"{t['origin']} P={t['p']*100:.0f}% Y={int(t['Y'])}" for t in s73["tilfoejede_origins"]))
+        print(f"   §3.6 Baseline: publiceret = poolet basisrate (+{pr['improvement']}%); expanding-intercept-udgave +{pr['improvement_expanding']}% (ekstra kolonne, aendrer ikke gaten)")
+
     if "--json" in sys.argv:
         k = sys.argv.index("--json")
         har_sti = len(sys.argv) > k + 1 and not sys.argv[k + 1].startswith("-")
@@ -428,7 +469,7 @@ def main():
         data = dict(
             version=W.get("version", "5.0"), manifest_hash=W.get("manifest_hash"),
             forrige_manifest=W.get("forrige_manifest"), raa=op.get("raa"), bro=W.get("bro"),
-            gate=W.get("gate"), stale=meta.get("stale"),
+            gate=W.get("gate"), stale=meta.get("stale"), diagnostik=diag,
             snapshot=snap.name, snapshot_hash=meta["snapshot_sha256"][:10],
             model="curve-only-logit" if W["operationel"] == "curve_only" else "fuldmodel",
             label=W["label_tekst"], kalibreret=W["created_utc"][:10],

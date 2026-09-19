@@ -90,6 +90,479 @@
     "note": "LL-forskel 3.9pp < stoejgulv 4.42pp (trin 3-MDE). Gaten er mekanisk og kan ikke flytte den operationelle model (RAADETS_V501 §6)."
   },
   "stale": null,
+  "diagnostik": {
+    "version": "5.0.1",
+    "manifest_hash": "72c3371d",
+    "snapshot": "2026-09-19",
+    "created_utc": "2026-09-19T22:03:23+00:00",
+    "primaer": {
+      "n": 198,
+      "n_pos": 32,
+      "logloss": 0.3227,
+      "baseline": 0.4423,
+      "improvement": 27.05,
+      "brier": 24.15,
+      "improvement_expanding": 29.21,
+      "baseline_expanding": 0.4558
+    },
+    "base_rate_poolet": 0.1616,
+    "episode_tabel": {
+      "raekker": [
+        {
+          "episode": "1970-01",
+          "n": 4,
+          "n_pos": 4,
+          "sum_L0": 7.29,
+          "sum_Lm": 4.415,
+          "bidrag_pp": 3.28,
+          "brier": 0.4466,
+          "max_p": 0.347
+        },
+        {
+          "episode": "1973-12",
+          "n": 4,
+          "n_pos": 4,
+          "sum_L0": 7.29,
+          "sum_Lm": 4.064,
+          "bidrag_pp": 3.68,
+          "brier": 0.3887,
+          "max_p": 0.668
+        },
+        {
+          "episode": "1980-02",
+          "n": 4,
+          "n_pos": 4,
+          "sum_L0": 7.29,
+          "sum_Lm": 1.54,
+          "bidrag_pp": 6.57,
+          "brier": 0.112,
+          "max_p": 0.881
+        },
+        {
+          "episode": "1981-08",
+          "n": 4,
+          "n_pos": 4,
+          "sum_L0": 7.29,
+          "sum_Lm": 2.578,
+          "bidrag_pp": 5.38,
+          "brier": 0.2279,
+          "max_p": 0.968
+        },
+        {
+          "episode": "1990-08",
+          "n": 4,
+          "n_pos": 4,
+          "sum_L0": 7.29,
+          "sum_Lm": 4.162,
+          "bidrag_pp": 3.57,
+          "brier": 0.4144,
+          "max_p": 0.468
+        },
+        {
+          "episode": "2001-04",
+          "n": 4,
+          "n_pos": 4,
+          "sum_L0": 7.29,
+          "sum_Lm": 2.737,
+          "bidrag_pp": 5.2,
+          "brier": 0.2476,
+          "max_p": 0.734
+        },
+        {
+          "episode": "2008-01",
+          "n": 4,
+          "n_pos": 4,
+          "sum_L0": 7.29,
+          "sum_Lm": 4.354,
+          "bidrag_pp": 3.35,
+          "brier": 0.419,
+          "max_p": 0.701
+        },
+        {
+          "episode": "2020-03",
+          "n": 4,
+          "n_pos": 4,
+          "sum_L0": 7.29,
+          "sum_Lm": 2.667,
+          "bidrag_pp": 5.28,
+          "brier": 0.2371,
+          "max_p": 0.619
+        },
+        {
+          "episode": "alle negative origins",
+          "n": 166,
+          "n_pos": 0,
+          "sum_L0": 29.262,
+          "sum_Lm": 37.373,
+          "bidrag_pp": -9.26,
+          "brier": 0.0625,
+          "max_p": 0.938
+        }
+      ],
+      "sum_bidrag_pp": 27.05,
+      "negative_pr_blok": [
+        {
+          "blok": "->1970-01",
+          "n": 5,
+          "bidrag_pp": -1.85,
+          "max_p": 0.442,
+          "origins": "1967Q4..1968Q4"
+        },
+        {
+          "blok": "->1973-12",
+          "n": 8,
+          "bidrag_pp": -0.0,
+          "max_p": 0.193,
+          "origins": "1970Q4..1972Q3"
+        },
+        {
+          "blok": "->1980-02",
+          "n": 15,
+          "bidrag_pp": 0.47,
+          "max_p": 0.513,
+          "origins": "1975Q2..1978Q4"
+        },
+        {
+          "blok": "->1990-08",
+          "n": 27,
+          "bidrag_pp": 2.5,
+          "max_p": 0.497,
+          "origins": "1982Q4..1989Q2"
+        },
+        {
+          "blok": "->2001-04",
+          "n": 36,
+          "bidrag_pp": 0.21,
+          "max_p": 0.481,
+          "origins": "1991Q2..2000Q1"
+        },
+        {
+          "blok": "->2008-01",
+          "n": 21,
+          "bidrag_pp": -0.74,
+          "max_p": 0.669,
+          "origins": "2001Q4..2006Q4"
+        },
+        {
+          "blok": "->2020-03",
+          "n": 38,
+          "bidrag_pp": 4.37,
+          "max_p": 0.356,
+          "origins": "2009Q3..2018Q4"
+        },
+        {
+          "blok": "efter sidste onset",
+          "n": 16,
+          "bidrag_pp": -14.22,
+          "max_p": 0.938,
+          "origins": "2020Q2..2024Q1"
+        }
+      ],
+      "blokdefinition": "blok k = origins fra forrige onset frem til onset k (finalize6.boot_weights); blok 12 = efter sidste onset"
+    },
+    "loeo": {
+      "blokke": [
+        {
+          "blok": 28,
+          "onset": "1973-12",
+          "n": 12,
+          "n_pos": 4,
+          "improvement": 27.74,
+          "brier": 32.85,
+          "logloss": 0.46,
+          "note": null
+        },
+        {
+          "blok": 29,
+          "onset": "1980-02",
+          "n": 19,
+          "n_pos": 4,
+          "improvement": 60.52,
+          "brier": 69.9,
+          "logloss": 0.2032,
+          "note": null
+        },
+        {
+          "blok": 30,
+          "onset": "1981-08",
+          "n": 4,
+          "n_pos": 4,
+          "improvement": null,
+          "brier": null,
+          "logloss": 0.6446,
+          "note": "udefineret: blokken har kun positive origins (basisrate 0/1)"
+        },
+        {
+          "blok": 31,
+          "onset": "1990-08",
+          "n": 31,
+          "n_pos": 4,
+          "improvement": 43.84,
+          "brier": 38.4,
+          "logloss": 0.216,
+          "note": null
+        },
+        {
+          "blok": 32,
+          "onset": "2001-04",
+          "n": 40,
+          "n_pos": 4,
+          "improvement": 31.17,
+          "brier": 31.57,
+          "logloss": 0.2238,
+          "note": null
+        },
+        {
+          "blok": 33,
+          "onset": "2008-01",
+          "n": 25,
+          "n_pos": 4,
+          "improvement": 21.06,
+          "brier": 8.23,
+          "logloss": 0.3471,
+          "note": null
+        },
+        {
+          "blok": 34,
+          "onset": "2020-03",
+          "n": 42,
+          "n_pos": 4,
+          "improvement": 57.06,
+          "brier": 62.02,
+          "logloss": 0.135,
+          "note": null
+        }
+      ],
+      "median": 37.51,
+      "min": 21.06,
+      "udefinerede": [
+        "1981-08"
+      ],
+      "status": "sensitivitet, aldrig co-primaer"
+    },
+    "parret_loss_bootstrap": {
+      "middel_pp": 0.1197,
+      "interval_90": [
+        -0.042,
+        0.2388
+      ],
+      "andel_ikke_positiv": 0.0893,
+      "n_blokke": 9,
+      "n_draws": 10000
+    },
+    "domsregler_backtest": {
+      "n_origins": 198,
+      "n_draws": 1000,
+      "baand_skelnelig": 154,
+      "parret_skelnelig": 166,
+      "uenige": 12,
+      "uenighedsrate": 0.0606,
+      "uenige_origins": [
+        {
+          "origin": "1968Q1",
+          "p": 0.369,
+          "baand": false,
+          "parret": true
+        },
+        {
+          "origin": "1972Q4",
+          "p": 0.19,
+          "baand": false,
+          "parret": true
+        },
+        {
+          "origin": "1973Q1",
+          "p": 0.289,
+          "baand": false,
+          "parret": true
+        },
+        {
+          "origin": "1978Q3",
+          "p": 0.33,
+          "baand": false,
+          "parret": true
+        },
+        {
+          "origin": "1986Q1",
+          "p": 0.176,
+          "baand": false,
+          "parret": true
+        },
+        {
+          "origin": "1989Q1",
+          "p": 0.353,
+          "baand": false,
+          "parret": true
+        },
+        {
+          "origin": "1995Q2",
+          "p": 0.314,
+          "baand": false,
+          "parret": true
+        },
+        {
+          "origin": "1996Q1",
+          "p": 0.154,
+          "baand": false,
+          "parret": true
+        },
+        {
+          "origin": "1997Q4",
+          "p": 0.324,
+          "baand": false,
+          "parret": true
+        },
+        {
+          "origin": "1998Q1",
+          "p": 0.332,
+          "baand": false,
+          "parret": true
+        },
+        {
+          "origin": "1999Q2",
+          "p": 0.137,
+          "baand": false,
+          "parret": true
+        },
+        {
+          "origin": "2017Q2",
+          "p": 0.142,
+          "baand": false,
+          "parret": true
+        }
+      ]
+    },
+    "oracle_fri": {
+      "alle_live_publicerbare": {
+        "n": 219,
+        "n_pos": 32,
+        "logloss": 0.3312,
+        "baseline": 0.4159,
+        "improvement": 20.37,
+        "brier": 16.19
+      },
+      "ekskl_additional": {
+        "n": 198,
+        "n_pos": 32,
+        "logloss": 0.3227,
+        "baseline": 0.4423,
+        "improvement": 27.05,
+        "brier": 24.15
+      },
+      "additional_live_publishable": {
+        "n": 21,
+        "n_pos": 0,
+        "origins": [
+          "1970Q1",
+          "1970Q2",
+          "1970Q3",
+          "1973Q4",
+          "1974Q1",
+          "1974Q2",
+          "1974Q3",
+          "1974Q4",
+          "1975Q1",
+          "1980Q1",
+          "1981Q3",
+          "1981Q4",
+          "1990Q3",
+          "1990Q4",
+          "1991Q1",
+          "2001Q2",
+          "2001Q3",
+          "2008Q1",
+          "2008Q2",
+          "2008Q3",
+          "2020Q1"
+        ],
+        "sum_L0": 3.317,
+        "sum_Lm": 8.638,
+        "max_p": 0.954
+      },
+      "primaer_til_sammenligning": 27.05,
+      "rekonstruktion": {
+        "note": "Annonceringsdatoer foer 1979 findes ikke; eligibility for onsets 1854-12, 1857-07, 1860-11, 1865-05, 1869-07, 1873-11, 1882-04, 1887-04, 1890-08, 1893-02, 1896-01, 1899-07, 1902-10, 1907-06, 1910-02, 1913-02, 1918-09, 1920-02, 1923-06, 1926-11, 1929-09, 1937-06, 1945-03, 1948-12, 1953-08, 1957-09, 1960-05, 1970-01, 1973-12 er rekonstrueret med konventionen trough + 18 mdr (ablation2 PRE1979_TROUGH_LAG).",
+        "onsets_med_konvention": [
+          "1854-12",
+          "1857-07",
+          "1860-11",
+          "1865-05",
+          "1869-07",
+          "1873-11",
+          "1882-04",
+          "1887-04",
+          "1890-08",
+          "1893-02",
+          "1896-01",
+          "1899-07",
+          "1902-10",
+          "1907-06",
+          "1910-02",
+          "1913-02",
+          "1918-09",
+          "1920-02",
+          "1923-06",
+          "1926-11",
+          "1929-09",
+          "1937-06",
+          "1945-03",
+          "1948-12",
+          "1953-08",
+          "1957-09",
+          "1960-05",
+          "1970-01",
+          "1973-12"
+        ]
+      },
+      "tolkning": "De to varianter tolkes i tandem og citeres aldrig hver for sig (Gemini R5)."
+    },
+    "skill_73": {
+      "trunkeret_panel": {
+        "n": 195,
+        "n_pos": 32,
+        "logloss": 0.2932,
+        "baseline": 0.4464,
+        "improvement": 34.32,
+        "brier": 32.85
+      },
+      "udvidet_faelles_origins": {
+        "n": 195,
+        "n_pos": 32,
+        "logloss": 0.2932,
+        "baseline": 0.4464,
+        "improvement": 34.32,
+        "brier": 32.85
+      },
+      "udvidet_tilfoejede_origins": {
+        "n": 3,
+        "n_pos": 0,
+        "logloss": 2.238,
+        "baseline": null,
+        "improvement": null,
+        "brier": null,
+        "note": "udefineret: blokken har kun negative origins (basisrate 0/1)"
+      },
+      "tilfoejede_origins": [
+        {
+          "origin": "2023Q3",
+          "p": 0.87,
+          "Y": 0.0
+        },
+        {
+          "origin": "2023Q4",
+          "p": 0.917,
+          "Y": 0.0
+        },
+        {
+          "origin": "2024Q1",
+          "p": 0.888,
+          "Y": 0.0
+        }
+      ],
+      "note": "faelles origins har identiske traeningssaet i begge paneler; forskellen er per konstruktion de tilfoejede origins"
+    },
+    "erklaering_36": "Publiceret baseline = poolet basisrate over scorede origins (C.metrics). Konsensustekstens 'expanding intercept' var sekretaerens fejl; expanding printes som ekstra kolonne, gaten aendres ikke."
+  },
   "snapshot": "2026-09-19",
   "snapshot_hash": "c8c2ffa526",
   "model": "curve-only-logit",
