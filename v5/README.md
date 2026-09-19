@@ -217,3 +217,50 @@ ufravigelige designregler: P aldrig uden baand og basisrate, ratio kun naar baan
 udelukker basisraten, ingen speedometre, ingen farvekodning af fare, ingen sammentaelling
 af monitorer, benchmark-tabellen altid synlig, dommen gengivet ordret. Reglerne findes
 for at et dashboard ikke kan komme til at love mere end modellen kan holde.
+
+## v5.0.1 — foerste rekalibrering (RAADETS_V501.md, ratificeret 4/4 2026-09-19)
+
+Udfoeres i konsensustekstens §8-raekkefoelge. Trin 1 (guards + tests, commit 928748f) efterlod
+een ROED test med vilje: `test_nyeste_snapshot_har_frisk_rygrad` — rygraden i snapshot 2026-09-10
+slutter 2023-09. Dette afsnit er trin 2 og er committet FOER trin 3-7 er koert.
+
+### FORUDSIGELSE (§7.1) — skrevet foer koersel, falsificerbar, ikke en acceptancetest
+
+Tilskrevet Kimi K3 (raadet, runde 3). Naar panelet forlaenges fra 2023Q2 til de nu modne origins,
+forventes:
+
+1. **Mindre absolut negativ kurvekoefficient** (raa `beta_curve = w1/s_curve` mindre i absolut vaerdi
+   end i v5.0: w = [-2,1755, -1,6907], s = 1,126 -> beta = -1,502 pr. pp).
+2. **Lavere walk-forward-skill paa det udvidede panel** end det trunkerede panels +34,3 % log-loss.
+3. **Lavere P ved faste inputs** (september-snapshottets x: kurve +0,96) end v5.0's 18,0 %.
+
+Astras forbehold, ordret fra konsensusteksten: *"the fixed-input probability and the historical skill
+are different objects, and none of the three directions is guaranteed once the intercept,
+standardisation and sample change together."* Udfaldet publiceres uanset om forudsigelsen holder.
+
+Sekretaerens (Claudes) egne forventninger, ogsaa skrevet foer koersel:
+
+- **Origin-audit:** forventet tilfoejet = 2023Q3, 2023Q4, 2024Q1 (vinduets slut + 18 mdr <= 2026-09),
+  alle med label 0 (dyb inversion, ingen onset); forventet fjernet = ingen; omlabelede = ingen;
+  n_obs 264 -> 267.
+- **Legacy-replay (§1.5a):** eksakt w = [-2,1755, -1,6907], n_obs 264 (allerede verificeret i trin 1).
+- **Korrektionsbro (§1.5b):** den korrigerede rygrad trunkeret ved 2023-09 giver identiske vaegte,
+  fordi de to erstattede maaneder (2023-08/09) kun beroerer 2023Q3, som ligger uden for
+  raekkeuniverset (teknisk label udefineret).
+- **Seam-tjek (§1.4, Kimi R5):** CAPE for 2023-08/09 genberegnet fra FRED SP500-maanedsmiddel, CPIAUCNS
+  og Yales egen (forloebige) indtjeningskolonne forventes at reproducere Yales forloebige vaerdier
+  (30,47 / 30,81) snarere end multpl's (30,09 / 29,80); afvigelsen (-1,25 % / -3,28 %) tilskrives
+  reviderede indtjeningstal og den endelige S&P-print. Tjekket maaler konsistens, ikke sandhed.
+- **Gaten paa det udvidede panel (§6):** forventet at curve-only fortsat slaar fuldmodellen; uanset
+  udfald flytter det ikke den operationelle model.
+
+### ERKLAERET FEJL I KONSENSUSTEKSTEN (§3.6)
+
+Konsensusteksten siger "expanding intercept inside the walk-forward". Det skrev sekretaeren (Claude)
+i matrixen, og det er forkert om koden: `calibrate.metrics()` bruger den POOLEDE middelvaerdi af de
+scorede origins som baseline, og det er den definition alle publicerede skill-tal (+34,3 % osv.)
+hviler paa. At aendre gate-metrikkens definition post hoc er praecis det protokollen forbyder (Astra,
+Kimi, Claude nedlagde alle veto mod det). Derfor: den publicerede definition beholdes som gate, og
+en expanding-intercept-udgave printes som EKSTRA diagnostik i §4-tabellen. Ingen tal i broen
+aendres af dette.
+
