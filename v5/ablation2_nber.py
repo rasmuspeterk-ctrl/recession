@@ -171,13 +171,18 @@ def samme_origins(D1, D2):
     """Gate-assertion (§2): to modellers origin-identiteter skal matche — ikke blot antal."""
     return list(D1["qk"]) == list(D2["qk"])
 
-def wf_nber(D, eps, avail, usrec, L, start=1960, collect_flips=False):
+def wf_nber(D, eps, avail, usrec, L, start=1960, collect_flips=False, R_score=None):
+    """Purged expanding-origin walk-forward. v5.0.1 (§3.5): `R_score` = refit-maaned; origins hvis
+    label ikke er moden ved R_score (vinduets slut + L > R_score) SCORES IKKE — en umoden label er
+    NaN, aldrig et provisorisk nul. None = alle origins scores (legacy-adfaerd; identisk naar alle er modne)."""
     Y_final, win_onsets, in_rec_final = nber_labels(D, eps, usrec)
     n = len(D["qend"])
     out, power, flips = [], [], set()
     for i in range(n):
         if D["year"][i] < start:
             continue
+        if R_score is not None and D["qend"][i] + 12 + L > R_score:
+            continue                           # umoden label -> ingen score (§3.5)
         R = D["qend"][i]
         tr_idx = []
         for j in range(i):

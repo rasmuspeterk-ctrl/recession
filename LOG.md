@@ -9,7 +9,7 @@ antændings-klassen (kurve-inversion, Sahm, HY OAS, drawdown, advance-print, CP-
 10Y, realkredit); forudsætnings-tripwires (margin, permits, realt kontantafkast) står
 i motor-outputtets market conditions.
 
-| logget | snapshot | P | baand 10-90 | basisrate | dom | kurve | antaending aktiv | note |
-|---|---|---|---|---|---|---|---|---|
+| logget | snapshot | P | baand 10-90 | basisrate | dom | kurve | antaending aktiv | note | kalibrering |
+|---|---|---|---|---|---|---|---|---|---|
 | 2026-08-12 | 2026-08-12 | 20.1% | 14.4-29.2% | 18.2% | ikke skelnelig | +0.87 | ingen |  |
 | 2026-09-09 | 2026-09-09 | 18.0% | 12.7-26.3% | 18.2% | ikke skelnelig | +0.96 | ingen |  |

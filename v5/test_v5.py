@@ -369,19 +369,26 @@ class TestFinalize6Main(unittest.TestCase):
         self.assertEqual(W["band"]["n_draws"], 1000)
         self.assertIn("curve_cape", W["benchmarks"]); self.assertIn("curve_awh", W["benchmarks"])
 
-    def test_promoveret_model_bevares(self):
+    def test_gate_udfald_kan_ikke_skifte_operationel_model(self):
+        """RAADETS_V501 §6: en tidligere 'promoveret' operationel model i weights.json er et gate-udfald,
+        ikke en raadsbeslutning — finalize6 ignorerer den (med advarsel) og laaser curve_only."""
         prev = dict(protocol_version="5.0-final", operationel="curve_cape",
-                    op=dict(features=["curve", "cape_pct"], mu={"curve": 1.0, "cape_pct": 0.5},
-                            sd={"curve": 1.0, "cape_pct": 0.3}, w=[-2.0, -1.0, -0.4],
-                            wf_improvement=36.8, wf_brier=34.3, stempel="data-foreslaaet, promoveret 2026-08"),
-                    band=dict(metode="test", seed=42, n_draws=1, W=[[-2.0, -1.0, -0.4]]),
-                    benchmarks=dict(curve_cape=dict(status="operationel (data-foreslaaet, promoveret 2026-08)")))
+                    op=dict(features=["curve", "cape_pct"], w=[-2.0, -1.0, -0.4]))
         (self.here / "weights.json").write_text(json.dumps(prev), encoding="utf-8")
         W = self._main()
-        self.assertEqual(W["operationel"], "curve_cape")
-        self.assertEqual(W["op"]["stempel"], "data-foreslaaet, promoveret 2026-08")
-        self.assertEqual(W["band"]["n_draws"], 1)
-        self.assertEqual(W["benchmarks"]["curve_cape"]["status"], "operationel (data-foreslaaet, promoveret 2026-08)")
+        self.assertEqual(W["operationel"], "curve_only")
+        self.assertEqual(W["op"]["features"], ["curve"])
+        self.assertFalse(W["gate"]["raadsbeslutning_paakraevet"])
+        self.assertEqual(W["version"], F6.VERSION)
+        self.assertIn("manifest_hash", W)
+        self.assertEqual(len(W["band"]["base"]), W["band"]["n_draws"])     # §4.3: basisrate pr. traek
+
+    def test_raadsbeslutning_fil_stopper_koerslen_indtil_v51_kode_findes(self):
+        kal = self.here / "kalibreringer"; kal.mkdir(exist_ok=True)
+        (kal / "raadsbeslutning.json").write_text(json.dumps(dict(operationel="fuldmodel", reference="test", dato="2027-01-01")), encoding="utf-8")
+        with self.assertRaisesRegex(SystemExit, "v5.1"):
+            self._main()
+        (kal / "raadsbeslutning.json").unlink()
 
 
 # ============================================================== motor.py

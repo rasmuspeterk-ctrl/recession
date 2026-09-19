@@ -1,0 +1,9 @@
+{
+ "note": "RAADETS_V501 §3.3: historiske hovedbogsraekker roeres aldrig; denne fil kobler dem til v5.0-manifestet.",
+ "manifest_hash": "6baeade4",
+ "version": "5.0",
+ "hovedbogsraekker": [
+  "2026-08-12",
+  "2026-09-09"
+ ]
+}

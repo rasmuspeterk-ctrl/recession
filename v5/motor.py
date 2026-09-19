@@ -38,7 +38,9 @@ def read_fred_raw(snap, sid):
 def laes_hovedbog(logf):
     """LOG.md-tabellen -> [dict] med alle kolonner. P/kurve beholder tekstformen;
     dashboardet faar tal via tal_af()."""
-    kol = ("logget", "snapshot", "P", "baand", "basisrate", "dom", "kurve", "antaending", "note")
+    kol = ("logget", "snapshot", "P", "baand", "basisrate", "dom", "kurve", "antaending", "note", "kalibrering")
+    # v5.0.1 (§3.3): kolonnen 'kalibrering' findes kun i raekker skrevet fra og med v5.0.1 — aeldre raekker
+    # har 9 celler og faar ingen vaerdi (historiske raekker roeres aldrig; se kalibreringer/legacy_mapping.json)
     ud = []
     if not logf.exists():
         return ud
@@ -118,7 +120,8 @@ def main():
     band_excludes_base = (base < lo) or (base > hi)
 
     fm = W["fuldmodel"]
-    p_full = float(p_of(x, fm["features"], fm["mu"], fm["sd"], fm["w"]))
+    fm_ok = "w" in fm                         # v5.0.1 §2: 'unavailable — CAPE stale' har ingen vaegte
+    p_full = float(p_of(x, fm["features"], fm["mu"], fm["sd"], fm["w"])) if fm_ok else float("nan")
     bm = W["benchmarks"]["curve_only"]
     p_curve = float(p_of(x, ["curve"], {"curve": bm["mu"]}, {"curve": bm["sd"]}, bm["w"]))
 
@@ -152,10 +155,18 @@ def main():
 
     # ---------------------------------------------------------------- output
     print("=" * 74)
-    print(f" MOTOR v5.0   snapshot {snap.name} (hash {meta['snapshot_sha256'][:10]}...)")
+    ver = W.get("version", "5.0")
+    print(f" MOTOR v{ver}   snapshot {snap.name} (hash {meta['snapshot_sha256'][:10]}...)"
+          + (f"   kalibrering {W['manifest_hash']}" if W.get("manifest_hash") else ""))
     print(f" operationel model: {'CURVE-ONLY-LOGIT' if W['operationel']=='curve_only' else 'FULDMODEL'} "
           f"paa {W['label_tekst']}")
-    print(f" kalibreret {W['created_utc'][:10]} paa {W['n_obs']} kvartaler / {W['n_episoder']} onsets")
+    print(f" kalibreret {W['created_utc'][:10]} paa {W['n_obs']} kvartaler / {W['n_episoder']} onsets"
+          + (f"   (estimering t.o.m. {op['estimering_slut']}; vaegte frosne til naeste rekalibrering)" if op.get("estimering_slut") else ""))
+    if op.get("raa"):
+        r = op["raa"]
+        print(f" raa: P = logit^-1({r['alpha']:+.4f} {r['beta_curve_pr_pp']:+.4f} * kurve_pp)   [beta = w1/s, alpha = w0 - w1*mu/s]")
+    if meta.get("stale"):
+        print(f" FRISKHED (§1.7): stale inputs {', '.join(meta['stale'])} — se meta.json")
     print("=" * 74)
 
     print(f"\n1) SANDSYNLIGHED   [operationel wf: +{op['wf_improvement']:.1f}% log-loss / "
@@ -168,6 +179,14 @@ def main():
     else:
         print("   (ratio undertrykt: baandet indeholder basisraten — Section 6)")
     print(f'   Fodnote: "{W["band"]["fodnote"]}"')
+    if W["band"].get("base"):                  # v5.0.1 §4.3: parret regel, supplement — Section 6 uaendret
+        d = np.array(band_ps) - np.array(W["band"]["base"])
+        dlo, dhi = np.percentile(d, 10), np.percentile(d, 90)
+        parret_skelnelig = (dlo > 0) or (dhi < 0)
+        print(f"   Supplement (parret, §4.3): Delta = P - basisrate pr. bootstrap-traek, central 80 %-baand "
+              f"[{dlo*100:+.1f}, {dhi*100:+.1f}]pp -> {'skelnelig' if parret_skelnelig else 'ikke skelnelig'} fra 0 "
+              f"({'enig' if parret_skelnelig == band_excludes_base else 'UENIG'} med baandreglen). "
+              "Diagnostik: aendrer ikke dommen. Coverage not established.")
 
     print("\n2) MODEL-INPUTS (fuldmodellens fem, z mod kalibrering):")
     NAVN = dict(curve="Rentekurve 10y-3m", realrate="Realrente 10y-CPI",
@@ -183,8 +202,11 @@ def main():
     print(f"   {'intercept (basisrate)':<34}{'+0.0%':>10}{base*100:>8.1f}%")
     print(f"   {'curve-only-logit (NY Fed-stil-bm.)':<34}{'+'+format(W['benchmarks']['curve_only']['wf_improvement'],'.1f')+'%':>10}{p_curve*100:>8.1f}%"
           + ("   <- OPERATIONEL" if W["operationel"] == "curve_only" else ""))
-    print(f"   {'fuldmodel (5 features)':<34}{'+'+format(fm['wf_improvement'],'.1f')+'%':>10}{p_full*100:>8.1f}%"
-          f"   [{fm['status']}]")
+    if fm_ok:
+        print(f"   {'fuldmodel (5 features)':<34}{'+'+format(fm['wf_improvement'],'.1f')+'%':>10}{p_full*100:>8.1f}%"
+              f"   [{fm['status']}]")
+    else:
+        print(f"   {'fuldmodel (5 features)':<34}{'':>10}{'':>9}   [{fm['status']}]")
     cc = W["benchmarks"].get("curve_cape")
     if cc:
         print(f"   {'curve+cape (praereg. v5.1-test)':<34}{'+'+format(cc['wf_improvement'],'.1f')+'%':>10}{'':>9}   [{cc['status']}]")
@@ -342,9 +364,23 @@ def main():
             print(f"   --log AFVIST: {idag[:7]} er allerede logget ({rows[-1]['logget']}). "
                   "Historiske raekker roeres ikke.")
         else:
+            noter = []
+            kh = W.get("manifest_hash", "")
+            # §3.4 bro-raekke: foerste raekke under et nyt manifest printer P under gamle OG nye vaegte ved samme input
+            sidste_kal = rows[-1].get("kalibrering", "") if rows else ""
+            if kh and sidste_kal != kh and W.get("forrige_manifest"):
+                fm_f = HERE / "kalibreringer" / f"manifest_{W['forrige_manifest']}.json"
+                if fm_f.exists():
+                    gl = json.loads(fm_f.read_text(encoding="utf-8"))["modeller"]["curve_only"]
+                    p_gl = float(p_of(x, gl["features"], gl["mu"], gl["sd"], gl["w"]))
+                    noter.append(f"bro: P(v{gl.get('version', '?')} {W['forrige_manifest']})={p_gl*100:.1f}% / "
+                                 f"P(v{W.get('version', '?')} {kh})={p_op*100:.1f}% ved identiske inputs")
+            ov = meta.get("spine", {}).get("outlier_override")
+            if ov:
+                noter.append(f"--accept-outlier: {ov.get('begrundelse', '')} ({'; '.join(ov.get('observationer', []))})")
             linje = (f"| {idag} | {snap.name} | {p_op*100:.1f}% | {lo*100:.1f}-{hi*100:.1f}% | "
                      f"{base*100:.1f}% | {dom_ord} | {x['curve']:+.2f} | "
-                     f"{', '.join(aktive) if aktive else 'ingen'} |  |")
+                     f"{', '.join(aktive) if aktive else 'ingen'} | {'; '.join(noter)} | {kh} |")
             with logf.open("a", encoding="utf-8", newline="\n") as fh:
                 fh.write(linje + "\n")
             print(f"   LOGGET som raekke {len(rows) + 1}: {idag}, P {p_op*100:.1f}%, dom '{dom_ord}'.")
@@ -390,6 +426,9 @@ def main():
                "inversion er usynlige for modellen.")
 
         data = dict(
+            version=W.get("version", "5.0"), manifest_hash=W.get("manifest_hash"),
+            forrige_manifest=W.get("forrige_manifest"), raa=op.get("raa"), bro=W.get("bro"),
+            gate=W.get("gate"), stale=meta.get("stale"),
             snapshot=snap.name, snapshot_hash=meta["snapshot_sha256"][:10],
             model="curve-only-logit" if W["operationel"] == "curve_only" else "fuldmodel",
             label=W["label_tekst"], kalibreret=W["created_utc"][:10],
