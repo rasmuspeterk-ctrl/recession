@@ -1,0 +1,34 @@
+{
+ "metode": "Shiller: real pris / 10-aars middel af real indtjening t.o.m. sidste tilgaengelige E-maaned (forloebige maaneder bruger samme naevner)",
+ "indtjening_sidste_maaned": "2023-06",
+ "vindue": [
+  "2013-07",
+  "2023-06"
+ ],
+ "n": 120,
+ "forventning_skrevet_foer": "genberegningen reproducerer Yales forloebige CAPE (30.47/30.81) ved Yales egen pris og ligger over multpl (30.09/29.80); residualen tilskrives reviderede indtjeningstal + endelig S&P-print",
+ "resultater": {
+  "2023-08": {
+   "yale_pris": 4457.358695652174,
+   "fred_maanedsmiddel": 4457.36,
+   "cpi_yale": 305.98199999999997,
+   "cpi_fred": 307.026,
+   "cape_yale_kolonne": 30.47,
+   "cape_genberegnet_yale_pris": 30.514,
+   "cape_genberegnet_fred_pris": 30.411,
+   "cape_multpl": 30.09,
+   "afv_multpl_vs_genberegnet_fred_pct": -1.05
+  },
+  "2023-09": {
+   "yale_pris": 4515.77,
+   "fred_maanedsmiddel": 4409.1,
+   "cpi_yale": 306.12749999999994,
+   "cpi_fred": 307.789,
+   "cape_yale_kolonne": 30.811,
+   "cape_genberegnet_yale_pris": 30.9,
+   "cape_genberegnet_fred_pris": 30.007,
+   "cape_multpl": 29.8,
+   "afv_multpl_vs_genberegnet_fred_pct": -0.69
+  }
+ }
+}

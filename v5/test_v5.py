@@ -210,27 +210,61 @@ class TestFetchMain(unittest.TestCase):
         base = Path(self.tmp.name)
         self.raw, self.manual = base / "raw", base / "manual"
         self.manual.mkdir()
-        for fn in ("shiller.csv", "manual.json", "acm.csv"):
+        for fn in ("manual.json", "acm.csv"):
             (self.manual / fn).write_bytes(b"x\n")
+        (self.manual / F.YALE).write_text(
+            "Date,SP500,CPI,LTR,CAPE\n2023-06,4200.0,304.0,3.8,29.0\n2023-07,4500.0,305.0,3.9,30.9\n"
+            "2023-08,4457.36,305.98,4.17,30.47\n2023-09,4515.77,306.13,4.09,30.81\n", encoding="utf-8")
         self.today = date.today().isoformat()
     def tearDown(self): self.tmp.cleanup()
 
-    def _run(self, fejler=()):
+    def _run(self, fejler=(), stale=None, multpl=None):
+        """Falsk FRED, falsk multpl (default: netvaerksfejl -> tom komposit) og friskhed neutraliseret
+        (fixturens 2020-raekker er per konstruktion gamle); `stale` overstyrer friskheds-resultatet."""
         def fake(sid, attempts=3):
             if sid in fejler:
                 raise RuntimeError("simuleret fejl")
             b = fred_bytes(ROWS); return b, F.parse_rows(b)
+        def fake_multpl(attempts=3):
+            if multpl is None:
+                raise RuntimeError("simuleret multpl-fejl")
+            return multpl
         with mock.patch.object(F, "RAW", self.raw), mock.patch.object(F, "MANUAL", self.manual), \
-             mock.patch.object(F, "fetch_series", fake), quiet():
+             mock.patch.object(F, "fetch_series", fake), mock.patch.object(F, "fetch_multpl", fake_multpl), \
+             mock.patch.object(F.SP, "staleness", lambda *a, **k: dict(stale or {})), quiet():
             F.main()
 
     def meta(self, name):
         return json.loads((self.raw / name / "meta.json").read_text(encoding="utf-8"))
 
+    def test_friskhed_kritisk_serie_giver_ukomplet_snapshot(self):
+        """§1.7: stale GS10 nedlaegger veto; stale PERMIT goer det ikke, men staar i meta."""
+        with self.assertRaises(SystemExit):
+            self._run(stale={"GS10": dict(alder_dage=200, graense=70, kritisk=True, sidste="2026-03-01")})
+        self.assertTrue((self.raw / f"{self.today}.ukomplet").exists())
+        shutil.rmtree(self.raw / f"{self.today}.ukomplet")
+        self._run(stale={"PERMIT": dict(alder_dage=200, graense=90, kritisk=False, sidste="2026-03-01")})
+        m = self.meta(self.today)
+        self.assertTrue(m["complete"]); self.assertIn("PERMIT", m["stale"])
+
+    def test_rygrad_bygges_og_yale_kopi_er_med(self):
+        """§1.1: spine.csv med proveniens; Shiller-felter ordret; Yale-kopien og dens hash i snapshottet."""
+        self._run()
+        d = self.raw / self.today
+        self.assertTrue((d / "spine.csv").exists()); self.assertTrue((d / F.YALE).exists())
+        lines = (d / "spine.csv").read_text(encoding="utf-8").splitlines()
+        self.assertEqual(lines[0], "Date,SP500,CPI,LTR,CAPE,Kilde")
+        self.assertIn("2023-07,4500.0,305.0,3.9,30.9,shiller", lines)     # ordret felt-kopi
+        self.assertNotIn("2023-08,4457.36", "\n".join(lines))            # forloebig raekke ude (ingen komposit her)
+        m = self.meta(self.today)
+        self.assertEqual(m["spine"]["seam"], "2023-07"); self.assertIn("yale", m["spine"])
+        self.assertIn("fejl", m["spine"]["multpl"])                        # multpl fejlede -> ingen komposit, stadig komplet
+        self.assertTrue(m["complete"])
+
     def test_succes_giver_komplet_dagssnapshot(self):
         self._run()
         self.assertTrue(self.meta(self.today)["complete"])
-        self.assertEqual(len(list((self.raw / self.today).glob("*.csv"))), len(F.SERIES) + 2)
+        self.assertEqual(len(list((self.raw / self.today).glob("*.csv"))), len(F.SERIES) + 3)   # + yale-kopi, spine, acm
         self.assertFalse((self.raw / f"{self.today}.ny").exists())
 
     def test_kritisk_fejl_giver_ukomplet_forsoeg_og_intet_dagssnapshot(self):
@@ -571,6 +605,17 @@ class TestSpine(unittest.TestCase):
         self.assertEqual([r[0] for r in rows], ["2023-06", "2023-07", "2023-08", "2023-09"])
         self.assertEqual(rows[1][5], "shiller"); self.assertEqual(rows[2][5], "fred+multpl")
         self.assertEqual(rows[3][1], 4409.1)                               # Shillers forloebige 4515.77 erstattet
+
+    def test_build_spine_tolererer_et_cpi_hul_men_ikke_manglende_sp500_eller_cape(self):
+        sh = {"2023-07": (4500.0, 305.0, 3.9, 30.9)}
+        sp = {"2023-08": 4457.4, "2023-09": 4409.1, "2023-10": 4269.0, "2023-11": 4460.0}
+        cpi = {"2023-08": 307.0, "2023-10": 307.7, "2023-11": 307.1}       # 2023-09 mangler (som BLS okt-2025)
+        gs = {}
+        cape = {"2023-08": 30.09, "2023-09": 29.80, "2023-10": 28.70}      # ingen 2023-11 -> stop der
+        rows = S.build_spine(sh, sp, cpi, gs, cape)
+        self.assertEqual([r[0] for r in rows], ["2023-07", "2023-08", "2023-09", "2023-10"])
+        self.assertIsNone(rows[2][2])                                     # CPI-hul skrives tomt (NaN)
+        self.assertEqual(S.cpi_huller(rows), ["2023-09"])
 
     def test_staleness_er_udgivelsesbevidst(self):
         today = date(2026, 9, 19)

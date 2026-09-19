@@ -1,0 +1,263 @@
+{
+ "retrieved_utc": "2026-09-19T21:46:42+00:00",
+ "series": {
+  "GS10": {
+   "rows": 881,
+   "first": "1953-04-01",
+   "last": "2026-08-01",
+   "last_value": "4.68",
+   "sha256": "e22128f6caa50e4e7fed03a1c2d323a517bad452a2c69eab89277450fb59bc5c",
+   "purpose": "10-aarig statsrente, maanedlig (feature: curve/realrate)"
+  },
+  "TB3MS": {
+   "rows": 1112,
+   "first": "1934-01-01",
+   "last": "2026-08-01",
+   "last_value": "3.72",
+   "sha256": "ebf04b1ae5bc5729ba3bb2b35dbb0e0c5e22dace36bea0c02632782d625ae6ab",
+   "purpose": "3-mdr T-bill, maanedlig (feature: curve)"
+  },
+  "CPIAUCNS": {
+   "rows": 1363,
+   "first": "1913-01-01",
+   "last": "2026-08-01",
+   "last_value": "334.980",
+   "sha256": "f79e3a78837142293449cee4a1a9b1da7be677fb3e989ffb2ef48e8e7cf4cdd7",
+   "purpose": "CPI NSA (inflations-features; Shiller-konsistent)"
+  },
+  "CPIAUCSL": {
+   "rows": 955,
+   "first": "1947-01-01",
+   "last": "2026-08-01",
+   "last_value": "334.131",
+   "sha256": "f8ecddf53a9a9a74dda92c2c4204e6039466fcb744bc74171b73b5f6aac48119",
+   "purpose": "CPI SA (reserve/diagnostik)"
+  },
+  "UNRATE": {
+   "rows": 943,
+   "first": "1948-01-01",
+   "last": "2026-08-01",
+   "last_value": "4.1",
+   "sha256": "ffe86c903f6944ebc8281e5474a15fc4ceaac61059bc51ec86a7241391d8713d",
+   "purpose": "ledighed (Sahm-transform-kandidat, trin 4)"
+  },
+  "SAHMREALTIME": {
+   "rows": 800,
+   "first": "1959-12-01",
+   "last": "2026-08-01",
+   "last_value": "-0.07",
+   "sha256": "4da0144adced98f11f79b131e7bff40c54572137c11e1003d507632476a7608b",
+   "purpose": "Sahm-reglen realtid (monitor + benchmark)"
+  },
+  "ICSA": {
+   "rows": 3115,
+   "first": "1967-01-07",
+   "last": "2026-09-12",
+   "last_value": "196000",
+   "sha256": "8a17e65deb9d7c16245f36373d6bc2c1d1dd7221e4cf82af179d1394a2c5d3d0",
+   "purpose": "initial claims, ugentlig (kandidat, trin 4)"
+  },
+  "PERMIT": {
+   "rows": 800,
+   "first": "1960-01-01",
+   "last": "2026-08-01",
+   "last_value": "1394",
+   "sha256": "e9020eb8a5a21bb8f71ef6c92f65df01be46c5f89f3a8e7694bbce572c725011",
+   "purpose": "byggetilladelser (kandidat, trin 4)"
+  },
+  "BAMLH0A0HYM2": {
+   "rows": 787,
+   "first": "2023-09-19",
+   "last": "2026-09-17",
+   "last_value": "2.70",
+   "sha256": "4ea75cf4394e50a5f127d89ead67b1a5356b968ec5529b01c0b5a561df7b0dad",
+   "purpose": "HY OAS, daglig (monitor \u2014 ineligible som feature)"
+  },
+  "USREC": {
+   "rows": 2061,
+   "first": "1854-12-01",
+   "last": "2026-08-01",
+   "last_value": "0",
+   "sha256": "de2b859e0cd8cb1c56f74bbc2b16b1f8bab4f882e5b8a9d83dfb58c3aa10dad9",
+   "purpose": "NBER-recessionsmaaneder (label fra trin 2)"
+  },
+  "A191RL1Q225SBEA": {
+   "rows": 317,
+   "first": "1947-04-01",
+   "last": "2026-04-01",
+   "last_value": "1.5",
+   "sha256": "b5afe31ad962ea5e5de0c67491f557e8fde93efbadadcb03e13c12d055db9d28",
+   "purpose": "real BNP %-aendring ann. (teknisk label + advance-diagnostik)"
+  },
+  "GDPC1": {
+   "rows": 318,
+   "first": "1947-01-01",
+   "last": "2026-04-01",
+   "last_value": "24269.613",
+   "sha256": "519d65c05941022da119fdcbc95976d6865e94b9cc4a8248239e20d7b898e5fc",
+   "purpose": "real BNP niveau (reserve)"
+  },
+  "FEDFUNDS": {
+   "rows": 866,
+   "first": "1954-07-01",
+   "last": "2026-08-01",
+   "last_value": "3.63",
+   "sha256": "4c3a0f601abf9db0a8298f9e972ae6627876c4232cda79b0bc43d3230aa0450d",
+   "purpose": "effektiv fed funds (market conditions: realt kontantafkast)"
+  },
+  "PCEPI": {
+   "rows": 811,
+   "first": "1959-01-01",
+   "last": "2026-07-01",
+   "last_value": "131.659",
+   "sha256": "02580549b5894c8d530e35a5ab9a23a15a64d94d6f37b8a077d23c3a66fafcb8",
+   "purpose": "PCE-prisindeks (market conditions: realt kontantafkast)"
+  },
+  "THREEFYTP10": {
+   "rows": 9160,
+   "first": "1990-01-02",
+   "last": "2026-09-11",
+   "last_value": "0.9610",
+   "sha256": "e0b3b1ffcf576a3c5bbc1e99b74c19daec364065629bce7c474706d8fb319a8a",
+   "purpose": "ACM 10-aars term-praemie, FRED-spejl 1990+ (trin 4: substitutionstest)"
+  },
+  "RECPROUSM156N": {
+   "rows": 710,
+   "first": "1967-06-01",
+   "last": "2026-07-01",
+   "last_value": "0.76",
+   "sha256": "0260a6033cfbd188771a48cdeea623f269926f69d5b58963b1de9d9c67e4b48d",
+   "purpose": "Chauvet-Piger glattet recessionssandsynlighed (benchmark, coincident nowcast)"
+  },
+  "AWHMAN": {
+   "rows": 1052,
+   "first": "1939-01-01",
+   "last": "2026-08-01",
+   "last_value": "41.7",
+   "sha256": "f8bca392429bfdffb682eb4b222a56158e1016faea5e6d9d0e506a986b100a68",
+   "purpose": "ugentlige arbejdstimer, industri, 1939+ (trin: sidste praeregistrerede feature-skud)"
+  },
+  "RIFSPPFAAD90NB": {
+   "rows": 6747,
+   "first": "1997-01-02",
+   "last": "2026-09-11",
+   "last_value": "3.90",
+   "sha256": "4b1a98227882f86e0c3f06efe1a9709e386f3a5fa51ae20007a1d120fce7760f",
+   "purpose": "90-dages AA finansiel commercial paper-rente (svaerm-tripwire: funding-spaend)"
+  },
+  "DTB3": {
+   "rows": 18169,
+   "first": "1954-01-04",
+   "last": "2026-09-17",
+   "last_value": "3.97",
+   "sha256": "68c3692a8bf044b95bde0ab86344edff75e10402dca25821f1dd1227ddf0a89a",
+   "purpose": "3-mdr T-bill sekundaermarked, daglig (til CP-spaendet)"
+  },
+  "MORTGAGE30US": {
+   "rows": 2895,
+   "first": "1971-04-02",
+   "last": "2026-09-17",
+   "last_value": "6.95",
+   "sha256": "11e81dbde55fab4f29cbe2e4604df594f05f655cf6f5196a3264db5b6c38c385",
+   "purpose": "30-aars realkreditrente, ugentlig (svaerm-tripwire: fiskal/term-praemie-kanalen)"
+  },
+  "SP500": {
+   "rows": 2513,
+   "first": "2016-09-19",
+   "last": "2026-09-17",
+   "last_value": "7637.76",
+   "sha256": "b2f8bfc713b59c9e6992ff520478035e30a352b059c782d0bc04cd420e9ab599",
+   "purpose": "S&P 500 dagligt luk, ~10 aar (rygradens SP500-kolonne efter 2023-07 som maanedsmiddel)"
+  }
+ },
+ "manual": {
+  "manual.json": {
+   "sha256": "a00a3140413b9c11a009937befdd422f2b36b458245ba5e52d034e6f5e53b692",
+   "bytes": 528
+  },
+  "acm.csv": {
+   "sha256": "bc6dae6898ae43ec143d9cf78ca60763e13b04b047e155134100525319b55593",
+   "bytes": 13407
+  }
+ },
+ "spine": {
+  "yale": {
+   "fil": "shiller_yale_2023-09.csv",
+   "sha256": "264da56238073ef40b6f417f35448c1ebc68b9719f3bd9767632501eb89e637f",
+   "bytes": 85174
+  },
+  "multpl": {
+   "sha256": "e2a212414cc11779c973b8674b105947d8b032eda5ee07a2819639b21d6ea578",
+   "bytes": 149319,
+   "maaneder": 1867,
+   "foerste": "1871-02",
+   "sidste": "2026-08"
+  },
+  "overlap": {
+   "sp500_n": 83,
+   "cape_n": 403,
+   "sp500_median_abs_pct": 0.0,
+   "sp500_andel_inden_1pct": 1.0,
+   "sp500_max_abs_pct": 0.0175,
+   "sp500_undtagelser": [],
+   "cape_median_abs_pct": 0.0102,
+   "cape_max_abs_pct": 0.0467,
+   "cape_undtagelser": [],
+   "preliminaere_afvigelser_pct": {
+    "2023-08": {
+     "sp500": -0.0,
+     "cape": -1.246
+    },
+    "2023-09": {
+     "sp500": -2.362,
+     "cape": -3.281
+    }
+   },
+   "bestaaet": true
+  },
+  "seam": "2023-07",
+  "raekker": 1868,
+  "sidste": "2026-08",
+  "komposit_maaneder": 37,
+  "cpi_huller": [
+   "2025-10"
+  ],
+  "sha256": "a9395f93f0a4f1a92654a9f279860a525080a53a9c83df9fea331d817a0e3efa",
+  "seam_check": {
+   "metode": "Shiller: real pris / 10-aars middel af real indtjening t.o.m. sidste tilgaengelige E-maaned (forloebige maaneder bruger samme naevner)",
+   "indtjening_sidste_maaned": "2023-06",
+   "vindue": [
+    "2013-07",
+    "2023-06"
+   ],
+   "n": 120,
+   "forventning_skrevet_foer": "genberegningen reproducerer Yales forloebige CAPE (30.47/30.81) ved Yales egen pris og ligger over multpl (30.09/29.80); residualen tilskrives reviderede indtjeningstal + endelig S&P-print",
+   "resultater": {
+    "2023-08": {
+     "yale_pris": 4457.358695652174,
+     "fred_maanedsmiddel": 4457.36,
+     "cpi_yale": 305.98199999999997,
+     "cpi_fred": 307.026,
+     "cape_yale_kolonne": 30.47,
+     "cape_genberegnet_yale_pris": 30.514,
+     "cape_genberegnet_fred_pris": 30.411,
+     "cape_multpl": 30.09,
+     "afv_multpl_vs_genberegnet_fred_pct": -1.05
+    },
+    "2023-09": {
+     "yale_pris": 4515.77,
+     "fred_maanedsmiddel": 4409.1,
+     "cpi_yale": 306.12749999999994,
+     "cpi_fred": 307.789,
+     "cape_yale_kolonne": 30.811,
+     "cape_genberegnet_yale_pris": 30.9,
+     "cape_genberegnet_fred_pris": 30.007,
+     "cape_multpl": 29.8,
+     "afv_multpl_vs_genberegnet_fred_pct": -0.69
+    }
+   }
+  }
+ },
+ "complete": true,
+ "snapshot_sha256": "c8c2ffa5261c480de8d9aeb7ccca6f7f88de2044d15e6fdc018535c514f0bbca"
+}

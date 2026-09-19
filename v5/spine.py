@@ -132,8 +132,11 @@ def outlier_check(cape_m, fra=None):
 
 
 def build_spine(shiller_rows, sp500_m, cpi_m, gs10_m, cape_m):
-    """-> [(YYYY-MM, sp500, cpi, ltr, cape, kilde)], Shiller t.o.m. SEAM, komposit derefter for
-    hver maaned hvor ALLE tre input findes (delvis komposit accepteres aldrig, §1.7)."""
+    """-> [(YYYY-MM, sp500, cpi, ltr, cape, kilde)], Shiller t.o.m. SEAM, komposit derefter saa
+    langt SP500 og CAPE begge findes (de to kilder der definerer kompositten; en delvis
+    komposit-maaned uden dem accepteres aldrig, §1.7). CPI maa mangle for en enkelt maaned
+    (BLS udgav aldrig oktober 2025) — feltet skrives tomt -> NaN, som Shillers egne huller;
+    kvartalsaggregeringen tager sidste ikke-NaN maaned, saa ingen kvartalsfeature tabes."""
     out = []
     for k in sorted(shiller_rows):
         if k <= SEAM:
@@ -146,10 +149,15 @@ def build_spine(shiller_rows, sp500_m, cpi_m, gs10_m, cape_m):
         if m > 12:
             y, m = y + 1, 1
         k = f"{y:04d}-{m:02d}"
-        if k not in sp500_m or k not in cpi_m or k not in cape_m:
+        if k not in sp500_m or k not in cape_m:
             break
-        out.append((k, sp500_m[k], cpi_m[k], gs10_m.get(k), cape_m[k], "fred+multpl"))
+        out.append((k, sp500_m[k], cpi_m.get(k), gs10_m.get(k), cape_m[k], "fred+multpl"))
     return out
+
+
+def cpi_huller(rows):
+    """Komposit-maaneder uden CPI (aegte datahuller, fx 2025-10)."""
+    return [r[0] for r in rows if r[5] != "shiller" and r[2] is None]
 
 
 def staleness(sidste_dato, today=None, regler=None):
