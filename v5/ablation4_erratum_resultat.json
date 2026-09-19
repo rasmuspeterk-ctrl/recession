@@ -1,0 +1,110 @@
+{
+ "protocol_version": "5.0-trin4-features-erratum",
+ "created_utc": "2026-09-19T22:04:30+00:00",
+ "snapshot": "2026-09-19",
+ "snapshot_sha256": "c8c2ffa5261c480de8d9aeb7ccca6f7f88de2044d15e6fdc018535c514f0bbca",
+ "spine": "shiller_yale_2023-09.csv",
+ "determinisme": true,
+ "kandidater": {
+  "sahm_t": {
+   "dLL": -1.71,
+   "dBrier": -3.49,
+   "n_parret": 189,
+   "egen_imp": 32.91,
+   "baseline_imp": 34.62,
+   "folds_niveau_pct": 0.0,
+   "alle_folds_positive": false,
+   "persistens_pct": 28.7,
+   "mde_pp": 6.75,
+   "fortegn_fuldfit": -1,
+   "fortegn_stab_pct": 0.0,
+   "fortegn_folds": 12,
+   "A1": false,
+   "A2": false,
+   "A3": false,
+   "OPTAGET": false
+  },
+  "claims_mom": {
+   "dLL": -72.79,
+   "dBrier": -13.79,
+   "n_parret": 125,
+   "egen_imp": -56.49,
+   "baseline_imp": 16.3,
+   "folds_niveau_pct": 0.0,
+   "alle_folds_positive": false,
+   "persistens_pct": 21.3,
+   "mde_pp": 239.62,
+   "fortegn_fuldfit": 1,
+   "fortegn_stab_pct": 75.0,
+   "fortegn_folds": 12,
+   "A1": false,
+   "A2": false,
+   "A3": false,
+   "OPTAGET": false
+  },
+  "permits_yoy": {
+   "dLL": -14.53,
+   "dBrier": -17.07,
+   "n_parret": 155,
+   "egen_imp": 14.37,
+   "baseline_imp": 28.9,
+   "folds_niveau_pct": 0.0,
+   "alle_folds_positive": false,
+   "persistens_pct": 10.4,
+   "mde_pp": 25.61,
+   "fortegn_fuldfit": -1,
+   "fortegn_stab_pct": 100.0,
+   "fortegn_folds": 12,
+   "A1": false,
+   "A2": false,
+   "A3": true,
+   "OPTAGET": false
+  }
+ },
+ "incumbents": {
+  "curve": {
+   "dLL_ved_drop": -44.56,
+   "dBrier_ved_drop": -48.33,
+   "folds_pos_pct": 0.0,
+   "DEMOTERET": false
+  },
+  "realrate": {
+   "dLL_ved_drop": 0.95,
+   "dBrier_ved_drop": 0.33,
+   "folds_pos_pct": 100.0,
+   "DEMOTERET": false
+  },
+  "dd": {
+   "dLL_ved_drop": 1.12,
+   "dBrier_ved_drop": 0.54,
+   "folds_pos_pct": 100.0,
+   "DEMOTERET": false
+  },
+  "d_infl": {
+   "dLL_ved_drop": 1.45,
+   "dBrier_ved_drop": -1.36,
+   "folds_pos_pct": 100.0,
+   "DEMOTERET": false
+  },
+  "cape_pct": {
+   "dLL_ved_drop": -3.19,
+   "dBrier_ved_drop": -2.13,
+   "folds_pos_pct": 0.0,
+   "DEMOTERET": false
+  }
+ },
+ "acm": {
+  "dLL_fuldsti": -77.88,
+  "dBrier": -30.82,
+  "n_parret": 192,
+  "folds_pos_pct": 0.0,
+  "ADOPTERET": false
+ },
+ "erratum": {
+  "hvad": "claims_mom: monthly_mean var en no-op (read_fred kollapsede ICSA til sidste uge i maaneden)",
+  "rettelse": "icsa_maanedsmiddel(): maanedsmiddel af alle ugeobservationer, som spec'en siger",
+  "panel": "trunkeret (Yale-rygrad t.o.m. 2023-09) = de publicerede origins; kun claims_mom kan aendre sig",
+  "publiceret_superseded": "ablation4_resultat.json claims_mom dLL -61.9pp = superseded implementation result",
+  "forfremmelse": "ingen uanset udfald; soegningen er lukket"
+ }
+}

@@ -28,6 +28,7 @@ import motor as M
 import debate as D
 import spine as S
 import ablation2_nber as A2
+import ablation4_features as A4
 
 REAL_SNAP = sorted(d for d in C.RAW.iterdir() if d.is_dir() and C.snapshot_complete(d))[-1]
 
@@ -716,6 +717,24 @@ class TestEligibility(unittest.TestCase):
         w = C.fit((X - X.mean(0)) / X.std(0, ddof=1), y)
         self.assertEqual([round(float(v), 4) for v in w], [-2.1755, -1.6907])
         self.assertEqual(int(elig.sum()), 264)
+
+
+class TestErratumAggregering(unittest.TestCase):
+    """RAADETS_V501 §5: den praeregistrerede spec (maanedsmiddel af ICSA) implementeret korrekt."""
+
+    def test_icsa_maanedsmiddel_bruger_alle_uger_og_read_fred_kollapser(self):
+        with tempfile.TemporaryDirectory() as t:
+            d = Path(t)
+            (d / "ICSA.csv").write_text("observation_date,ICSA" + chr(10) + "2026-08-01,200000" + chr(10)
+                                        + "2026-08-08,212000" + chr(10) + "2026-08-15,207000" + chr(10)
+                                        + "2026-08-22,204000" + chr(10) + "2026-09-05,206000" + chr(10), encoding="utf-8")
+            m = A4.icsa_maanedsmiddel(d)
+            self.assertEqual(m[(2026, 8)], 205750.0)                       # middel af fire uger
+            self.assertEqual(m[(2026, 9)], 206000.0)
+            # fejlklassen, dokumenteret: read_fred beholder kun maanedens sidste uge, og den gamle
+            # monthly_mean() kunne derfor ikke aendre noget
+            gammel = A4.monthly_mean(C.read_fred(d, "ICSA"))
+            self.assertEqual(gammel[(2026, 8)], 204000.0)
 
 
 class TestDebate(unittest.TestCase):

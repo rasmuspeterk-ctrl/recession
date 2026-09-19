@@ -41,6 +41,7 @@ from pathlib import Path
 import numpy as np
 
 import calibrate as C
+import spine as SP
 import ablation2_nber as A2
 
 HERE = Path(__file__).parent
@@ -67,10 +68,28 @@ def sahm_transform(u):
     return out
 
 def monthly_mean(weekly):
+    """ERRATUM (RAADETS_V501 §5): denne funktion var en no-op, fordi C.read_fred allerede havde
+    kollapset ugeserien til maanedens SIDSTE observation, saa hver gruppe havde eet element.
+    Trin 4's claims_mom (-61,9pp, ablation4_resultat.json) blev derfor testet paa sidste uge i
+    maaneden, ikke paa maanedsmidlen som headeren specificerer. Bevaret uaendret som dokumentation
+    af fejlen; den korrekte aggregering er icsa_maanedsmiddel() nedenfor."""
     agg = {}
     for (y, mo), v in weekly.items():
         agg.setdefault((y, mo), []).append(v)
     return {k: float(np.mean(v)) for k, v in agg.items()}
+
+def icsa_maanedsmiddel(snap):
+    """Korrekt implementering af den praeregistrerede spec: maanedsmiddel af ALLE ugeobservationer."""
+    import csv as _csv
+    rows = []
+    with (snap / "ICSA.csv").open(encoding="utf-8-sig") as fh:
+        for row in _csv.DictReader(fh):
+            d, v = list(row.values())[:2]
+            rows.append((d, v))
+    m = SP.monthly_mean(rows)
+    return {(int(k[:4]), int(k[5:7])): v for k, v in m.items()}
+
+SPINE_FILE = None        # saettes af --erratum: den trunkerede Yale-rygrad, saa kun claims_mom aendres
 
 def read_acm(snap):
     import csv as _csv
@@ -85,12 +104,12 @@ def read_acm(snap):
 
 def build(snap):
     """Kvartalsdata med incumbents + kandidater + curve_adj, samme univers som trin 2."""
-    shiller = C.read_shiller(snap)
+    shiller = C.read_shiller(snap, SPINE_FILE)
     gs10 = C.read_fred(snap, "GS10")
     tb3ms = C.read_fred(snap, "TB3MS")
     gdp_g = C.read_fred(snap, "A191RL1Q225SBEA")
     unrate = C.read_fred(snap, "UNRATE")
-    icsa_m = monthly_mean(C.read_fred(snap, "ICSA"))
+    icsa_m = icsa_maanedsmiddel(snap)              # erratum §5: maanedsmiddel som spec'en siger
     permit = C.read_fred(snap, "PERMIT")
     acm = read_acm(snap)
 
@@ -303,9 +322,14 @@ def run(snap):
     return res
 
 def main():
+    global SPINE_FILE
+    erratum = "--erratum" in sys.argv
+    if erratum:
+        SPINE_FILE = "shiller_yale_2023-09.csv"      # trunkeret panel: samme origins som det publicerede resultat
     snap = C.find_snapshot(sys.argv)
     meta = json.loads((snap / "meta.json").read_text(encoding="utf-8"))
-    print(f"=== ablation4_features — {PROTOCOL} — snapshot {snap.name} ===")
+    print(f"=== ablation4_features — {PROTOCOL} — snapshot {snap.name}"
+          f"{' — ERRATUM (RAADETS_V501 §5): korrigeret claims-aggregering paa det trunkerede panel' if erratum else ''} ===")
     res = run(snap)
     det_ok = True
     if "--check" in sys.argv:
@@ -347,12 +371,21 @@ def main():
           f"ACM={'adopteret' if res['acm'].get('ADOPTERET') else 'nej'}"
           f" -> feature-saettet {'AENDRES' if changed else 'er UAENDRET: de 5 incumbents bestaar'}")
 
-    out = dict(protocol_version=PROTOCOL,
+    out = dict(protocol_version=PROTOCOL + ("-erratum" if erratum else ""),
                created_utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),
                snapshot=snap.name, snapshot_sha256=meta["snapshot_sha256"],
-               determinisme=bool(det_ok), **res)
-    (HERE / "ablation4_resultat.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
-    print("ablation4_resultat.json skrevet.")
+               spine=SPINE_FILE or "spine.csv", determinisme=bool(det_ok), **res)
+    if erratum:
+        out["erratum"] = dict(hvad="claims_mom: monthly_mean var en no-op (read_fred kollapsede ICSA til sidste uge i maaneden)",
+                              rettelse="icsa_maanedsmiddel(): maanedsmiddel af alle ugeobservationer, som spec'en siger",
+                              panel="trunkeret (Yale-rygrad t.o.m. 2023-09) = de publicerede origins; kun claims_mom kan aendre sig",
+                              publiceret_superseded="ablation4_resultat.json claims_mom dLL -61.9pp = superseded implementation result",
+                              forfremmelse="ingen uanset udfald; soegningen er lukket")
+        (HERE / "ablation4_erratum_resultat.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
+        print("ablation4_erratum_resultat.json skrevet (det publicerede ablation4_resultat.json er uroert).")
+    else:
+        (HERE / "ablation4_resultat.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
+        print("ablation4_resultat.json skrevet.")
 
 if __name__ == "__main__":
     main()
