@@ -1,0 +1,61 @@
+{
+ "id": "gen-1789851840-rpaVfFo95NkQohuHuxbx",
+ "object": "chat.completion",
+ "created": 1789851840,
+ "model": "openai/gpt-6-astra",
+ "provider": "OpenAI",
+ "system_fingerprint": null,
+ "service_tier": "default",
+ "choices": [
+  {
+   "index": 0,
+   "logprobs": null,
+   "finish_reason": "stop",
+   "native_finish_reason": "completed",
+   "message": {
+    "role": "assistant",
+    "content": "VOTE: REJECT\n\nThe negotiated O1\u2013O7 compromises are incorporated. Three implementation clauses still need correction; none requires reopening those compromises.\n\n**1. \u00a73.3 \u2014 Preserve the historical-ledger constraint.**  \nAdding calibration hashes to existing rows is prohibited by the stated rule allowing retrospective changes **only in the note column**. Replace the migration sentence with:\n\n> \u201cExisting rows remain unchanged except for optional provenance annotations in their note column. A separate committed mapping links historical readings to the legacy calibration manifest. The new calibration column is populated prospectively.\u201d\n\n**2. \u00a73.5 \u2014 Audit membership changes, not necessarily increasing counts.**  \n\u201cN_obs must grow by exactly [new origins]\u201d is not generally valid under announcement-triggered recalibration: newly established chronology can change censoring, and corrected eligibility can remove observations. Replace it with:\n\n> \u201cBefore fitting, publish added, removed and relabeled origin IDs with reasons. Assert \\(n_{\\mathrm{new}}=n_{\\mathrm{old}}+n_{\\mathrm{added}}-n_{\\mathrm{removed}}\\), exact membership agreement with the audited set, and label agreement for retained origins. Unexplained changes fail.\u201d\n\nRetain the 18-month-floor and synthetic-observation tests. This catches accidental sample changes without prohibiting legitimate ones.\n\n**3. \u00a71.6 \u2014 Make freshness release-aware and failure scope model-specific.**  \nAge measured from an observation\u2019s timestamp is not release latency. For example, August monthly data stamped August 1 are already **49 days old on September 19**, despite potentially being the latest available release. Replace the blanket limits with:\n\n> \u201cEach source has a committed release-lag/calendar rule specifying the latest observation expected at the publication cutoff. Unexpected missing releases fail the affected stage. Missing CAPE or another non-operational input blocks the full-model comparison and affected diagnostics, not an otherwise valid curve-only reading. No partial composite is accepted as complete.\u201d\n\nOtherwise the universal hard fail reintroduces the CAPE-hostage failure that \u00a72 explicitly removes.\n\nWith those three edits, I vote APPROVE. The remaining compromises\u2014including deterministic NBER-triggered refits and the supplementary paired rule\u2014stand.",
+    "refusal": null,
+    "reasoning": "**Evaluating announcement impact**\n\nThe announcement about the floor means that newly identified peaks are removing eligible origins, which shrinks the counts. This situation could be serious, especially if the current standards retrospectively exclude certain elements. I wonder if there's a chance an embargo could prevent this? If the announcement goes beyond 18 months, it might lead to even more removals. That seems like something important to keep track of!",
+    "reasoning_details": [
+     {
+      "type": "reasoning.summary",
+      "summary": "**Evaluating announcement impact**\n\nThe announcement about the floor means that newly identified peaks are removing eligible origins, which shrinks the counts. This situation could be serious, especially if the current standards retrospectively exclude certain elements. I wonder if there's a chance an embargo could prevent this? If the announcement goes beyond 18 months, it might lead to even more removals. That seems like something important to keep track of!",
+      "format": "openai-responses-v1",
+      "index": 0
+     },
+     {
+      "type": "reasoning.encrypted",
+      "data": "gAAAAABqrvjKZ4jxUsQPlggLIXIZK3MeuFl1R8PXfuUOfdFfujX7-WlUHeqiynogEi6kJKqa8_MZOmodKhk-Dfvwp4GUzVcRWE2YxXu_vlnYadxJE8Wh9qLzkl3h6mNoLSwkVEgy-C0ncMQ10BstrbQ_ERzrnANNTZpgYQf5QHaNq8DdQ-LNhEwYoXHsGJlyPytadPThrq8emMyypH0ZkRASvHgWg1C58_bx8vrOTnreBStpRqEHstLdLB7ka46t0hL_LryV2HUUA7V78ZobcnCDFybSg51tlDXzqL3iV63kgl3qvoPPdI3cq96If-umIaNO8D9FQIqKgCaT6kBZIgd3A81B8JLazDmmIblRqj8jMdHa2oIoKr7Absi5Vj68qOBSNJ46kgfGjvJn45PSTNCaK01l4cPRHftZWOXNN3S7agA_cS1FRVc1p3sIU9O4c3kS5uvnM6GOaEJ4_5Zz5vZCeA6wdnhfPaAeiPsKjdIY9NWMcU803I4qPj8W4Dv-INGvyDbcjdsM0vIVl9SXbefEBaoamj9lAcGBIgnXXUCHEwSVQSnn8dodG4CCHt5KOdY2NSAqVS00nb9BqU3l1cCkTU50G4Oj5lyPduoYkPJF463jSu14ypQQazEYVu16ucXrETkwnYs7NTmqIndflSh1BQZ3l1fMcHPVfFvMM8wclHLBB3wECv_Q8EFmVBn05heaeR-4uasu44TFbmtx4neYmgfb1-RP07q4k88NQer_fWodkhMoz1UI1LxL4G5Y1Eph61tN9fBasL8UCupOXQZqP_BidH5GQen-AwlS9fC_SO45SdNmO8C1K9904Td2zkLWIaJwKUhz5CyDP5HErLiLKhbtvSK9DDpd1G4bQ8w2b3y7tOA48X1-3pyjgsaZx87x5x7jVnulIgbvid__ZNKfgbU5zujsOn_DpArgGSXBzazQG6hFP6N4nBklZZDt99OLjRM_PwZ-k3xmSiYfrZn7fteWr3VhkFC6d7Hg1XsXG966OHKbYAnn7XZ2-xUWhMVrJ1bkTOLTgAcIfwO2aC6-ZF-HLv0doFigOq8RtA1wYdCpqZUp9Q7b_FtkFIpo-zkdgajfAVgDhMwrJe9SJg-FkCgNjTnodmWdbywg_q-zdo2wFs8QN6PSd13AaLLwcAH5x1I_x-6Ni9wU0VWVs-F-De_78QpLujZUaSmkFgyKnkRhw385OWeIp3qnwvN8WWifgdyDUSdcIcU1zBJXbRgXncqbYrHGRvuUesFNfiFX0rhfO9b0eGlg4IBNZLomI5ZqWT8bpQxQJIuoY8XhwwmKgdhWf_OC75zdi33gwU5zQu35QrASusBimv_2eHNCWWGcpPwJNZPqBjMR6ApPduYKinKGt5_BzEbUKAAhYI9BoTMnIjkMSzKOXfc_xz1N0mvTl4GUKIOEkR-dl19YbivOaNJQgH4ESmpzvx27jg-1YP77S6C4LlJ3J1O4mP1NDUmDmQZb-5AahYCxo2DbvLCcxyEoXkv8yeNatYl0bs4024sAQxNaEg9L4-7H2EyxJpHRaDcysjc_cCmVzhXz8E88ZJEHxeAw6m1STu8zGOmxTf1hRqmg1CqIGfp2MRHssZh0p7MxTOho1SPb7DQPPU7ry7Wm2y99G8pNGaubFoULyYEq6AYlwoOc_mAq5cZJdXi0e0ugvDXOvIAKKLTJjvIMv47f_-r4d2Ojw5GAEPlzHuW7novCtCSUnWwWyyNArHmue-CdLCMJvbxGE-ftkBMM2EzHIJatrSm3gkHgJgD0h--Q7HQd4OK_5cLQfpF3N5qMVB6v1wY6u7LjYGiK16Y8wlZI6H_J5tDq-Xc0M0HrvNOy7VcGECnD7ik0v3IGa8pMaUa1iVd7Ydw0n7t5OQjkHiLL5jYYvLCqXcwKmpoodEzSfEO_J6oT3EnaHGOXpk0X2m9pgLxQu-Dmu8P9A8b0nk-ZjhktsTm0KL7bPbkrHq217diCYs4-ReGUrpmC9uWWc5hA5ShsN59bZGx-oQbSUvfw6ps5Mb6EPv8ksnlmQT-fJXBBxB4fUQ0pSiUeUGA5w_x0Xi7B6KgNaxuh_OPG4ivY-dWWyVFJxcHt2TlAWFbOXh73nghC7XY-xSTb7Vnf8yE103LaxjVrM-yevkkdMOS0zb8bEfGyOt4avpiLX379PmTy2WTdsKsAtQaipWptJ2BwUc8uWCzU_mTtoiXNLno-RNB10dMN-nPxvOZ75mz6k6_4MwHnpKcxuuwmY3MFL1SdWCyL_2N3Lj7qk4TZRQsWUeDnYvN_ai2SdERTerC48BqCaolInBzQm7iixUVILZsUnhRGAiyu-a8X9m5MLibHWCOjS9S6KFyJQSsUyx3lJnqd59oOST6AI5om4jwM512LDAquo-WLU8oXRiNwkFdWmFwYtOMWrQeM6bT3oACjadXcGZXDaUZzg1kSv04gZIx-Gx-JnNgGZoN0TQCdPNXmz6NLMkOEYKvNNUnPtO5hQhN5mlekBIPtExotIr4EOFmc-_2Fr5qbA2VFra3uIwTlXinzn5CGzYfFX4Z9iNq-aPRkWTVFNjDtlN68WYEAxCiEz7NH2gmDz0QjDMobuKOGhTNEGyWTb1-qpsfQHo3u5bCxVyJpwjTqQvUR2tc6EoRlOI-Zf5B3ssIahQ76SygSdxmUxudpdk8GE5XzGo9q5AOoC9NyBByN1A_3LZ4dindLyrVjuwuAbSvffniPFcbYwV2OWha3CPpLX4zD6SxuzEwJHihH2sGOQrHOIHGaPtF_ZyK74SPfN6n9cL0xkSSPvxQpXI40YEJRFNAtXsRkgfO1T8OzojoTV2f6hj2QLntn2RK2R1TwkgvyzSL2ejtxXUaGFtDiyn5b16_lrOeBfw4laZWXq-aRYHZ3yig2IBogv0UsUubAOVMp33LBFC5GoATt-aCljdZ7nUa4IlRRMJM6b7oQvKyyH31B2oPL9jyNZEJbXCp1xMRlI7XamvsJjEWrozv7xl9ejiFuxXI3U0rSUeYByhOxouKGnHaY1r1t_QB5.eyJlbmRwb2ludF9zbHVnIjoib3BlbmFpL2dwdC02LWFzdHJhLTIwMjYwOTAzfG9wZW5haSJ9",
+      "format": "openai-responses-v1",
+      "id": "rs_05f3ace935f5b0ae016aaef8c2f75487d18904766bc09e83d5",
+      "index": 1
+     }
+    ]
+   }
+  }
+ ],
+ "usage": {
+  "prompt_tokens": 8942,
+  "completion_tokens": 687,
+  "total_tokens": 9629,
+  "cost": 0.1461175,
+  "is_byok": false,
+  "prompt_tokens_details": {
+   "cached_tokens": 0,
+   "cache_write_tokens": 8939,
+   "audio_tokens": 0,
+   "video_tokens": 0
+  },
+  "cost_details": {
+   "upstream_inference_cost": 0.1461175,
+   "upstream_inference_prompt_cost": 0.1117675,
+   "upstream_inference_completions_cost": 0.03435
+  },
+  "completion_tokens_details": {
+   "reasoning_tokens": 235,
+   "image_tokens": 0,
+   "audio_tokens": 0
+  }
+ }
+}

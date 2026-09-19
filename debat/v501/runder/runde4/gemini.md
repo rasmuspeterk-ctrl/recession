@@ -1,0 +1,9 @@
+VOTE: APPROVE
+
+### Reservations for the record
+
+1. **Paired-difference coverage width (§4.3):** Adopting the 10–90% bootstrap band (80% coverage) as the supplementary criterion is adequate for an informational diagnostic, but it remains an unusually permissive threshold for distinguishing an operational forecast from the unconditional base rate. Prior to any future council debate regarding an operational verdict migration, the backtest must formally evaluate the empirical Type I error rate of this interval against synthetic, uninformative exchangeable sequences.
+
+2. **Asymmetric loss impact of unannounced contractions (§4.5):** Disclosing the count and loss contribution of "additional live-publishable origins" (unannounced in-recession quarters) correctly prevents penalizing curve-steepening onset dynamics. However, the council must recognize that printing the score excluding these origins creates an unavoidable selection bias: it evaluates the model exclusively on cycles where the NBER dating committee acted with sufficient speed or where expansions persisted. Both variants must be interpreted strictly in tandem, never cited in isolation.
+
+3. **Parameter variance across event-driven refits (§3.2, §3.4):** Triggering an immediate re-anchor upon NBER turning-point announcements introduces parameter volatility precisely during cyclical transition regimes. While the deterministic execution rule and mandatory bridge row eliminate discretion, estimating weights on freshly minted turning points risks over-indexing on the terminal dynamics of the latest shock. The bridge row must be monitored carefully to verify that absorbing a new trough does not induce sudden probability compression in the subsequent non-recession quarters.

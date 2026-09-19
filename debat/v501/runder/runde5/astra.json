@@ -1,0 +1,55 @@
+{
+ "id": "gen-1789851985-5HfFDjB0R8RWcC6VjCMm",
+ "object": "chat.completion",
+ "created": 1789851985,
+ "model": "openai/gpt-6-astra",
+ "provider": "OpenAI",
+ "system_fingerprint": null,
+ "service_tier": "default",
+ "choices": [
+  {
+   "index": 0,
+   "logprobs": null,
+   "finish_reason": "stop",
+   "native_finish_reason": "completed",
+   "message": {
+    "role": "assistant",
+    "content": "VOTE: APPROVE\n\nAll three blocking amendments from my previous vote are incorporated: historical ledger rows remain protected; eligibility changes are audited by origin identity rather than assumed monotonic growth; freshness checks are release-aware and do not make curve-only production dependent on CAPE.\n\nThree non-blocking reservations for the implementation record:\n\n1. **\u00a78 \u2014 Not every new test should fail before repair.** The staleness and omitted-eligible-origin tests must expose the existing defect. Legacy replay should already pass. Synthetic-observation and eligibility tests need explicit defective fixtures where appropriate. The acceptance criterion is demonstrated defect detection\u2014not artificially making every assertion fail.\n\n2. **\u00a74.3 \u2014 \u201c80% coverage\u201d is nominal, not established.** The 10\u201390% endpoints contain the central 80% of bootstrap draws; that does not establish 80% repeated-sample coverage with 13 dependent episode blocks. Print **\u201ccentral 80% bootstrap estimation-sensitivity band; coverage not established.\u201d** The supplementary rule remains diagnostic, with Section 6 unchanged.\n\n3. **\u00a77.1\u20137.2 \u2014 Report coefficients on comparable scales.** Alongside the standardised coefficient, print the raw curve slope \\( \\beta_{\\mathrm{curve}}=w_1/s_{\\mathrm{curve}} \\), with the curve measured in percentage points, and the raw intercept \\( \\alpha=w_0-w_1\\mu_{\\mathrm{curve}}/s_{\\mathrm{curve}} \\). Otherwise a change in training-window dispersion can be misreported as coefficient dilution. Fixed-input probabilities remain the relevant measure of the recalibration\u2019s operational effect.\n\nThis approval authorises the specified repair and reporting protocol\u2014not feature reopening, automatic full-model promotion, or retrospective alteration of published forecasts.",
+    "refusal": null,
+    "reasoning": null,
+    "reasoning_details": [
+     {
+      "type": "reasoning.encrypted",
+      "data": "gAAAAABqrvlUQt3Ij89DHGt-vYUclCxVGRa6ApRGvVho4xriXJ3p9ECmPt7VQp3FdZd_Sb1h89UJJwAw6L4TJItWtfzXxxErqDQmaLXX-hrsRbNNLM11AM-2BKEeVJmBehfljxegZwMnu869uAq_tcTptfhWwPvUbhdSc8xsgyINBZNlyNd42YH7GY_Kyo22m67b7nYm4kz-sk55IiDy4Y-LylI7dgZstGk3Rp4mNF1XVoLkPOTbxa44AgyILjbLoil6-TdMjubvY6HoJSZhdHVD0cOjs2xSNlLSVmx1bg4kH7Xl562mGLz6ji3ZTHpvaLaYsafMOtvsC5jWfSQSt2dc11tAR5OZ0LB4anhjwRfQp59tLkOLc9M-NalqlotgQBtiZEYnEf6UCgy_OegAeWATMrp3knV4ZPNDMzoj0PGUG0qVrFRMbFn64kPZgF4o-SpsjrIT6KLDJFn5kKX1p-n5_XmQ6V5p4YZV_OLCpunj6ANbxuPAyVLw-Eia0qprA2vmtbdBXFil774mKsp7vd4SAyofCjzngHz3sWhXqGPPCafGkxol7ZB3HZJqMn9-a1SpyGORvQKtZ45uczE6aNWQr_HwLq7zZK8BWR-ic6K5xsRrGJpD1pt2YXa0VX9ooor-TNGSN65UCpLB14UepuyinPesyxJZR2zFAkYeyR4IXDwYgwy6FhysOEFehPW24HIKr8anPlYWm6aEom7wel-Kj-C_BI68CSpyAD_mPjwPaOMFHiadOdQtdHyR4VkD8nzZTNeMq3KgCAz5sQnY8WT9vJKG4QrHghjY5HRndJXHWyW5FaGq9q2Tzq4RFOtdl-JPK6VN6JlrD7xU_yKWhbTsl6lMwunUTegEjo3XC93ASdLpkGNA_h_hCNHelJuKCjH1is6ICIb9QHgYiZD6xian6SLVibL1ZnJ9btyO3ugMW3rGKmbtTurjN0MtDES9MGKnEViV9Gz0F_hzpyQvb0uB1FR8BtBsfJVgoPvC_FuUhhtDngmv1xT5YBsreaYv2MEXs6KlMLFJ7BlcaddSJZjxRyjRlE0E7ZO7xhbg-1PhX-RLDGsZmZXhcAnuyMJ2tE68zZZ3mDD_stdhtpwiuTOBkLITbLoK-AIllFGrM1QIEyRa2efBBIlsI-h8jj-eHjkml-yjagJh8Ii96iDdmBZqCuqAu2nj2-PhK0MCdKKYghhZxbw4joOIjGtSBijywsDv_s2XA07pOjZnZsr5DmKWJWd8ddlgPOGqbVVnUKql8FHda5qGU6bsQo1y3JF2jhSRgsFC52nceofATft0_Nac0_XlzqQk1IluTVd71bfNsjk4-rxZVj2q9q_8yvgZACyLISjm1YvIGpSw6F2dzUj_W1URKeDbAsbL3Ir83U3UWCm2VJrvguvKsKDA7I3pKoL67iRcN5NPoisYQS3Ni94398RN4wHSNQGlcgSg319iDcpVIkz9wovIREVXdQoD-DzOyvhl0opSzovjuGX2UKz5GAoAizkwjC3OJ62-LHc2I0Te-IbBAvore95mumOCaDAK0Ri7w4bYhjRuYlsJTiVbWq4YAHARMgQvtQjPgeuha_pxqkoqa7nXj8mpYpMAXb9cWpx4VvZ3Ewgtj1iA9exSfFOXNsdwKHbcYxqffr_QYv9p-_VBmYEnVFTyRJUgNZedj5UZ8wWwqpLGkHVK97izdvjFl68j7SSc2MbDiTUGZF-nKj4Fmyyhy0A03gJVmOAt6ib3E2R02ScPsdGKCXPZ2YHRR07F7GyPVEgQEFr2PSJACToeSQIOJSWopSCmk-Gwj-G-dh_vaagfmz6F9vUXjfAR8BwVrPEWxuzjoh5C3dRsWEGUrWV5-Jyk7oV-EdualF0i84Z_EyRBGLlpLIy0x5wXdfWVqA==.eyJlbmRwb2ludF9zbHVnIjoib3BlbmFpL2dwdC02LWFzdHJhLTIwMjYwOTAzfG9wZW5haSJ9",
+      "format": "openai-responses-v1",
+      "id": "rs_082f62c93302a5c2016aaef952758887d1ad0638760549e51e",
+      "index": 0
+     }
+    ]
+   }
+  }
+ ],
+ "usage": {
+  "prompt_tokens": 7553,
+  "completion_tokens": 450,
+  "total_tokens": 8003,
+  "cost": 0.116905,
+  "is_byok": false,
+  "prompt_tokens_details": {
+   "cached_tokens": 0,
+   "cache_write_tokens": 7550,
+   "audio_tokens": 0,
+   "video_tokens": 0
+  },
+  "cost_details": {
+   "upstream_inference_cost": 0.116905,
+   "upstream_inference_prompt_cost": 0.094405,
+   "upstream_inference_completions_cost": 0.0225
+  },
+  "completion_tokens_details": {
+   "reasoning_tokens": 86,
+   "image_tokens": 0,
+   "audio_tokens": 0
+  }
+ }
+}

@@ -1,0 +1,9 @@
+VOTE: APPROVE
+
+### Reservations for the record
+
+1. **Parameter dilution under the 2022–2024 false-alarm quarters (§1.5, §7.1):** Incorporating 2023Q3–2024Q1 adds deep yield-curve inversions followed by no recessionary onset within four quarters. Because the model relies strictly on the curve's static level rather than duration or post-inversion steepening dynamics, this refit mechanically penalizes the slope coefficient. Council members and external users must recognize that this shift is an artifact of functional-form misspecification (unmodeled cycle length and term-structure path), not proof that yield-curve information has fundamentally degraded.
+
+2. **Strict enforcement of tandem interpretation for the oracle-free supplement (§4.5):** Disclosing both variants—including and excluding unannounced in-recession origins—is essential. Omitting unannounced quarters masks the model’s real-time failure mode during rapid downturns, whereas including them penalizes the model for cyclical regime transitions that NBER had not yet codified. Neither metric represents an unvarnished ground truth; isolating or headlining either variant individually in downstream reporting would distort the historical skill assessment.
+
+3. **Preregistration hurdles for verdict migration (§4.3):** Adopting the 10–90% paired-difference bootstrap band beside Section 6 is safe as a purely supplementary diagnostic. However, moving it to primary status in any future release must remain blocked until the empirical Type I error rate of this 80% coverage interval is benchmarked against uninformative, block-permuted synthetic series. Without establishing that the paired band limits false "distinguishable" verdicts to nominal levels under the null, migrating the primary rule risks replacing conservative reporting with uncalibrated signal noise.

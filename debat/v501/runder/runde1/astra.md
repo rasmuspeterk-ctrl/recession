@@ -1,0 +1,35 @@
+## A) Q1–Q8
+
+**1. Spine.** Stitch through 2023-07; FRED cannot reconstruct an internally consistent 1871–2026 replacement, and changing validated history adds unnecessary revision risk. Preserve the original file and construct a separately named composite with source provenance per column/month, excluding incomplete months and data unavailable at the forecast timestamp. On the non-preliminary overlap, require median absolute relative deviation ≤0.1% and at least 99% of observations within 1%; individually document every exception, including August–September 2023. Test unique consecutive months, units, positivity, historical immutability, daily-to-monthly aggregation, and independent recomputation of every seam-crossing rolling feature; do not smooth genuine market movements.
+
+**2. Row universe.** Reject both blanket BASE10 completeness and comparisons on different samples: estimation requires the model’s own features; comparisons require a common evaluation sample. For models \(A,B\), use \(E_{AB}=E_A\cap E_B\), with identical label-maturity, censoring and purge rules; report each model’s training and evaluation counts. Operational curve-only estimation should not depend on CAPE availability, but its expanded-sample score must be distinguished from its common-sample comparison score. This repair does not reopen promotion: curve-only remains operational and every published rejection remains visible.
+
+**3. Cadence and versioning.** Freeze weights, standardisation parameters and the fitted base rate between annual recalibrations, scheduled for the first September publication; v5.0.1 is an explicitly exceptional repair. Each month still updates predictors, while NBER-table changes update eligibility and scoring without triggering an unscheduled refit. Every ledger row must identify code version, calibration ID, data-snapshot hash, announcement-table hash, training cutoff, sample count, coefficients, standardisation and base rate through an immutable linked manifest. Comparing probabilities from different calibrations is legitimate only when the calibration change is disclosed.
+
+**4. Deferred diagnostics.** For each of the 12 onsets, assign eligible positive origins whose four-quarter horizon first contains that onset; put all remaining negative origins in a thirteenth, explicitly non-episode row. Print counts, summed model/base losses, mean Brier scores and contribution \(100\sum_{i\in e}(L_{0i}-L_{mi})/\sum_iL_{0i}\), which adds exactly to pooled percentage improvement; also print negative-origin losses by the existing 13 chronological bootstrap blocks, whose boundaries must be published. LOEO remains sensitivity analysis, not a retrospectively introduced co-primary gate; any rerun must preserve walk-forward timing and remove the held-out block from subsequent training.
+
+For the language supplement, jointly bootstrap the fitted probability and corresponding base rate using identical existing episode-block draws: \(\Delta^{(b)}=p^{(b)}-p_0^{(b)}\); use the existing band’s nominal coverage and percentile convention, retain Section 6’s verdict and ratio suppression, and distinguish this parameter-sensitivity comparison from historical skill uncertainty. The oracle-free supplement scores **every feature-available quarterly origin where production would issue a forecast**, including retrospectively recession-dated origins, using archived or timestamp-reconstructed forecasts and \(Y_t=1\) only for a *new* onset in the next four quarters; score only after label maturity, apply identical coverage to the baseline, and report unreconstructable origins rather than silently dropping them.
+
+**5. Claims aggregation.** Fix and rerun the exact original claims specification as a preregistered implementation correction, with no tuning. Aggregate the underlying weekly observations by arithmetic mean according to observation date, retain those raw observations, and test missing-week and release-timing handling. Publish the original −61.9pp as “superseded implementation result” beside the corrected result; even a reversal grants no automatic feature promotion.
+
+**6. Reporting.** Publish a calibration bridge at one fixed current input vector: original pipeline, corrected sources on original origins, model-specific completeness on the historical date span, then extension through the new eligible cutoff. Show probability, base rate, band, coefficients and sample count at each stage, acknowledging that this sequential attribution is order-dependent. For skill, separate rescoring the original evaluation origins from performance on newly eligible origins; their changing composition must not masquerade as improved methodology. Bump to v5.0.1, retain old artifacts, append the first new ledger row with a calibration-change note, and describe this as a **data-and-estimation repair**, not an upgrade in predictive skill.
+
+**7. Missing controls.** Require an origin-level eligibility audit listing missing features, censoring, horizon completion, announcement maturity and purge status; “2–3 new origins” must become an exact dated list before fitting. Separate observation dates from publication dates, and explicitly label revised-history backtests rather than calling them fully real-time. Add freshness assertions, fail-closed source-schema checks, frozen fetch timestamps, snapshot replay, and a regression test proving that an eligible synthetic new observation reaches estimation. Monthly forecast rows have overlapping horizons and must not be counted as independent quarterly validation observations.
+
+**8. Vetoes.** I block mutable overwriting of `shiller.csv`, BASE10-driven operational eligibility, undocumented automatic promotion/refitting, and any “oracle-free” score that silently retains retrospective recession exclusions. I also block interpreting a lower recalibrated probability as reduced economic risk: that mixes changed evidence with changed estimation. Reproducible manifests, eligibility tables, common-sample scores and the fixed-input calibration bridge would remove these vetoes.
+
+## B) Verdict on Claude’s five points
+
+**REQUEST CHANGES. None stays as written.**
+
+1. **Amend:** immutable composite, provenance and integrity tests.
+2. **Amend:** exact eligibility audit; remove the expectation that P falls.
+3. **Amend:** additive episode decomposition and negative-origin attribution.
+4. **Amend:** specify paired resampling and genuinely non-oracle scoring.
+5. **Amend:** add calibration manifests, cadence and attribution bridge.
+
+Strike no objective; strike implicit automatic re-promotion and mutable source replacement.
+
+## C) Biggest risk
+
+Annual freezing delays incorporation of newly matured inversion false alarms by up to twelve months. That is the explicit cost of calibration stability—not evidence that stale weights are economically superior.

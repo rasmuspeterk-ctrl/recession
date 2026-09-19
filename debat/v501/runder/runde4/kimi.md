@@ -1,0 +1,11 @@
+VOTE: APPROVE
+
+All three of my Round-3 conditions are in the text. §2's gate assertion is a hard error printing "comparison unavailable", with per-model estimation end and n_obs in the manifest — a divergent-sample operational estimate is identifiable from the ledger hash. §4.5 prints the oracle-free supplement twice under the strict onset label and explicitly excludes scoring any other target; my Y′ veto is not engaged. §4.3 fixes the backtest specification (same origins, same draws, disagreement count and disagreeing origins published), bars automatic verdict migration, and mandates the README sentence; my O4 veto is not engaged. §3.2's trigger is a hash change adding a peak or trough, executed at the next publication run — deterministic, as required. §1.5 puts `--accept-outlier` in the ledger note column. §1.6 implements the staleness guard first, and §8 commits §1–§3 before §4–§7 are seen. The preregistration logic is enforced by execution order, not by goodwill.
+
+Reservations for the record (non-blocking):
+
+1. **§3.5's n_obs assertion assumes monotonic growth.** "n_obs must grow by exactly that number" is wrong in general: a newly dated peak simultaneously matures pre-peak origins (label 1) and censors post-peak origins the 18-month floor had just released. The assertion should be that n_obs equals the audit's *signed* eligible count — additions minus reclassifications, both lists printed. As written it will false-fail at the next recession dating, or worse, be silently relaxed when it does.
+
+2. **The seam months are adopted, not verified.** The composite takes multpl CAPE for 2023-08/09 — precisely the two months with the largest overlap deviations (−1.25 %, −3.28 %), where Yale was preliminary. §1.2 documents the exception; nothing checks the adopted value. Add a one-time archived cross-check: CAPE for those two months hand-computed from FRED SP500 monthly means and published S&P earnings, stored in meta.json.
+
+3. **The multpl failure mode is underspecified.** §1.3 guarantees no partial spine and §2 frees curve-only estimation from CAPE, but the monthly full-model line ("tested, did not pass") has no stated behavior when CAPE is stale. Specify: on multpl failure that line prints "unavailable — CAPE stale"; the last good value is never carried forward silently.

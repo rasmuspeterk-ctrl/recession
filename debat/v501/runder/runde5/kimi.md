@@ -1,0 +1,11 @@
+VOTE: APPROVE
+
+All three of my Round-4 conditions are now binding text: §3.5 asserts the signed audit identity (n_new = n_old + n_added − n_removed) with exact membership and label agreement; §1.4 makes the seam months a verified measurement stored in meta.json; §2 specifies "unavailable — CAPE stale" with no silent carry-forward. Astra's three amendments are incorporated in substance; Gemini's Type-I criterion and tandem-interpretation clause are in §4.3/§4.5; Claude's override-record and commit-order points are in §1.6/§8. Preregistration is enforced by execution order, not goodwill. Nothing left to block.
+
+Reservations for the record (non-blocking):
+
+1. **§1.4's seam check measures vintage, not validity.** Hand-computing 2023-08/09 CAPE from the archived Yale earnings column reproduces Yale's *preliminary* values; multpl's deviations (−1.25 %, −3.28 %) almost certainly reflect revised earnings and the final S&P print. The stored comparison will show a discrepancy by construction. meta.json must state the expected direction and magnitude in advance, or the number invites post-hoc reading. Materiality is low: the seam touches only S&P-derived and CAPE features; the operational curve-only P is insensitive to it.
+
+2. **The bridge row is one input vector.** §3.4 prints ΔP at current inputs only. At an NBER-triggered refit (§3.2b) the interesting variance sits elsewhere — origins adjacent to the newly dated turning point, where censoring flips. The manifest should print max |ΔP| and max |Δw| across all walk-forward origins between successive calibrations. That is cheap and converts Gemini's regime-transition concern into an auditable number rather than a monitoring exhortation.
+
+3. **multpl is an uncontracted single-operator source.** If it stops, §2/§1.7 degrade gracefully — the full-model line prints "unavailable — CAPE stale" indefinitely — but the README should state that outcome as accepted design, not a defect: the full model is non-operational, and no keyless independent CAPE exists (§1.6 already records this). A future reader must not mistake the line's permanent absence for a pipeline failure.
