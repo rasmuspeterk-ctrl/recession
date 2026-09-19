@@ -401,8 +401,10 @@ class TestMotor(unittest.TestCase):
         cls.raw = base / "raw"; cls.here = base / "v5"; cls.here.mkdir()
         cls.today = date.today().isoformat()
         shutil.copytree(REAL_SNAP, cls.raw / cls.today)
-        for fn in ("weights.json", "weights_trin1_teknisk.json"):
+        for fn in ("weights.json", "weights_trin1_teknisk.json", "nber_announcements.csv"):
             shutil.copy(HERE / fn, cls.here / fn)
+        if (HERE / "kalibreringer").exists():
+            shutil.copytree(HERE / "kalibreringer", cls.here / "kalibreringer")
     @classmethod
     def tearDownClass(cls): cls.tmp.cleanup()
 
@@ -438,6 +440,39 @@ class TestMotor(unittest.TestCase):
             (raw / self.today / "manual.json").unlink()
             with self.assertRaises(SystemExit):
                 self._motor([], raw=raw)
+
+    def test_frosne_vaegte_giver_ingen_reankrings_advarsel(self):
+        """§3: et nyere snapshot end kalibreringen er forventet — ingen 'koer finalize6 igen'."""
+        out = self._motor([])
+        self.assertNotIn("koer finalize6.py igen", out)
+        self.assertIn("vaegte frosne", out)
+        self.assertNotIn("REKALIBRERING PAAKRAEVET", out)
+
+    def test_aendret_annonceringstabel_afviser_log(self):
+        """§3.2b: hash-aendring i nber_announcements.csv -> deterministisk trigger, --log afvises."""
+        with tempfile.TemporaryDirectory() as t:
+            here = Path(t) / "v5"; shutil.copytree(self.here, here)
+            with (here / "nber_announcements.csv").open("a", encoding="utf-8") as fh:
+                fh.write("peak,2099-01,2099-07-01,test" + chr(10))
+            logf = here.parent / "LOG.md"
+            logf.write_text("| logget | snapshot | P | baand | basisrate | dom | kurve | antaending | note | kalibrering |"
+                            + chr(10) + "|---|" + chr(10), encoding="utf-8")
+            out = self._motor(["--log"], here=here)
+        self.assertIn("REKALIBRERING PAAKRAEVET", out); self.assertIn("nber_announcements.csv er aendret", out)
+        self.assertIn("--log AFVIST", out); self.assertNotIn("LOGGET som raekke", out)
+
+    def test_forfalden_september_rekalibrering_afviser_log(self):
+        """§3.2a: er refit-maaneden mere end et aar bag naeste september, afvises --log."""
+        with tempfile.TemporaryDirectory() as t:
+            here = Path(t) / "v5"; shutil.copytree(self.here, here)
+            W = json.loads((here / "weights.json").read_text(encoding="utf-8"))
+            W["refit_maaned"] = "2020-09"
+            (here / "weights.json").write_text(json.dumps(W), encoding="utf-8")
+            logf = here.parent / "LOG.md"
+            logf.write_text("| logget | snapshot | P | baand | basisrate | dom | kurve | antaending | note | kalibrering |"
+                            + chr(10) + "|---|" + chr(10), encoding="utf-8")
+            out = self._motor(["--log"], here=here)
+        self.assertIn("september-rekalibrering er forfalden", out); self.assertIn("--log AFVIST", out)
 
     def test_json_dump_har_dashboard_kontrakten(self):
         logf = self.here.parent / "LOG.md"

@@ -343,8 +343,19 @@ def main():
         print(f"bro {navn:<40} P={t['P']*100:5.1f}%  w={t['w']}  n={t['n_obs']}  beta={t['raa'].get('beta_curve_pr_pp')}")
     print(f'bro: "{BRO_SAETNING}"')
 
-    h = skriv_manifest(m)
-    print(f"manifest: kalibreringer/manifest_{h}.json (v{VERSION}, refit {m['refit_maaned']}, n_obs {mc['n_obs']})")
+    # Idempotens: samme origins, labels og vaegte som forrige manifest = SAMME kalibrering.
+    # Saa genbruges forrige hash (intet nyt manifest); kaeden holder, og en genkoersel uden
+    # dataaendring (fx den aarlige september-koersel i et roligt aar) skaber ikke stoej.
+    def _indhold(mod, origins):
+        return (origins, mod["w"], mod["mu"], mod["sd"], mod["base_rate"])
+    if forrige and _indhold(forrige["modeller"]["curve_only"], forrige["origins"]) == _indhold(m["modeller"]["curve_only"], m["origins"]):
+        h = forrige["hash"]
+        audit["forrige_hash"] = forrige["audit"].get("forrige_hash")
+        audit["forrige_version"] = forrige["audit"].get("forrige_version")
+        print(f"kalibrering UAENDRET (samme origins, labels og vaegte): manifest {h} genbruges, intet nyt skrives.")
+    else:
+        h = skriv_manifest(m)
+        print(f"manifest: kalibreringer/manifest_{h}.json (v{VERSION}, refit {m['refit_maaned']}, n_obs {mc['n_obs']})")
 
     # ---- weights.json (samme skema som foer + version/manifest/bro/raa) ----
     fm = m["modeller"].get("fuldmodel")
@@ -354,6 +365,7 @@ def main():
                 seed=SEED, n_draws=len(ekstra["W"]), W=ekstra["W"], base=ekstra["B"])
     out = dict(protocol_version=PROTOCOL, version=VERSION, manifest_hash=h,
                forrige_manifest=audit["forrige_hash"],
+               refit_maaned=m["refit_maaned"], announcement_table_sha256=m["announcement_table_sha256"],
                created_utc=m["created_utc"], snapshot=snap.name, snapshot_sha256=m["snapshot_sha256"],
                label="nber-onset", label_tekst="NBER-onset inden 4 kvartaler", frekvens="kvartal",
                n_obs=mc["n_obs"], n_episoder=len({o for wo in A2.nber_labels(ekstra["Dc"], ekstra["eps"], ekstra["usrec"])[1] for o in wo}),

@@ -3,7 +3,9 @@
  "version": "5.0.1",
  "manifest_hash": "72c3371d",
  "forrige_manifest": "6baeade4",
- "created_utc": "2026-09-19T21:51:57+00:00",
+ "refit_maaned": "2026-09",
+ "announcement_table_sha256": "17ed8d7b6b22f3f4385b2e9662c9c0bb874a7c83da521920b2ec774e7bf22084",
+ "created_utc": "2026-09-19T22:36:38+00:00",
  "snapshot": "2026-09-19",
  "snapshot_sha256": "c8c2ffa5261c480de8d9aeb7ccca6f7f88de2044d15e6fdc018535c514f0bbca",
  "label": "nber-onset",
@@ -5135,13 +5137,9 @@
   "note": "LL-forskel 3.9pp < stoejgulv 4.42pp (trin 3-MDE). Gaten er mekanisk og kan ikke flytte den operationelle model (RAADETS_V501 \u00a76)."
  },
  "audit": {
-  "n_forrige": 264,
+  "n_forrige": 267,
   "n_ny": 267,
-  "tilfoejede": [
-   "2023Q3",
-   "2023Q4",
-   "2024Q1"
-  ],
+  "tilfoejede": [],
   "fjernede": [],
   "omlabelede": [],
   "identitet_ok": true,

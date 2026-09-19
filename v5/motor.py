@@ -84,8 +84,26 @@ def main():
     age = (date.today() - date.fromisoformat(snap.name)).days
     if age > STALE_DAYS and "--allow-stale" not in sys.argv:
         sys.exit(f"FEJL: snapshottet er {age} dage gammelt (>{STALE_DAYS}). fetch.py eller --allow-stale.")
-    if W["snapshot_sha256"] != meta["snapshot_sha256"]:
-        print("ADVARSEL: weights kalibreret paa andet snapshot — koer finalize6.py igen.")
+    # v5.0.1 §3: vaegtene er FROSNE mellem rekalibreringer, saa snapshot-hashen afviger som regel.
+    # Det der skal tjekkes er de to deterministiske triggere (§3.2): (b) annonceringstabellen
+    # aendret siden manifestet, (a) september-koerslen forfalden. Begge blokerer --log.
+    rekal_paakraevet = []
+    ann_f = HERE / "nber_announcements.csv"
+    if W.get("announcement_table_sha256") and ann_f.exists():
+        import hashlib as _hl
+        if _hl.sha256(ann_f.read_bytes()).hexdigest() != W["announcement_table_sha256"]:
+            rekal_paakraevet.append("nber_announcements.csv er aendret siden manifest "
+                                    f"{W.get('manifest_hash')} (§3.2b: ny top/bund -> refit ved denne koersel)")
+    if W.get("refit_maaned"):
+        ry, rm = int(W["refit_maaned"][:4]), int(W["refit_maaned"][5:7])
+        naeste_sep = (ry + 1, 9) if (rm <= 9) else (ry + 2, 9)   # naeste september EFTER refit-maaneden
+        if (date.today().year, date.today().month) >= naeste_sep:
+            rekal_paakraevet.append(f"den aarlige september-rekalibrering er forfalden (sidste refit {W['refit_maaned']}, §3.2a)")
+    for r in rekal_paakraevet:
+        print(f"REKALIBRERING PAAKRAEVET: {r} — koer finalize6.py && diagnostik.py foer --log.")
+    if W.get("manifest_hash"):
+        print(f"vaegte frosne: manifest {W['manifest_hash']} (refit {W.get('refit_maaned', '?')}); "
+              f"snapshot {snap.name} er nyere end kalibreringen — det er forventet (§3).")
 
     manual_f = snap / "manual.json"
     if not manual_f.exists():
@@ -357,7 +375,10 @@ def main():
     if "--log" in sys.argv:
         idag = date.today().isoformat()
         nyeste = sorted(d for d in C.RAW.iterdir() if d.is_dir())[-1]
-        if nyeste != snap:
+        if rekal_paakraevet:
+            print("   --log AFVIST: rekalibrering paakraevet (§3.2) — den deterministiske trigger udfoeres ved denne "
+                  "publiceringskoersel, ikke efter skoen. Koer finalize6.py && diagnostik.py, derefter motor.py --log.")
+        elif nyeste != snap:
             print(f"   --log AFVIST: laesningen bygger paa {snap.name}, men nyeste snapshot-mappe er "
                   f"{nyeste.name} (ukomplet/ubrugelig). Hovedbogen faar kun friske data — koer fetch.py igen.")
         elif rows and rows[-1]["logget"][:7] == idag[:7]:
