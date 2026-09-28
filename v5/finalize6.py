@@ -153,30 +153,44 @@ def manifest_hash(m):
 
 
 def forrige_manifest():
-    """Nyeste manifest ifoelge kalibreringer/index.json (None hvis ingen)."""
-    idx = kal() / "index.json"
-    if not idx.exists():
+    """Den kalibrering der er I DRIFT = weights.json's manifest_hash — ikke blot sidste post i
+    index.json: en legacy-replay eller en afbrudt koersel maa aldrig kunne goere sig selv til
+    'forrige'. Uden manifest_hash i weights.json (foer v5.0.1) bruges sidste index-post."""
+    h = None
+    wf = HERE / "weights.json"
+    if wf.exists():
+        try:
+            h = json.loads(wf.read_text(encoding="utf-8")).get("manifest_hash")
+        except ValueError:
+            h = None
+    if h is None:
+        idx = kal() / "index.json"
+        entries = json.loads(idx.read_text(encoding="utf-8")) if idx.exists() else []
+        h = entries[-1]["hash"] if entries else None
+    if h is None:
         return None
-    entries = json.loads(idx.read_text(encoding="utf-8"))
-    if not entries:
-        return None
-    e = entries[-1]
-    f = kal() / f"manifest_{e['hash']}.json"
+    f = kal() / f"manifest_{h}.json"
     return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
 
 
 def skriv_manifest(m):
+    """Nyt manifest + post SIDST i index.json (kronologisk kaede). Findes kalibreringen allerede
+    (samme indholds-hash), roeres hverken fil eller index: den oprindelige proveniens (created_utc,
+    code_commit) og kaedens raekkefoelge bevares. Returnerer (hash, nyt_skrevet)."""
     kal().mkdir(exist_ok=True)
     h = manifest_hash(m)
     m["hash"] = h
-    (kal() / f"manifest_{h}.json").write_text(json.dumps(m, indent=1, ensure_ascii=False), encoding="utf-8")
+    f = kal() / f"manifest_{h}.json"
     idx = kal() / "index.json"
     entries = json.loads(idx.read_text(encoding="utf-8")) if idx.exists() else []
+    if f.exists() and any(e["hash"] == h for e in entries):
+        return h, False
+    f.write_text(json.dumps(m, indent=1, ensure_ascii=False), encoding="utf-8")
     entries = [e for e in entries if e["hash"] != h]
     entries.append(dict(hash=h, version=m["version"], snapshot=m["snapshot"], refit_maaned=m["refit_maaned"],
                         created_utc=m["created_utc"], n_obs=m["modeller"]["curve_only"]["n_obs"]))
     idx.write_text(json.dumps(entries, indent=1), encoding="utf-8")
-    return h
+    return h, True
 
 
 def rekalibrer(snap, spine_file=None, R=None, version=VERSION, kaldt_som="rekalibrering"):
@@ -321,11 +335,12 @@ def main():
         if not ok:
             sys.exit("FEJL: legacy-replay reproducerer ikke v5.0 — stitchen er brudt (§1.5a).")
         m["audit"] = dict(note="legacy: ingen forrige manifest")
-        h = skriv_manifest(m)
+        h, nyt = skriv_manifest(m)
         mapping = dict(note="RAADETS_V501 §3.3: historiske hovedbogsraekker roeres aldrig; denne fil kobler dem til v5.0-manifestet.",
                        manifest_hash=h, version=LEGACY_VERSION, hovedbogsraekker=["2026-08-12", "2026-09-09"])
         (kal() / "legacy_mapping.json").write_text(json.dumps(mapping, indent=1, ensure_ascii=False), encoding="utf-8")
-        print(f"v5.0-manifest skrevet: kalibreringer/manifest_{h}.json + legacy_mapping.json (weights.json uroert)")
+        print(f"v5.0-manifest {'skrevet' if nyt else 'findes allerede og er uroert'}: kalibreringer/manifest_{h}.json"
+              " + legacy_mapping.json (weights.json og index-raekkefoelgen uroert)")
         return
 
     m, ekstra = rekalibrer(snap)
@@ -404,7 +419,7 @@ def main():
         if forrige:
             delta = delta_vs_forrige(ekstra["Dc"], m["modeller"]["curve_only"], forrige["modeller"]["curve_only"])
         m["delta_vs_forrige"] = delta
-        h = skriv_manifest(m)
+        h, _ = skriv_manifest(m)
         print(f"manifest: kalibreringer/manifest_{h}.json (v{VERSION}, refit {m['refit_maaned']}, n_obs {mc['n_obs']}, trigger: {m['trigger']})")
     if delta:
         print(f"delta vs forrige kalibrering over {delta['n_origins']} origins: max|dP| {delta['max_abs_dP']*100:.1f}pp ved "

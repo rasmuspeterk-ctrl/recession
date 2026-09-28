@@ -384,6 +384,27 @@ class TestFinalize6Main(unittest.TestCase):
         self.assertIn("manifest_hash", W)
         self.assertEqual(len(W["band"]["base"]), W["band"]["n_draws"])     # §4.3: basisrate pr. traek
 
+    def test_legacy_replay_roerer_hverken_index_eller_kaeden(self):
+        """--legacy er ren verifikation naar v5.0-manifestet findes: index-raekkefoelgen og den
+        kalibrering der er i drift aendres ikke (regression: en lokal legacy-replay flyttede v5.0
+        sidst i index.json, saa naeste rekalibrering ville have auditeret mod v5.0)."""
+        def koer(*extra):
+            with mock.patch.object(F6, "HERE", self.here), mock.patch.object(sys, "argv", ["finalize6.py", *extra]), quiet():
+                F6.main()
+        kal = self.here / "kalibreringer"
+        koer("--legacy")
+        foer_legacy = (kal / "index.json").read_bytes()
+        koer("--legacy")
+        self.assertEqual((kal / "index.json").read_bytes(), foer_legacy)       # idempotent
+        koer()                                                                  # v5.0.1-kalibrering
+        W = json.loads((self.here / "weights.json").read_text(encoding="utf-8"))
+        kaede = [e["hash"] for e in json.loads((kal / "index.json").read_text(encoding="utf-8"))]
+        self.assertEqual(kaede[-1], W["manifest_hash"])
+        koer("--legacy")                                                        # maa ikke flytte v5.0 sidst
+        self.assertEqual([e["hash"] for e in json.loads((kal / "index.json").read_text(encoding="utf-8"))], kaede)
+        with mock.patch.object(F6, "HERE", self.here):
+            self.assertEqual(F6.forrige_manifest()["hash"], W["manifest_hash"])    # kalibreringen i drift
+
     def test_raadsbeslutning_fil_stopper_koerslen_indtil_v51_kode_findes(self):
         kal = self.here / "kalibreringer"; kal.mkdir(exist_ok=True)
         (kal / "raadsbeslutning.json").write_text(json.dumps(dict(operationel="fuldmodel", reference="test", dato="2027-01-01")), encoding="utf-8")

@@ -38,3 +38,4 @@ jobs:
           cp weights.json /tmp/weights.json.bak
           python finalize6.py --legacy
           cmp weights.json /tmp/weights.json.bak
+          git diff --exit-code -- kalibreringer/   # ren verifikation: ingen proveniens-omskrivning, ingen index-flytning
