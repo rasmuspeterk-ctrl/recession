@@ -22,12 +22,15 @@ walk-forward-skill +27,1 % (fra +34,3 %) fordi de tre tilføjede kvartaler er 20
 fejlalarmer. *"A lower or higher recalibrated probability is changed estimation, not changed economic
 risk."* Detaljer: [v5/README.md](v5/README.md#v501--foerste-rekalibrering-raadets_v501md-ratificeret-44-2026-09-19).
 
+**Fra 2026-09-28 måles kurven på daglige data** (trailing måned af DGS10 − DTB3 — samme statistik som
+månedstallene, uden op til en måneds forsinkelse). Tripwires og Fed funds læses fra seneste dag.
+
 ## Hvor er hvad
 
 | Fil | Indhold |
 |---|---|
 | [v5/README.md](v5/README.md) | Byggelog: acceptancetests, alle seks trin, vedligehold |
-| [v5/](v5/) | Koden: fetch → calibrate → ablation → finalize → diagnostik → motor. 66 tests. |
+| [v5/](v5/) | Koden: fetch → calibrate → ablation → finalize → diagnostik → motor. 76 tests. |
 | [LOG.md](LOG.md) | Hovedbogen — én række pr. måned, logført før udfaldet kendes. Redigeres aldrig. |
 | [RAADETS_KONSENSUS.md](RAADETS_KONSENSUS.md) | Blueprintet, ratificeret 7/7 af et råd af sprogmodeller efter seks debatrunder |
 | [RAADETS_REVIEW.md](RAADETS_REVIEW.md) | Grand review med 18 modeller |
@@ -53,7 +56,7 @@ python fetch.py                        # FRED-snapshot, hashet
 # opdatér manual/manual.json: CAPE, marginlån y/y, S&P vs 12-mdr-høj
 python fetch.py                        # igen, så snapshottet bærer de nye manuelle tal
 python motor.py --log --json           # læsning, hovedbogsrække, dashboard.json
-python -m unittest test_v5             # 66 tests
+python -m unittest test_v5             # 76 tests
 ```
 
 Vægtene er frosne mellem rekalibreringer (hver september, eller når NBER daterer en ny top/bund):

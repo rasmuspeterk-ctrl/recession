@@ -13,7 +13,7 @@ sammenlignes med v4's publicerede konstanter; afvigelser printes.
 
 Kun stdlib + numpy.  Koer:  python calibrate.py [--check] [--snapshot data/raw/YYYY-MM-DD]
 """
-import csv, hashlib, json, sys
+import calendar, csv, hashlib, json, sys
 from datetime import datetime, timezone
 from pathlib import Path
 import numpy as np
@@ -45,7 +45,7 @@ SETS = {
 # ---------------------------------------------------------------- indlaesning
 # Alt ritualkaeden (calibrate/ablation2/finalize6/motor) laeser fra et snapshot. Aeldre snapshots
 # uden de senere tilfoejede serier var "komplette" for deres tid, men er ubrugelige for motor.
-KRAEVEDE = ["GS10", "TB3MS", "CPIAUCNS", "USREC", "A191RL1Q225SBEA", "SAHMREALTIME", "BAMLH0A0HYM2",
+KRAEVEDE = ["DGS10", "GS10", "TB3MS", "CPIAUCNS", "USREC", "A191RL1Q225SBEA", "SAHMREALTIME", "BAMLH0A0HYM2",
             "FEDFUNDS", "PCEPI", "RECPROUSM156N", "RIFSPPFAAD90NB", "DTB3", "MORTGAGE30US"]
 KRAEVEDE_FILER = ["manual.json"]
 SPINE_FILER = ("spine.csv", "shiller.csv")     # komposit (v5.0.1) foretraekkes; ren Shiller = legacy
@@ -94,6 +94,56 @@ def read_fred(snap, sid):
             y, m = int(d[:4]), int(d[5:7])
             out[(y, m)] = float(v)
     return out
+
+def read_fred_daily(snap, sid):
+    """FRED-csv -> [(YYYY-MM-DD, vaerdi)] i datoorden uden '.'/tomme; None hvis filen mangler.
+    Til daglige/ugentlige serier: read_fred() kollapser til (aar, maaned) og beholder kun
+    maanedens sidste observation."""
+    f = snap / f"{sid}.csv"
+    if not f.exists():
+        return None
+    out = []
+    with f.open(encoding="utf-8-sig") as fh:
+        for row in csv.DictReader(fh):
+            d, v = list(row.values())[:2]
+            if v not in (".", ""):
+                out.append((d.strip()[:10], float(v)))
+    out.sort()
+    return out
+
+def maaned_foer(d):
+    """'YYYY-MM-DD' -> samme dato en kalendermaaned tidligere (dagen klippet til maanedens laengde)."""
+    y, m, day = int(d[:4]), int(d[5:7]), int(d[8:10])
+    y, m = (y, m - 1) if m > 1 else (y - 1, 12)
+    return f"{y:04d}-{m:02d}-{min(day, calendar.monthrange(y, m)[1]):02d}"
+
+def live_kurve(snap):
+    """Live-input til den operationelle feature (drift fra 2026-09-28).
+
+    Kalibreringens feature er kvartalets sidste MAANEDSSNIT af GS10 - TB3MS, og GS10/TB3MS er
+    netop maanedssnit af de daglige serier DGS10/DTB3 — samme statistik, men publiceret foerst
+    efter maanedens udgang, saa en maanedlig live-input kan vaere op til en maaned gammel (i
+    walk-forward'en er inputtet altid maaneden der LIGE sluttede). Live-inputtet er derfor en
+    TRAILING kalendermaaned af de daglige observationer (faelles handelsdage, datoer efter samme
+    dato forrige maaned): samme statistik og udglatning, uden publiceringsforsinkelsen. Vaegtene
+    roeres ikke. Mangler de daglige serier (aeldre snapshots), bruges maanedstallene — hoejlydt.
+    Returnerer curve/y10/tb3 (live), kilde, vindue, n_dage, seneste daglige niveauer og
+    'maanedlig' = de publicerede maanedstal til sammenligning."""
+    gs10 = read_fred(snap, "GS10"); tb3 = read_fred(snap, "TB3MS")
+    mk = max(set(gs10) & set(tb3))
+    maanedlig = dict(curve=gs10[mk] - tb3[mk], y10=gs10[mk], tb3=tb3[mk], maaned=f"{mk[0]}-{mk[1]:02d}")
+    d10, d3 = read_fred_daily(snap, "DGS10"), read_fred_daily(snap, "DTB3")
+    if not d10 or not d3:
+        return dict(curve=maanedlig["curve"], y10=maanedlig["y10"], tb3=maanedlig["tb3"], kilde="maanedlig",
+                    note="daglige serier (DGS10/DTB3) mangler i snapshottet — maanedstal bruges",
+                    maanedlig=maanedlig)
+    a, b = dict(d10), dict(d3)
+    faelles = sorted(set(a) & set(b))
+    fra = maaned_foer(faelles[-1])
+    vin = [d for d in faelles if d > fra]
+    y10 = float(np.mean([a[d] for d in vin])); t3 = float(np.mean([b[d] for d in vin]))
+    return dict(curve=y10 - t3, y10=y10, tb3=t3, kilde="daglig", vindue=[vin[0], vin[-1]], n_dage=len(vin),
+                y10_seneste=list(d10[-1]), tb3_seneste=list(d3[-1]), maanedlig=maanedlig)
 
 def read_shiller(snap, fname=None):
     """Den maanedlige rygrad: spine.csv (komposit, v5.0.1 §1) hvis den findes, ellers shiller.csv

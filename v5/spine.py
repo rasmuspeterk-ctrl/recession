@@ -39,11 +39,13 @@ FRISKHED_DAGE = {
     "PERMIT": 90, "AWHMAN": 75, "FEDFUNDS": 70, "RECPROUSM156N": 130,
     # ugentlige / daglige
     "ICSA": 21, "MORTGAGE30US": 14, "BAMLH0A0HYM2": 10, "DTB3": 10, "RIFSPPFAAD90NB": 10,
+    "DGS10": 10, "DFF": 10,
     "THREEFYTP10": 21, "SP500": 10,
     # rygrad: sidste komposit-maaned skal vaere forrige lukkede maaned (stempel den 1.)
     "spine": 75,
 }
-KRITISKE = ("GS10", "TB3MS", "USREC")   # stale her -> snapshot ukomplet (kurve + label)
+KRITISKE = ("GS10", "TB3MS", "USREC", "DGS10", "DTB3")   # stale her -> snapshot ukomplet
+# (GS10/TB3MS: kalibrering; DGS10/DTB3: live-input til kurven; USREC: label)
 
 
 def _mk(d):

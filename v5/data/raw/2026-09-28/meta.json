@@ -1,5 +1,5 @@
 {
- "retrieved_utc": "2026-09-28T19:45:24+00:00",
+ "retrieved_utc": "2026-09-28T19:56:42+00:00",
  "series": {
   "GS10": {
    "rows": 881,
@@ -151,7 +151,23 @@
    "last": "2026-09-24",
    "last_value": "4.08",
    "sha256": "33d5d398fc4533733db1cdd4d6f25b1f80e562dc517bb0e05df9f5e14e9bc284",
-   "purpose": "3-mdr T-bill sekundaermarked, daglig (til CP-spaendet)"
+   "purpose": "3-mdr T-bill sekundaermarked, daglig (live-input til kurven: trailing maaned; CP-spaend)"
+  },
+  "DGS10": {
+   "rows": 16168,
+   "first": "1962-01-02",
+   "last": "2026-09-24",
+   "last_value": "5.18",
+   "sha256": "89dabb1a3db1e14a4948563ee2b8555b54f22a1cded5ef7a97c3e6575bc13c72",
+   "purpose": "10-aarig statsrente, daglig (live-input til kurven: trailing maaned; 10Y-tripwire)"
+  },
+  "DFF": {
+   "rows": 26384,
+   "first": "1954-07-01",
+   "last": "2026-09-24",
+   "last_value": "3.88",
+   "sha256": "9b8ba0163eb300e14a186f73fd4b5648fafc2024e4b57b439e24c8b3221e5ef0",
+   "purpose": "effektiv fed funds, daglig (pengepolitik-blok; FEDFUNDS er maanedssnittet)"
   },
   "MORTGAGE30US": {
    "rows": 2896,
@@ -259,5 +275,5 @@
   }
  },
  "complete": true,
- "snapshot_sha256": "a67db172396fd7a915d5053a6046d8809878b823a6140a38d0035b7705a8bdb3"
+ "snapshot_sha256": "b822312efec2b553ebb9620e4087af77a4d646d9952efd5a40bd1894ee6c8886"
 }

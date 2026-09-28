@@ -59,7 +59,9 @@ SERIES = {
     "RECPROUSM156N":   "Chauvet-Piger glattet recessionssandsynlighed (benchmark, coincident nowcast)",
     "AWHMAN":          "ugentlige arbejdstimer, industri, 1939+ (trin: sidste praeregistrerede feature-skud)",
     "RIFSPPFAAD90NB":  "90-dages AA finansiel commercial paper-rente (svaerm-tripwire: funding-spaend)",
-    "DTB3":            "3-mdr T-bill sekundaermarked, daglig (til CP-spaendet)",
+    "DTB3":            "3-mdr T-bill sekundaermarked, daglig (live-input til kurven: trailing maaned; CP-spaend)",
+    "DGS10":           "10-aarig statsrente, daglig (live-input til kurven: trailing maaned; 10Y-tripwire)",
+    "DFF":             "effektiv fed funds, daglig (pengepolitik-blok; FEDFUNDS er maanedssnittet)",
     "MORTGAGE30US":    "30-aars realkreditrente, ugentlig (svaerm-tripwire: fiskal/term-praemie-kanalen)",
     "SP500":           "S&P 500 dagligt luk, ~10 aar (rygradens SP500-kolonne efter 2023-07 som maanedsmiddel)",
 }
@@ -141,7 +143,8 @@ def diff_mark(prev_s, prev_dir, sid, data, cur):
             marks.append("forrige fil ulaeselig")
     return "  <-- " + (", ".join(marks) if marks else "andet indhold")
 
-RESERVE = {"GDPC1", "CPIAUCSL", "THREEFYTP10", "SP500"}   # fejl her nedlaegger ikke veto (SP500: rygraden stopper blot)
+RESERVE = {"GDPC1", "CPIAUCSL", "THREEFYTP10", "SP500", "DFF"}   # fejl her nedlaegger ikke veto
+# (SP500: rygraden stopper blot; DFF: motor falder tilbage til FEDFUNDS-maanedssnittet)
 KRAEVEDE_MANUAL = ("manual.json",)                 # calibrate/motor kan ikke koere uden
 
 def fetch_multpl(attempts=3):

@@ -21,7 +21,7 @@ walk-forward som v4 — men reproducerbart og uden haandkopierede konstanter.
 python fetch.py                  # hent + rygrad + guards + diff-tjek med oejnene
 # opdater manual/manual.json (3 tal); koer fetch.py igen saa snapshottet baerer dem
 python motor.py --log --json     # aflaesning, prospektiv logfoering i ../LOG.md, dashboard.json
-python -m unittest test_v5       # 66 tests
+python -m unittest test_v5       # 76 tests
 ```
 Hovedbogen (`../LOG.md`) er den eneste aegte out-of-sample-eksamen: een raekke
 pr. maaned, skrevet FOER udfaldet kendes; historiske raekker roeres aldrig.
@@ -313,3 +313,34 @@ aendres af dette.
 - Nye filer: `spine.py`, `diagnostik.py`, `kalibreringer/` (manifester + index + legacy_mapping), `manual/seam_check_2023.json`, `ablation4_erratum_resultat.json`. Tests: 66.
 
 Commit-historikken viser de fejlende tests foer reparationen (928748f -> 8165745), som §8 kraever.
+
+## Drift 2026-09-28: daglige live-input (vaegtene uaendrede, kalibrering 72c3371d)
+
+**Hvorfor.** GS10, TB3MS og FEDFUNDS er maanedssnit, der foerst publiceres efter maanedens udgang, saa
+motorens live-input kunne vaere op til en maaned gammelt. Den 28/9-2026 viste motoren augusts 10Y (4,68 %),
+mens den daglige var 5,18 % — 7bp fra 5,25-tripwiren — og Fed funds (3,63) var fra foer Feds hævning den
+16/9 (3,88). I walk-forward'en er inputtet altid maaneden der LIGE sluttede; en maaned gammel live-input
+var en forsinkelse, backtesten aldrig havde.
+
+**Hvad.** (1) Den operationelle kurve maales som TRAILING kalendermaaned af de daglige serier DGS10 - DTB3
+(faelles handelsdage, datoer efter samme dato forrige maaned) — `calibrate.live_kurve()`. Realrenten i
+fuldmodel-linjen bruger samme 10Y. (2) Tripwire-niveauer og aktierisikopraemien bruger SENESTE daglige 10Y.
+(3) Pengepolitik-blokken bruger DFF (daglig effektiv Fed funds); CP-spaendet laeses paa samme dag for begge
+ben; 10Y-dekomponeringen paa term-praemiens dato. (4) P paa de publicerede maanedstal printes altid ved
+siden af. Ingen ny feature, ingen ny kalibrering.
+
+**Samme statistik — bevist.** Kalendermaanedssnittet af DGS10 reproducerer GS10 i alle 776 maaneder siden
+1962 med max 0,50bp afvigelse (afrunding); DTB3 mod TB3MS ligesaa. Kurven paa faelles dage: max 0,91bp
+siden 1990. Trailing-vinduet ved maanedens sidste handelsdag: median 0,41bp, max 3,36bp. Paastanden er en
+permanent test (`TestLiveKurve`).
+
+**Effekt 2026-09-28.** Kurve +0,96 -> +1,01 (vindue 25/8-24/9, 22 dage); P 17,7 -> 16,9 % [12,0-24,1]; 10Y-
+tripwire 4,68 -> 5,18 %; realt kontantafkast -0,07 -> +0,18pp; 3m-bill minus Fed funds +45 -> +20bp.
+Dekomponeret paa samme dato steg 10Y 28bp fra 28/8 til 18/9, heraf 20bp forventet rentesti og 8bp
+term-praemie — septembers udsalg er primaert en opjustering af den ventede pengepolitik.
+
+**Drift.** DGS10 og DTB3 er nu kritiske (fejl eller forældelse > 10 dage goer snapshottet ukomplet); DFF er
+reserve (motor falder tilbage til FEDFUNDS). Snapshots foer 2026-09-28 mangler DGS10 og er dermed ubrugelige
+for kaeden — som ved tidligere serieudvidelser. Foerste hovedbogsraekke paa daglig input faar noten
+"input: daglig", og 10Y-tripwiren i antaendings-kolonnen reagerer nu paa det seneste daglige niveau.
+

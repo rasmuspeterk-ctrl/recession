@@ -112,7 +112,15 @@ def main():
     man = json.loads(manual_f.read_text(encoding="utf-8"))
     gs10 = C.read_fred(snap, "GS10"); tb3 = C.read_fred(snap, "TB3MS")
     cpi = C.read_fred(snap, "CPIAUCNS")
-    (d_y10, y10) = latest(gs10); (d_tb, tb3m) = latest(tb3)
+    # Live-input (drift fra 2026-09-28): kurven maales som TRAILING kalendermaaned af de daglige
+    # DGS10/DTB3 — samme statistik som GS10/TB3MS, uden op til en maaneds publiceringsforsinkelse
+    # (se C.live_kurve). Tripwire-niveauer og ERP bruger seneste daglige 10Y. Vaegtene er uaendrede.
+    LI = C.live_kurve(snap)
+    y10, tb3m = LI["y10"], LI["tb3"]
+    if LI["kilde"] == "daglig":
+        y10_dato, y10_niveau = LI["y10_seneste"]
+    else:
+        (_gy, _gm), y10_niveau = latest(gs10); y10_dato = f"{_gy}-{_gm:02d}, maanedssnit"
     ck = sorted(cpi)
     k0, k1 = ck[-1], (ck[-1][0] - 1, ck[-1][1])
     k2 = (k1[0] - 1, k1[1])
@@ -130,6 +138,8 @@ def main():
 
     op = W["op"]
     p_op = float(p_of(x, op["features"], op["mu"], op["sd"], op["w"]))
+    x_m = dict(x, curve=LI["maanedlig"]["curve"], realrate=LI["maanedlig"]["y10"] - cpi_yoy)
+    p_maanedlig = float(p_of(x_m, op["features"], op["mu"], op["sd"], op["w"]))
     band_ps = []
     for wb in W["band"]["W"]:
         band_ps.append(float(p_of(x, op["features"], op["mu"], op["sd"], wb)))
@@ -154,7 +164,12 @@ def main():
     cp = latest(C.read_fred(snap, "RECPROUSM156N"))
     oas_d, oas_pct = latest(C.read_fred(snap, "BAMLH0A0HYM2")); oas_bp = oas_pct * 100
     gq = sorted(C.read_fred(snap, "A191RL1Q225SBEA").items()); adv2 = [v for _, v in gq[-2:]]
-    ff = latest(C.read_fred(snap, "FEDFUNDS"))
+    _dff = C.read_fred_daily(snap, "DFF")
+    if _dff:
+        ff_dato, ff_v, ff_kilde = _dff[-1][0], _dff[-1][1], "DFF dagligt"
+    else:
+        (_fy, _fm), ff_v = latest(C.read_fred(snap, "FEDFUNDS"))
+        ff_dato, ff_kilde = f"{_fy}-{_fm:02d}", "FEDFUNDS maanedssnit"
     pce = C.read_fred(snap, "PCEPI"); pk = sorted(pce)
     pce_yoy = (pce[pk[-1]] / pce[(pk[-1][0] - 1, pk[-1][1])] - 1) * 100
 
@@ -183,6 +198,11 @@ def main():
     if op.get("raa"):
         r = op["raa"]
         print(f" raa: P = logit^-1({r['alpha']:+.4f} {r['beta_curve_pr_pp']:+.4f} * kurve_pp)   [beta = w1/s, alpha = w0 - w1*mu/s]")
+    if LI["kilde"] == "daglig":
+        print(f" live-input: kurve = trailing maaned af daglige DGS10 - DTB3 ({LI['vindue'][0]}..{LI['vindue'][1]}, "
+              f"{LI['n_dage']} dage): {LI['y10']:.2f} - {LI['tb3']:.2f} = {LI['curve']:+.2f}pp")
+    else:
+        print(f" live-input: MAANEDSTAL {LI['maanedlig']['maaned']} — {LI.get('note', '')}")
     if meta.get("stale"):
         print(f" FRISKHED (§1.7): stale inputs {', '.join(meta['stale'])} — se meta.json")
     print("=" * 74)
@@ -190,6 +210,9 @@ def main():
     print(f"\n1) SANDSYNLIGHED   [operationel wf: +{op['wf_improvement']:.1f}% log-loss / "
           f"+{op['wf_brier']:.1f}% Brier]")
     print(f"   P({W['label_tekst']})     {p_op*100:>6.1f}%")
+    if LI["kilde"] == "daglig":
+        print(f"   (paa publicerede maanedstal GS10-TB3MS {LI['maanedlig']['maaned']}, kurve "
+              f"{LI['maanedlig']['curve']:+.2f}pp: {p_maanedlig*100:.1f}% — samme vaegte, aeldre input)")
     print(f"   Estimation-sensitivity-baand (10-90%)   {lo*100:.1f}% - {hi*100:.1f}%")
     print(f"   Basisrate                               {base*100:.1f}%")
     if band_excludes_base:
@@ -281,22 +304,26 @@ def main():
         ("Inversionsnote", None, inv_note, "uvalideret kontekst"),
     ]
     # svaerm-tripwires (trigger-atlas 2026-08; scenarie-baserede, uvaliderede)
-    cp_d, cp_r = latest(C.read_fred(snap, "RIFSPPFAAD90NB"))
-    tb_d, tb_r = latest(C.read_fred(snap, "DTB3"))
-    cp_spread_bp = (cp_r - tb_r) * 100
-    mg_d, mg = latest(C.read_fred(snap, "MORTGAGE30US"))
-    acm_f = snap / "acm.csv"
-    tp_txt = ""
-    if acm_f.exists():
+    _cp = dict(C.read_fred_daily(snap, "RIFSPPFAAD90NB")); _tb = dict(C.read_fred_daily(snap, "DTB3"))
+    cp_dato = max(set(_cp) & set(_tb))                      # begge ben af spaendet paa samme dag
+    cp_spread_bp = (_cp[cp_dato] - _tb[cp_dato]) * 100
+    tb_dato, tb_r = C.read_fred_daily(snap, "DTB3")[-1]
+    mg_dato, mg = C.read_fred_daily(snap, "MORTGAGE30US")[-1]
+    _tpd = C.read_fred_daily(snap, "THREEFYTP10")
+    tp_dato, tp10, tp_txt = None, None, ""
+    if _tpd:
+        tp_dato, tp10 = _tpd[-1]
+        tp_txt = f" / ACM TP {tp10:+.2f}pp ({tp_dato[5:]})"
+    elif (snap / "acm.csv").exists():
         import csv as _csv
-        with acm_f.open(encoding="utf-8-sig") as fh:
+        with (snap / "acm.csv").open(encoding="utf-8-sig") as fh:
             rows = list(_csv.DictReader(fh))
-        tp_txt = f" / ACM TP {float(rows[-1]['ACMTP10']):+.2f}pp"
+        tp_txt = f" / ACM TP {float(rows[-1]['ACMTP10']):+.2f}pp (maanedlig)"
     mon += [
         ("CP-spaend 3m > 75bp", cp_spread_bp > 75,
-         f"{cp_spread_bp:.0f}bp ({cp_d[0]}-{cp_d[1]:02d})", "svaerm-tripwire: funding-stress foer kreditspaend"),
-        ("10Y > 5,25%", y10 > 5.25, f"{y10:.2f}%{tp_txt}", "svaerm-tripwire: fiskal/term-praemie-kanalen"),
-        ("Realkredit 30Y > 7,8%", mg > 7.8, f"{mg:.2f}% ({mg_d[0]}-{mg_d[1]:02d})", "svaerm-tripwire: boligkanalen"),
+         f"{cp_spread_bp:.0f}bp ({cp_dato})", "svaerm-tripwire: funding-stress foer kreditspaend"),
+        ("10Y > 5,25%", y10_niveau > 5.25, f"{y10_niveau:.2f}% ({y10_dato}){tp_txt}", "svaerm-tripwire: fiskal/term-praemie-kanalen"),
+        ("Realkredit 30Y > 7,8%", mg > 7.8, f"{mg:.2f}% ({mg_dato})", "svaerm-tripwire: boligkanalen"),
     ]
     for navn, aktiv, vaerdi, status in mon:
         boks = "[X]" if aktiv else ("[ ]" if aktiv is not None else "[-]")
@@ -304,7 +331,7 @@ def main():
 
     print()
     print("5) MARKET CONDITIONS — not recession evidence   [kvalitativ]")
-    erp = 100 / cape_live - y10
+    erp = 100 / cape_live - y10_niveau                     # live CAPE mod seneste daglige 10Y
     for navn, vaerdi in [("CAPE-percentil (expanding)", f"{cape_pct*100:.1f}. pct"),
                          ("Aktierisikopraemie 1/CAPE - y10", f"{erp:+.2f}pp"),
                          ("Marginlaan y/y", f"{float(man['margin_yoy']):+.1f}% (manual, {man.get('as_of','?')})")]:
@@ -313,18 +340,19 @@ def main():
     # ---- pengepolitik & inflation: KONTEKST, firewallet som atlassets tripwires ----
     # Momentum kun paa saesonkorrigerede serier (PCEPI, CPIAUCSL). Modellens egen
     # cpi_yoy bruger CPIAUCNS — korrekt for y/y, forkert for 3m/6m.
-    pol = [("Fed funds (effektiv)", f"{ff[1]:.2f}% ({ff[0][0]}-{ff[0][1]:02d})"),
-           ("Realt kontantafkast FF - PCE", f"{ff[1] - pce_yoy:+.2f}pp"),
-           ("3m-bill minus Fed funds", f"{(tb_r - ff[1]) * 100:+.0f}bp ({tb_d[0]}-{tb_d[1]:02d}, diskonto)"),
+    pol = [("Fed funds (effektiv)", f"{ff_v:.2f}% ({ff_dato}, {ff_kilde})"),
+           ("Realt kontantafkast FF - PCE", f"{ff_v - pce_yoy:+.2f}pp (PCE y/y {pk[-1][0]}-{pk[-1][1]:02d})"),
+           ("3m-bill minus Fed funds", f"{(tb_r - ff_v) * 100:+.0f}bp ({tb_dato}, diskonto)"),
            ("PCE-infl. 3m/6m/12m ann.", f"{ann_rate(pce, 3):.1f} / {ann_rate(pce, 6):.1f} / {pce_yoy:.1f}%")]
     if (snap / "CPIAUCSL.csv").exists():
         cpi_sa = C.read_fred(snap, "CPIAUCSL")
         pol.append(("CPI (SA) 3m/6m/12m ann.",
                     f"{ann_rate(cpi_sa, 3):.1f} / {ann_rate(cpi_sa, 6):.1f} / {ann_rate(cpi_sa, 12):.1f}%"))
-    if (snap / "THREEFYTP10.csv").exists():
-        _tp = C.read_fred(snap, "THREEFYTP10")
-        tp10 = _tp[sorted(_tp)[-1]]
-        pol.append(("10y = term-praemie + forventet", f"{y10:.2f} = {tp10:.2f} + {y10 - tp10:.2f}"))
+    if tp10 is not None:                                     # 10Y paa TP-datoen (eller naermeste tidligere)
+        _d10 = dict(C.read_fred_daily(snap, "DGS10") or [])
+        _prior = [d for d in _d10 if d <= tp_dato]
+        _y = _d10[max(_prior)] if _prior else y10_niveau
+        pol.append(("10y = term-praemie + forventet", f"{_y:.2f} = {tp10:.2f} + {_y - tp10:.2f} ({tp_dato})"))
     print()
     print("   PENGEPOLITIK & INFLATION   [kontekst — ingen indflydelse paa P]")
     for navn, vaerdi in pol:
@@ -386,6 +414,8 @@ def main():
                   "Historiske raekker roeres ikke.")
         else:
             noter = []
+            if LI["kilde"] == "daglig" and not any("input: daglig" in r.get("note", "") for r in rows):
+                noter.append("input: daglig (kurve = trailing maaned DGS10-DTB3; foer: GS10-TB3MS maanedssnit)")
             kh = W.get("manifest_hash", "")
             # §3.4 bro-raekke: foerste raekke under et nyt manifest printer P under gamle OG nye vaegte ved samme input
             sidste_kal = rows[-1].get("kalibrering", "") if rows else ""
@@ -492,6 +522,11 @@ def main():
             version=W.get("version", "5.0"), manifest_hash=W.get("manifest_hash"),
             forrige_manifest=W.get("forrige_manifest"), raa=op.get("raa"), bro=W.get("bro"),
             gate=W.get("gate"), stale=meta.get("stale"), diagnostik=diag,
+            live_input=dict(kilde=LI["kilde"], vindue=LI.get("vindue"), n_dage=LI.get("n_dage"),
+                            curve=round(LI["curve"], 4), y10=round(LI["y10"], 4), tb3=round(LI["tb3"], 4),
+                            y10_seneste=LI.get("y10_seneste"), tb3_seneste=LI.get("tb3_seneste"),
+                            maanedlig=LI["maanedlig"], p_maanedlig=round(p_maanedlig, 6),
+                            fed_funds=dict(vaerdi=ff_v, dato=ff_dato, kilde=ff_kilde)),
             trigger=W.get("trigger"), delta_vs_forrige=W.get("delta_vs_forrige"),
             snapshot=snap.name, snapshot_hash=meta["snapshot_sha256"][:10],
             model="curve-only-logit" if W["operationel"] == "curve_only" else "fuldmodel",

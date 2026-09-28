@@ -106,6 +106,9 @@ Struktur:
 samme hash i feltet `kalibrering` (ældre rækker har det ikke — vis dem uden). `bro` findes kun efter en
 rekalibrering og skal vises som to tal ved identiske inputs, aldrig som "før/efter-forbedring".
 `diagnostik` er valgfri kontekst: episode-tabellen må tegnes, men aldrig sammenfattes til én score.
+`live_input` fortæller hvilke data kurven er målt på (`kilde`: daglig/månedlig, `vindue`) og bærer
+`p_maanedlig` — P på de publicerede månedstal. Vis inputvinduet ved læsningen; `p_maanedlig` må vises som
+en lille sammenligningslinje, aldrig som et alternativt hovedtal.
 
 Tre felter styrer betinget visning og må ikke ignoreres:
 `baand_udelukker_basisrate`, `ratio` (kan være `null`) og `monitors[].tilstand`

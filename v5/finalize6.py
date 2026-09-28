@@ -137,9 +137,8 @@ def p_af(model, x):
 
 
 def live_x(snap):
-    gs10 = C.read_fred(snap, "GS10"); tb3 = C.read_fred(snap, "TB3MS")
-    (_, y10), (_, tb3m) = sorted(gs10.items())[-1], sorted(tb3.items())[-1]
-    return {"curve": float(y10 - tb3m)}
+    """Broens faste inputvektor = motorens live-input (trailing maaned af daglige DGS10 - DTB3)."""
+    return {"curve": float(C.live_kurve(snap)["curve"])}
 
 
 HASH_UDELUKKET = ("created_utc", "code_commit", "kaldt_som", "hash",
@@ -307,6 +306,29 @@ def bestem_trigger(m_ny, m_gl):
     return "manuel/reparation"
 
 
+def kalibrerings_indhold(mod, origins):
+    """Det der ER en kalibrering: origin-saet med labels, vaegte, standardisering, basisrate.
+    Snapshot-navn/-hash er proveniens: samme kalibrering verificeret paa et nyere snapshot er
+    stadig samme kalibrering."""
+    return (origins, mod["w"], mod["mu"], mod["sd"], mod["base_rate"])
+
+
+def legacy_manifest():
+    """Det eksisterende v5.0-manifest (via legacy_mapping.json, ellers index-post med version 5.0)."""
+    lm = kal() / "legacy_mapping.json"
+    h = None
+    if lm.exists():
+        try:
+            h = json.loads(lm.read_text(encoding="utf-8")).get("manifest_hash")
+        except ValueError:
+            h = None
+    if h is None and (kal() / "index.json").exists():
+        h = next((e["hash"] for e in json.loads((kal() / "index.json").read_text(encoding="utf-8"))
+                  if e.get("version") == LEGACY_VERSION), None)
+    f = kal() / f"manifest_{h}.json" if h else None
+    return json.loads(f.read_text(encoding="utf-8")) if f and f.exists() else None
+
+
 def raadsbeslutning():
     """§6: den operationelle model skiftes KUN ved en raadsbeslutning, nedskrevet i
     kalibreringer/raadsbeslutning.json ({"operationel": ..., "reference": ..., "dato": ...}).
@@ -334,6 +356,15 @@ def main():
               f"{'EKSAKT' if ok else 'AFVIGER'} fra v5.0 ({LEGACY_W}, {LEGACY_NOBS})")
         if not ok:
             sys.exit("FEJL: legacy-replay reproducerer ikke v5.0 — stitchen er brudt (§1.5a).")
+        eks = legacy_manifest()
+        if eks is not None:
+            # Ren verifikation: samme kalibrering som det arkiverede v5.0-manifest -> intet skrives.
+            if kalibrerings_indhold(eks["modeller"]["curve_only"], eks["origins"]) != kalibrerings_indhold(mc, m["origins"]):
+                sys.exit(f"FEJL: legacy-replay paa {snap.name} giver en ANDEN kalibrering end det arkiverede "
+                         f"v5.0-manifest {eks['hash']} (snapshot {eks['snapshot']}) — historikken er aendret under os.")
+            print(f"legacy-replay verificeret mod arkiveret v5.0-manifest {eks['hash']} (oprindeligt snapshot "
+                  f"{eks['snapshot']}, verificeret paa {snap.name}) — samme origins, labels og vaegte; intet skrevet.")
+            return
         m["audit"] = dict(note="legacy: ingen forrige manifest")
         h, nyt = skriv_manifest(m)
         mapping = dict(note="RAADETS_V501 §3.3: historiske hovedbogsraekker roeres aldrig; denne fil kobler dem til v5.0-manifestet.",
@@ -391,8 +422,7 @@ def main():
     # Idempotens: samme origins, labels og vaegte som forrige manifest = SAMME kalibrering.
     # Saa genbruges forrige hash (intet nyt manifest); kaeden holder, og en genkoersel uden
     # dataaendring (fx den aarlige september-koersel i et roligt aar) skaber ikke stoej.
-    def _indhold(mod, origins):
-        return (origins, mod["w"], mod["mu"], mod["sd"], mod["base_rate"])
+    _indhold = kalibrerings_indhold
     m["trigger"] = bestem_trigger(m, forrige)
     delta = None
     if forrige and _indhold(forrige["modeller"]["curve_only"], forrige["origins"]) == _indhold(m["modeller"]["curve_only"], m["origins"]):

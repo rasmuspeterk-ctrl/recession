@@ -405,6 +405,25 @@ class TestFinalize6Main(unittest.TestCase):
         with mock.patch.object(F6, "HERE", self.here):
             self.assertEqual(F6.forrige_manifest()["hash"], W["manifest_hash"])    # kalibreringen i drift
 
+    def test_legacy_replay_verificerer_og_fejler_hoejlydt_ved_aendret_historik(self):
+        def koer(*extra):
+            with mock.patch.object(F6, "HERE", self.here), mock.patch.object(sys, "argv", ["finalize6.py", *extra]), quiet():
+                F6.main()
+        koer("--legacy")
+        kal = self.here / "kalibreringer"
+        h = json.loads((kal / "legacy_mapping.json").read_text(encoding="utf-8"))["manifest_hash"]
+        mf = kal / f"manifest_{h}.json"
+        m = json.loads(mf.read_text(encoding="utf-8"))
+        m["snapshot"] = "1999-01-01"                        # proveniens aendret: stadig samme kalibrering
+        mf.write_text(json.dumps(m), encoding="utf-8")
+        koer("--legacy")                                    # verificerer paa nyere snapshot, skriver intet
+        self.assertEqual(json.loads(mf.read_text(encoding="utf-8"))["snapshot"], "1999-01-01")
+        self.assertEqual(len(list(kal.glob("manifest_*.json"))), 1)
+        m["origins"] = m["origins"][:-1]                    # indhold aendret: historikken er flyttet
+        mf.write_text(json.dumps(m), encoding="utf-8")
+        with self.assertRaisesRegex(SystemExit, "ANDEN kalibrering"):
+            koer("--legacy")
+
     def test_raadsbeslutning_fil_stopper_koerslen_indtil_v51_kode_findes(self):
         kal = self.here / "kalibreringer"; kal.mkdir(exist_ok=True)
         (kal / "raadsbeslutning.json").write_text(json.dumps(dict(operationel="fuldmodel", reference="test", dato="2027-01-01")), encoding="utf-8")
@@ -461,6 +480,29 @@ class TestMotor(unittest.TestCase):
             (raw / self.today / "manual.json").unlink()
             with self.assertRaises(SystemExit):
                 self._motor([], raw=raw)
+
+    def test_live_input_er_daglig_og_maanedstallet_printes_ved_siden_af(self):
+        out = self._motor(["--json", str(self.here.parent / "d_live.json")])
+        self.assertIn("live-input: kurve = trailing maaned af daglige DGS10 - DTB3", out)
+        self.assertIn("paa publicerede maanedstal GS10-TB3MS", out)
+        L = C.live_kurve(self.raw / self.today)
+        # 10Y-tripwiren viser seneste DAGLIGE niveau, ikke maanedssnittet
+        self.assertIn(f"{L['y10_seneste'][1]:.2f}% ({L['y10_seneste'][0]})", out)
+        self.assertIn("DFF dagligt", out)
+        d = json.loads((self.here.parent / "d_live.json").read_text(encoding="utf-8"))
+        self.assertEqual(d["live_input"]["kilde"], "daglig")
+        self.assertAlmostEqual(d["live_input"]["curve"], round(L["curve"], 4))
+        self.assertIn("p_maanedlig", d["live_input"])
+
+    def test_foerste_lograekke_paa_daglig_input_faar_note(self):
+        with tempfile.TemporaryDirectory() as t:
+            here = Path(t) / "v5"; shutil.copytree(self.here, here)
+            logf = here.parent / "LOG.md"
+            logf.write_text("| logget | snapshot | P | baand | basisrate | dom | kurve | antaending | note | kalibrering |"
+                            + chr(10) + "|---|" + chr(10), encoding="utf-8")
+            out = self._motor(["--log"], here=here)
+            self.assertIn("LOGGET som raekke 1", out)
+            self.assertIn("input: daglig", logf.read_text(encoding="utf-8"))
 
     def test_frosne_vaegte_giver_ingen_reankrings_advarsel(self):
         """§3: et nyere snapshot end kalibreringen er forventet — ingen 'koer finalize6 igen'."""
@@ -791,6 +833,56 @@ class TestErratumAggregering(unittest.TestCase):
             # monthly_mean() kunne derfor ikke aendre noget
             gammel = A4.monthly_mean(C.read_fred(d, "ICSA"))
             self.assertEqual(gammel[(2026, 8)], 204000.0)
+
+
+class TestLiveKurve(unittest.TestCase):
+    """Live-input (drift 2026-09-28): kurven maales paa trailing maaned af daglige DGS10/DTB3."""
+
+    def test_daglige_maanedssnit_er_gs10_og_tb3ms(self):
+        """Paastanden der baerer hele aendringen: GS10/TB3MS ER maanedssnit af DGS10/DTB3.
+        Verificeret 2026-09-28: max 0,50bp afvigelse i alle 776 maaneder siden 1962 (afrunding)."""
+        par = (("DGS10", "GS10"), ("DTB3", "TB3MS"))
+        for dag, mnd in par:
+            daglig = C.read_fred_daily(REAL_SNAP, dag)
+            maaned = C.read_fred(REAL_SNAP, mnd)
+            agg = {}
+            for d, v in daglig:
+                agg.setdefault((int(d[:4]), int(d[5:7])), []).append(v)
+            ks = [k for k in agg if k in maaned and k >= (1990, 1)]
+            self.assertGreater(len(ks), 400)
+            maks = max(abs(float(np.mean(agg[k])) - maaned[k]) for k in ks)
+            self.assertLessEqual(maks, 0.01, f"{dag} vs {mnd}: max afvigelse {maks*100:.2f}bp")
+
+    def test_maaned_foer_klipper_til_maanedens_laengde(self):
+        self.assertEqual(C.maaned_foer("2026-09-24"), "2026-08-24")
+        self.assertEqual(C.maaned_foer("2026-03-31"), "2026-02-28")
+        self.assertEqual(C.maaned_foer("2024-03-30"), "2024-02-29")
+        self.assertEqual(C.maaned_foer("2026-01-15"), "2025-12-15")
+
+    def test_trailing_vindue_og_fallback_til_maanedstal(self):
+        nl = chr(10)
+        with tempfile.TemporaryDirectory() as t:
+            d = Path(t)
+            (d / "GS10.csv").write_text("observation_date,GS10" + nl + "2026-07-01,4.60" + nl + "2026-08-01,4.68" + nl, encoding="utf-8")
+            (d / "TB3MS.csv").write_text("observation_date,TB3MS" + nl + "2026-07-01,3.73" + nl + "2026-08-01,3.72" + nl, encoding="utf-8")
+            rk10 = [("2026-08-20", "4.70"), ("2026-08-25", "4.70"), ("2026-09-10", "5.00"), ("2026-09-24", "5.30")]
+            rk3 = [("2026-08-20", "3.70"), ("2026-08-25", "3.70"), ("2026-09-10", "3.90"), ("2026-09-24", "4.10"),
+                   ("2026-09-25", ".")]
+            (d / "DGS10.csv").write_text("observation_date,DGS10" + nl + "".join(f"{a},{b}{nl}" for a, b in rk10), encoding="utf-8")
+            (d / "DTB3.csv").write_text("observation_date,DTB3" + nl + "".join(f"{a},{b}{nl}" for a, b in rk3), encoding="utf-8")
+            L = C.live_kurve(d)
+            self.assertEqual(L["kilde"], "daglig")
+            self.assertEqual(L["vindue"], ["2026-08-25", "2026-09-24"])         # 20/8 ligger foer 24/8 -> ude
+            self.assertEqual(L["n_dage"], 3)
+            self.assertAlmostEqual(L["y10"], (4.70 + 5.00 + 5.30) / 3)
+            self.assertAlmostEqual(L["curve"], (1.00 + 1.10 + 1.20) / 3)
+            self.assertEqual(L["y10_seneste"], ["2026-09-24", 5.30])
+            self.assertAlmostEqual(L["maanedlig"]["curve"], 0.96)
+            (d / "DGS10.csv").unlink()
+            L2 = C.live_kurve(d)
+            self.assertEqual(L2["kilde"], "maanedlig")
+            self.assertAlmostEqual(L2["curve"], 0.96)
+            self.assertIn("mangler", L2["note"])
 
 
 class TestDebate(unittest.TestCase):
