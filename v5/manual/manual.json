@@ -1,12 +1,12 @@
 {
-  "spx_vs_hi": -0.0071,
-  "cape": 41.48,
+  "spx_vs_hi": -0.0148,
+  "cape": 41.16,
   "margin_yoy": 37.2,
-  "as_of": "2026-09-28",
+  "as_of": "2026-09-29",
   "_kilder": {
-    "spx_vs_hi": "FRED SP500 (i snapshottet) luk 2026-09-25 (7743.41) vs 12m-hoej 2026-08-13 (7798.99): -0.71 %",
-    "cape": "multpl.com/shiller-pe live-raekke 'Sep 25, 2026': 41.48 (fra snapshottets multpl_cape.html)",
-    "margin_yoy": "FINRA margin statistics: debit balances aug-26 1,453,832 mio. USD vs aug-25 1,059,723 = +37.2 % (jul-26: 1,417,225)",
-    "_note": "Opdateret 2026-09-28 (mellemlaesning, ikke logfoert). Foer: -0.0103 / 41.18 / 38.6 (as_of 2026-09-09)."
+    "spx_vs_hi": "FRED SP500 (i snapshottet) luk 2026-09-28 (7683.69) vs 12m-hoej 2026-08-13 (7798.99): -1.48 %",
+    "cape": "multpl.com/shiller-pe live-raekke 'Sep 28, 2026': 41.16 (fra snapshottets multpl_cape.html)",
+    "margin_yoy": "FINRA margin statistics: debit balances aug-26 1,453,832 mio. USD vs aug-25 1,059,723 = +37.2 % (jul-26: 1,417,225) — uaendret: FINRA publicerer september sidst i oktober",
+    "_note": "Opdateret 2026-09-29 (mellemlaesning, ikke logfoert). Foer: -0.0071 / 41.48 / 37.2 (as_of 2026-09-28)."
   }
 }

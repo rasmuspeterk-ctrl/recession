@@ -162,7 +162,7 @@ def main():
 
     sahm = latest(C.read_fred(snap, "SAHMREALTIME"))
     cp = latest(C.read_fred(snap, "RECPROUSM156N"))
-    oas_d, oas_pct = latest(C.read_fred(snap, "BAMLH0A0HYM2")); oas_bp = oas_pct * 100
+    oas_dato, oas_pct = C.read_fred_daily(snap, "BAMLH0A0HYM2")[-1]; oas_bp = oas_pct * 100
     gq = sorted(C.read_fred(snap, "A191RL1Q225SBEA").items()); adv2 = [v for _, v in gq[-2:]]
     _dff = C.read_fred_daily(snap, "DFF")
     if _dff:
@@ -297,7 +297,7 @@ def main():
         ("Permits y/y", None,
          f"{pmt[pmk]:.0f} ({pmk[0]}-{pmk[1]:02d}); 12m {permits_yoy:+.1f}%",
          "testet, ikke bestaaet (trin 4)"),
-        ("HY OAS > 600bp", oas_bp > 600, f"{oas_bp:.0f}bp ({oas_d[0]}-{oas_d[1]:02d})", "ineligible (historik 1997-); svaerm-zone 350-450bp"),
+        ("HY OAS > 600bp", oas_bp > 600, f"{oas_bp:.0f}bp ({oas_dato})", "ineligible (historik 1997-); svaerm-zone 350-450bp"),
         ("S&P drawdown > 20%", x["dd"] < -0.20, f"{x['dd']*100:+.0f}%", "fuldmodel-feature"),
         ("Advance-estimat: 2 neg. BNP-print", len(adv2) == 2 and all(v < 0 for v in adv2),
          f"{adv2[0]:+.1f}%, {adv2[1]:+.1f}%", "uvalideret realtidsdiagnostik (vintage-flip dokumenteret, trin 5)"),

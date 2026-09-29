@@ -566,19 +566,19 @@
   "live_input": {
     "kilde": "daglig",
     "vindue": [
-      "2026-08-25",
-      "2026-09-24"
+      "2026-08-26",
+      "2026-09-25"
     ],
     "n_dage": 22,
-    "curve": 1.0059,
-    "y10": 4.8755,
-    "tb3": 3.8695,
+    "curve": 1.0132,
+    "y10": 4.8995,
+    "tb3": 3.8864,
     "y10_seneste": [
-      "2026-09-24",
-      5.18
+      "2026-09-25",
+      5.17
     ],
     "tb3_seneste": [
-      "2026-09-24",
+      "2026-09-25",
       4.08
     ],
     "maanedlig": {
@@ -590,7 +590,7 @@
     "p_maanedlig": 0.177329,
     "fed_funds": {
       "vaerdi": 3.88,
-      "dato": "2026-09-24",
+      "dato": "2026-09-25",
       "kilde": "DFF dagligt"
     }
   },
@@ -610,8 +610,8 @@
     "d_beta_pr_pp": 0.2068,
     "d_alpha": -0.2197
   },
-  "snapshot": "2026-09-28",
-  "snapshot_hash": "b822312efe",
+  "snapshot": "2026-09-29",
+  "snapshot_hash": "91487c74cc",
   "model": "curve-only-logit",
   "label": "NBER-onset inden 4 kvartaler",
   "kalibreret": "2026-09-19",
@@ -619,33 +619,33 @@
   "n_episoder": 12,
   "wf_log_loss": 27.05,
   "wf_brier": 24.15,
-  "p": 0.168823,
+  "p": 0.167506,
   "baand": [
-    0.119586,
-    0.241473
+    0.118387,
+    0.239417
   ],
   "basisrate": 0.1798,
   "baand_udelukker_basisrate": false,
   "ratio": null,
   "baand_fodnote": "Not a predictive interval; reflects weight sensitivity to episode composition",
-  "dom": "P er 16.9% mod basisraten 18.0%, men baandet [12.0-24.1%] indeholder basisraten: IKKE SKELNELIG FRA BASISRATEN.",
+  "dom": "P er 16.8% mod basisraten 18.0%, men baandet [11.8-23.9%] indeholder basisraten: IKKE SKELNELIG FRA BASISRATEN.",
   "inputs": [
     {
       "navn": "Rentekurve 10y-3m",
-      "vaerdi": 1.0059,
-      "z": -0.3196,
+      "vaerdi": 1.0132,
+      "z": -0.3133,
       "operationel": true
     },
     {
       "navn": "Realrente 10y-CPI",
-      "vaerdi": 1.4789,
-      "z": -0.1009,
+      "vaerdi": 1.503,
+      "z": -0.0927,
       "operationel": false
     },
     {
       "navn": "S&P vs 12-mdr hoejde",
-      "vaerdi": -0.0071,
-      "z": 0.4636,
+      "vaerdi": -0.0148,
+      "z": 0.3161,
       "operationel": false
     },
     {
@@ -656,8 +656,8 @@
     },
     {
       "navn": "CAPE-percentil (expanding)",
-      "vaerdi": 0.9267,
-      "z": 0.9827,
+      "vaerdi": 0.9256,
+      "z": 0.9789,
       "operationel": false
     }
   ],
@@ -671,13 +671,13 @@
     {
       "navn": "curve-only-logit (NY Fed-stil-bm.)",
       "wf": 27.05,
-      "live_p": 0.168823,
+      "live_p": 0.167506,
       "status": "OPERATIONEL"
     },
     {
       "navn": "fuldmodel (5 features)",
       "wf": 23.16,
-      "live_p": 0.079771,
+      "live_p": 0.081162,
       "status": "testet, ikke bestaaet mod benchmark (trin 6; genkoert v5.0.1)"
     },
     {
@@ -695,7 +695,7 @@
     {
       "navn": "v4-arv (teknisk label)",
       "wf": null,
-      "live_p": 0.040598,
+      "live_p": 0.04352,
       "status": "andet maal - arv"
     },
     {
@@ -740,7 +740,7 @@
     {
       "navn": "HY OAS > 600bp",
       "tilstand": "inaktiv",
-      "vaerdi": "293bp (2026-09)",
+      "vaerdi": "302bp (2026-09-28)",
       "klasse": "ineligible (historik 1997-); svaerm-zone 350-450bp"
     },
     {
@@ -770,7 +770,7 @@
     {
       "navn": "10Y > 5,25%",
       "tilstand": "inaktiv",
-      "vaerdi": "5.18% (2026-09-24) / ACM TP +0.96pp (09-18)",
+      "vaerdi": "5.17% (2026-09-25) / ACM TP +0.96pp (09-18)",
       "klasse": "svaerm-tripwire: fiskal/term-praemie-kanalen"
     },
     {
@@ -783,21 +783,21 @@
   "market_conditions": [
     {
       "navn": "CAPE-percentil (expanding)",
-      "vaerdi": "92.7. pct"
+      "vaerdi": "92.6. pct"
     },
     {
       "navn": "Aktierisikopraemie 1/CAPE - y10",
-      "vaerdi": "-2.77pp"
+      "vaerdi": "-2.74pp"
     },
     {
       "navn": "Marginlaan y/y",
-      "vaerdi": "+37.2% (manual, 2026-09-28)"
+      "vaerdi": "+37.2% (manual, 2026-09-29)"
     }
   ],
   "pengepolitik": [
     {
       "navn": "Fed funds (effektiv)",
-      "vaerdi": "3.88% (2026-09-24, DFF dagligt)"
+      "vaerdi": "3.88% (2026-09-25, DFF dagligt)"
     },
     {
       "navn": "Realt kontantafkast FF - PCE",
@@ -805,7 +805,7 @@
     },
     {
       "navn": "3m-bill minus Fed funds",
-      "vaerdi": "+20bp (2026-09-24, diskonto)"
+      "vaerdi": "+20bp (2026-09-25, diskonto)"
     },
     {
       "navn": "PCE-infl. 3m/6m/12m ann.",
