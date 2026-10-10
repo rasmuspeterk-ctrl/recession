@@ -502,7 +502,13 @@ class TestMotor(unittest.TestCase):
                             + chr(10) + "|---|" + chr(10), encoding="utf-8")
             out = self._motor(["--log"], here=here)
             self.assertIn("LOGGET som raekke 1", out)
-            self.assertIn("input: daglig", logf.read_text(encoding="utf-8"))
+            tekst = logf.read_text(encoding="utf-8")
+            self.assertIn("input: daglig", tekst)
+            W = json.loads((here / "weights.json").read_text(encoding="utf-8"))
+            gl_v = json.loads((here / "kalibreringer" / f"manifest_{W['forrige_manifest']}.json")
+                              .read_text(encoding="utf-8"))["version"]
+            self.assertIn(f"bro: P(v{gl_v} {W['forrige_manifest']})", tekst)   # oktober-rækken skrev 'v?'
+            self.assertNotIn("P(v? ", tekst)
 
     def test_frosne_vaegte_giver_ingen_reankrings_advarsel(self):
         """§3: et nyere snapshot end kalibreringen er forventet — ingen 'koer finalize6 igen'."""

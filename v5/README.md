@@ -344,3 +344,7 @@ reserve (motor falder tilbage til FEDFUNDS). Snapshots foer 2026-09-28 mangler D
 for kaeden — som ved tidligere serieudvidelser. Foerste hovedbogsraekke paa daglig input faar noten
 "input: daglig", og 10Y-tripwiren i antaendings-kolonnen reagerer nu paa det seneste daglige niveau.
 
+**Erratum, hovedbogsraekke 2026-10-10:** bro-noten skriver `P(v? 6baeade4)` i stedet for `P(v5.0 6baeade4)` —
+motor laeste versionen i manifestets model-blok i stedet for i toppen. Hashen 6baeade4 identificerer v5.0
+entydigt, og ingen tal er beroert. Raekken er IKKE redigeret (historiske raekker roeres aldrig); fejlen er
+rettet i koden efter logfoeringen og daekket af en test.

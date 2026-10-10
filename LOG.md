@@ -19,3 +19,4 @@ niveau. De to ældre rækker brugte månedstal; den første række på daglig in
 |---|---|---|---|---|---|---|---|---|---|
 | 2026-08-12 | 2026-08-12 | 20.1% | 14.4-29.2% | 18.2% | ikke skelnelig | +0.87 | ingen |  |
 | 2026-09-09 | 2026-09-09 | 18.0% | 12.7-26.3% | 18.2% | ikke skelnelig | +0.96 | ingen |  |
+| 2026-10-10 | 2026-10-10 | 15.1% | 10.4-21.6% | 18.0% | ikke skelnelig | +1.11 | ingen | input: daglig (kurve = trailing maaned DGS10-DTB3; foer: GS10-TB3MS maanedssnit); bro: P(v? 6baeade4)=15.0% / P(v5.0.1 72c3371d)=15.1% ved identiske inputs; trigger: manuel/reparation (foerste kalibrering efter v5.0) | 72c3371d |

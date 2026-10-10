@@ -422,9 +422,10 @@ def main():
             if kh and sidste_kal != kh and W.get("forrige_manifest"):
                 fm_f = HERE / "kalibreringer" / f"manifest_{W['forrige_manifest']}.json"
                 if fm_f.exists():
-                    gl = json.loads(fm_f.read_text(encoding="utf-8"))["modeller"]["curve_only"]
+                    gl_m = json.loads(fm_f.read_text(encoding="utf-8"))
+                    gl = gl_m["modeller"]["curve_only"]
                     p_gl = float(p_of(x, gl["features"], gl["mu"], gl["sd"], gl["w"]))
-                    noter.append(f"bro: P(v{gl.get('version', '?')} {W['forrige_manifest']})={p_gl*100:.1f}% / "
+                    noter.append(f"bro: P(v{gl_m.get('version', '?')} {W['forrige_manifest']})={p_gl*100:.1f}% / "
                                  f"P(v{W.get('version', '?')} {kh})={p_op*100:.1f}% ved identiske inputs"
                                  + (f"; trigger: {W['trigger']}" if W.get("trigger") else ""))
             ov = meta.get("spine", {}).get("outlier_override")

@@ -13,8 +13,8 @@ operationelle model er en curve-only-logit, valgt mekanisk fordi den slog fuldmo
 walk-forward (+34,3 % mod +33,2 % log-loss-forbedring over basisraten). Syv
 feature-kandidater er testet, publiceret og afvist; søgningen er lukket.
 
-**Seneste logførte læsning (2026-09-09, v5.0):** P = 18,0 % [12,7–26,3 %] mod basisrate 18,2 % —
-ikke skelnelig fra basisraten. Se [LOG.md](LOG.md).
+**Seneste logførte læsning (2026-10-10, v5.0.1, daglig kurve):** P = 15,1 % [10,4–21,6 %] mod basisrate
+18,0 % — ikke skelnelig fra basisraten. Se [LOG.md](LOG.md).
 
 **Rekalibrering v5.0.1 (2026-09-19):** kalibreringsrygraden var frosset ved 2023 (Yales Shiller-fil), så
 tre modne kvartaler manglede i fittet. Rådet ratificerede reparationen 4/4; samme inputs giver nu 17,7 %,
