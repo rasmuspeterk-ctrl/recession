@@ -2,3 +2,5 @@
 # ingen linjeskift-konvertering, saa hash paa disk == hash i repo paa alle maskiner.
 v5/data/** -text
 v5/manual/** -text
+# Annonceringstabellen hashes (rekalibrerings-trigger §3.2b): ingen linjeskift-konvertering.
+v5/nber_announcements.csv -text

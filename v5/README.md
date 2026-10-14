@@ -8,7 +8,7 @@ walk-forward som v4 — men reproducerbart og uden haandkopierede konstanter.
 
 | Fil | Rolle |
 |---|---|
-| `fetch.py` | Henter 20 FRED-serier noeglefrit (parallelt), skriver byte-eksakt hashet snapshot i `data/raw/<dato>/`, printer diff mod forrige snapshot (ny obs / aendret vaerdi / revideret historik) |
+| `fetch.py` | Henter 23 FRED-serier noeglefrit (parallelt), skriver byte-eksakt hashet snapshot i `data/raw/<dato>/`, printer diff mod forrige snapshot (ny obs / aendret vaerdi / revideret historik) |
 | `calibrate.py` | Genopbygger v4's kalibrering fra snapshottet, skriver `weights.json` (vaegte + datahash + protokolversion). `--check` koerer determinisme-test. Indbygget acceptancetest mod v4's konstanter |
 | `motor.py` | Maanedlig aflaesning: laeser weights.json + snapshot + manual.json. Naegter snapshots >40 dage (`--allow-stale` for at overstyre). CAPE-percentil beregnes af snapshottets egen historik — ingen 2026-knuder |
 | `nber_announcements.csv` | Committet tabel over NBERs annonceringsdatoer (til trin 2's mekaniske label-regel) |
@@ -21,7 +21,7 @@ walk-forward som v4 — men reproducerbart og uden haandkopierede konstanter.
 python fetch.py                  # hent + rygrad + guards + diff-tjek med oejnene
 # opdater manual/manual.json (3 tal); koer fetch.py igen saa snapshottet baerer dem
 python motor.py --log --json     # aflaesning, prospektiv logfoering i ../LOG.md, dashboard.json
-python -m unittest test_v5       # 76 tests
+python -m unittest test_v5       # 113 tests
 ```
 Hovedbogen (`../LOG.md`) er den eneste aegte out-of-sample-eksamen: een raekke
 pr. maaned, skrevet FOER udfaldet kendes; historiske raekker roeres aldrig.
@@ -29,6 +29,7 @@ pr. maaned, skrevet FOER udfaldet kendes; historiske raekker roeres aldrig.
 ## Rekalibrering (RAADETS_V501 §3) — hver september, eller naar nber_announcements.csv faar en ny top/bund
 
 ```
+# foerst: bump VERSION i finalize6.py (5.0.1 -> 5.0.2 ...) — finalize6 stopper ellers foer noget skrives (§3.3)
 python finalize6.py      # gulv + audit mod forrige manifest + bro + nyt manifest -> weights.json
 python diagnostik.py     # §4-diagnostik -> diagnostik.json (~95 s)
 python motor.py --json   # verificer; naeste --log-raekke faar automatisk bro-noten
@@ -37,12 +38,15 @@ Vaegte, standardisering og basisrate er frosne mellem rekalibreringer. Et skift 
 operationelle model kraever `kalibreringer/raadsbeslutning.json` (§6). Legacy-replay til
 enhver tid: `python finalize6.py --legacy` (skal give w=[-2.1755,-1.6907], n_obs 264).
 
-Test (stdlib unittest, ingen netvaerk, ~3 s): `cd v5 && python -m unittest -v test_v5`
+Test (stdlib unittest, ingen netvaerk, ca. 15 s): `cd v5 && python -m unittest -v test_v5`
 — daekker snapshot-livscyklussen (.ny/.ukomplet, retry, diff-markering), komplethedsgaten,
 finalize6's permanente linjer og promotion-bevaring, motor's --log-guards og debate.py's
 arkiv-layout. Koer den efter enhver kodeaendring, foer maanedsritualet.
 
 ## MANGLER FOER ACCEPTANCETESTEN KAN KOERES: manual/shiller.csv
+
+*Opfyldt: acceptancetesten blev koert 2026-08-09 (nedenfor). Fra v5.0.1 ligger Yale-filen som
+`manual/shiller_yale_2023-09.csv` (uforanderlig), og hvert snapshot bygger `spine.csv` af den.*
 
 v4's kalibrering brugte Shiller-historikken 1871+ (data/spx.csv), som ikke fulgte
 med i zippen. Laeg filen som `manual/shiller.csv` med header:
@@ -117,7 +121,7 @@ er acceptancetestens reelle formaal, og DEN er bestaaet.
 ## v5.0 ER KOMPLET — alle 6 trin gennemfoert 2026-08-09
 
 Rekalibreringskaede (sjaelden): `fetch.py` → `ablation2_nber.py --promote` →
-`finalize6.py`. Maanedligt ritual uaendret: `fetch.py` + manual.json + `motor.py`.
+`finalize6.py`. *(v5.0-kaeden; fra v5.0.1 er rekalibreringen `finalize6.py && diagnostik.py`, se ovenfor.)* Maanedligt ritual uaendret: `fetch.py` + manual.json + `motor.py`.
 
 ## v5.2-testen: AWHMAN — TESTET, IKKE BESTAAET; INFORMATIONSSOEGNINGEN LUKKET
 
@@ -206,7 +210,7 @@ begrundelse (praeregistreret i ablation7's header). Resultat: ablation7_resultat
   `C.read_fred` kollapser ugeserier til maanedens sidste obs og derfor ikke kan give et
   4-ugers snit) og `ann_rate`.
 
-**BEMAERKET, IKKE RETTET:** `ablation4_features.monthly_mean` er reelt en no-op —
+**BEMAERKET, IKKE RETTET** *(genkoert som erratum 2026-09-19, se v5.0.1 §5 nedenfor)*: `ablation4_features.monthly_mean` er reelt en no-op —
 `C.read_fred` har allerede kollapset ICSA til een vaerdi pr. maaned, saa der er kun eet
 element pr. gruppe at tage middel af. Trin 4's `claims_mom` blev derfor testet paa
 maanedens SIDSTE uge, ikke paa maanedsmidlen som modulets header angiver. Afvisningen var
@@ -306,10 +310,10 @@ aendres af dette.
 
 - Maanedsritualet er nu `fetch.py` -> manual.json -> `motor.py --log --json`. **Ingen maanedlig re-ankring.** Vaegte, standardisering og basisrate er frosne til naeste rekalibrering: hver september, eller ved hash-aendring i `nber_announcements.csv` (ny top/bund), eksekveret ved naeste maanedskoersel: `python finalize6.py && python diagnostik.py`.
 - Hovedbogen har faaet kolonnen `kalibrering` (manifest-hash) — **kun fremadrettet**. De to historiske raekker er byte-identiske; `kalibreringer/legacy_mapping.json` kobler dem til v5.0-manifestet (6baeade4). Den foerste raekke under 72c3371d (oktober) faar automatisk en bro-note med P under begge vaegtsaet ved identiske inputs.
-- Rygraden: `manual/shiller_yale_2023-09.csv` (uforanderlig) + `spine.csv` i hvert snapshot (komposit m. proveniens). Friskheds-guarden (§1.7) koerer i fetch: GS10/TB3MS/USREC nedlaegger veto, resten staar i meta. Er multpl nede, printer fuldmodel-linjen "unavailable — CAPE stale", og curve-only koerer videre. **Det er accepteret design, ikke en defekt** (Kimi R5): multpl er en enkelt, ukontraheret kilde uden noeglefrit alternativ; fuldmodellen er ikke operationel, og et permanent fravaer af dens linje maa ikke laeses som et pipeline-svigt.
+- Rygraden: `manual/shiller_yale_2023-09.csv` (uforanderlig) + `spine.csv` i hvert snapshot (komposit m. proveniens). Friskheds-guarden (§1.7) koerer i fetch: GS10/TB3MS/USREC nedlaegger veto (fra 2026-09-28 ogsaa DGS10/DTB3), resten staar i meta. Er multpl nede, printer fuldmodel-linjen "unavailable — CAPE stale", og curve-only koerer videre. **Det er accepteret design, ikke en defekt** (Kimi R5): multpl er en enkelt, ukontraheret kilde uden noeglefrit alternativ; fuldmodellen er ikke operationel, og et permanent fravaer af dens linje maa ikke laeses som et pipeline-svigt.
 - Kimis Δ-diagnostik (R5 #2): hver kalibrering baerer `delta_vs_forrige` — max|ΔP| og max|Δw| over ALLE origins i raekkeuniverset mellem to kalibreringer, ikke kun ved eet inputpunkt. v5.0 -> v5.0.1: max|ΔP| 7,8pp ved 1974Q1, middel 1,7pp, 10 % af 316 origins flytter >5pp, Δβ +0,21 pr. pp. Feltet og `trigger` (nber-datering / september / manuel) ligger uden for manifest-hashen (proveniens om aendringen, ikke kalibreringsindhold). Bro-noten i hovedbogen naevner triggeren.
 - Motor haandhaever de frosne vaegte (§3): et nyere snapshot end kalibreringen er forventet og giver ingen advarsel; en aendret `nber_announcements.csv` eller en forfalden september-koersel blokerer `--log` ("REKALIBRERING PAAKRAEVET") indtil `finalize6.py && diagnostik.py` er koert — triggeren er deterministisk, ikke skoensmaessig. En genkoersel uden dataaendring genbruger manifestet (idempotent).
-- CI: `.github/workflows/tests.yml` koerer suiten + legacy-replay ved hvert push.
+- CI: `.github/workflows/tests.yml` koerer suiten + legacy-replay ved push til main og ved hver PR.
 - Nye filer: `spine.py`, `diagnostik.py`, `kalibreringer/` (manifester + index + legacy_mapping), `manual/seam_check_2023.json`, `ablation4_erratum_resultat.json`. Tests: 66.
 
 Commit-historikken viser de fejlende tests foer reparationen (928748f -> 8165745), som §8 kraever.
@@ -348,3 +352,80 @@ for kaeden — som ved tidligere serieudvidelser. Foerste hovedbogsraekke paa da
 motor laeste versionen i manifestets model-blok i stedet for i toppen. Hashen 6baeade4 identificerer v5.0
 entydigt, og ingen tal er beroert. Raekken er IKKE redigeret (historiske raekker roeres aldrig); fejlen er
 rettet i koden efter logfoeringen og daekket af en test.
+
+## Vedligehold 2026-10-14: CPI-hullet 2025-10 (ingen modelaendring; P, baand og vaegte bit-identiske)
+
+FRED har tomme felter for 2025-10 i CPIAUCSL, CPIAUCNS, UNRATE og SAHMREALTIME: BLS udgav aldrig oktober 2025
+(shutdown). To fejl i `motor.py`, begge rettet:
+
+- **November-ritualet ville crashe.** `cpi_yoy` slog (aar-1, maaned) op direkte og fejlede med `KeyError: (2025, 10)`,
+  saa snart oktober-CPI 2026 var udgivet (reproduceret; samme fejl ville ramme `cpi_yoy_1` i oktober 2027).
+- **"CPI (SA) 12m" var et 13-maaneders vindue.** `ann_rate` talte observationer, ikke kalendermaaneder. 10/10-
+  dashboardet viste 3,7 % mod sande 3,4 % (`dashboard.json` regenereret fra samme snapshot; det er den eneste
+  aendrede vaerdi). Hovedbogen har ingen CPI-kolonne og er uroert.
+
+Rettelse: `ann_rate` maaler over kalendermaaneder (`mdr_foer`), og `udfyld_huller` interpolerer interne huller
+log-lineaert i de maanedlige prisindeks (CPI NSA/SA, PCE). Motor printer `DATAHUL: ...` under model-inputs og
+`(2025-10 interpoleret)` paa kontekstlinjerne, naar en interpoleret maaned faktisk indgaar. Det roerer kun
+realrate/d_infl (fuldmodellen, ikke operationel) og kontekstlinjer. Fem nye tests; den simulerede november-koersel
+(`test_oktober_cpi_2026_crasher_ikke_og_hullet_markeres`) er roed paa den gamle kode.
+
+### Kode-review 2026-10-14 (fem reviewere paa fire modeller; ingen modelaendring; P, baand, vaegte og manifest bit-identiske)
+
+Hvert fund er reproduceret foer rettelsen og har faaet en test, der er roed paa den gamle kode.
+
+- **Blocker, fetch (§1.2):** FRED's SP500 er et rullende 10-aars vindue, saa foerste maaned er et DELVIST middel.
+  Starter vinduet efter valgrallyet i nov. 2016 (hentninger 10.-30. nov. 2026), afviger den op til 1,8 % fra
+  Shillers hele-maaneds-middel, og 99 %-reglen (n ~80) gjorde snapshottet UKOMPLET: november-ritualet ville vaere
+  blokeret. Foerste SP500-maaned holdes nu uden for overlap-tjekket (`overlap.sp500_n` 82 -> 81).
+- **motor, CAPE stale:** naar finalize6 skriver fuldmodel = "unavailable — CAPE stale" (accepteret design), crashede
+  motor med `KeyError 'mu'` hver maaned til naeste refit, og dashboard.json fik en bar NaN. Nu koerer curve-only
+  videre, og dashboard.json er altid gyldig JSON (`endelig()`, `allow_nan=False`).
+- **§3.2a september-fristen:** `(aar+1, 9) if maaned <= 9 else (aar+2, 9)` var et aar for sent for alle refit-maaneder
+  undtagen september — en NBER-udloest refit i april 2027 ville springe september 2027 over, og allerede en
+  idempotent genkoersel af finalize6.py i oktober flyttede `refit_maaned` til 2026-10 og dermed fristen til 2028.
+  Nu `september_forfald()`, og weights.json baerer det genbrugte manifests refit-maaned.
+- **§3.2b NBER-trigger:** en ny top-raekke, som snapshottets USREC endnu ikke viser, blev ignoreret i stilhed, og
+  rekalibreringen "forbrugte" triggeren uden at toppen indgik. Nu stopper den hoejlydt. CRLF i
+  `nber_announcements.csv` (Windows-checkout) udloeser ikke laengere en rekalibrering (`C.ann_sha256`, LF-hashen er
+  uaendret; `.gitattributes` -text).
+- **§3.3 version:** finalize6 stopper foer noget skrives, hvis dataene giver en ny kalibrering med samme VERSION som
+  den i drift (ogsaa en vagt mod at loesne de frosne vaegte mellem rekalibreringer).
+- **§1.7/§2 rygrad:** curve-only-panelets maanedsindeks kom fra rygraden, saa en rekalibrering paa en trunkeret rygrad
+  (multpl/SP500 nede) gav stille v5.0-vaegtene (n_obs 264). Indekset forlaenges nu med GS10/TB3MS-maanederne efter
+  rygradens sidste maaned: med rygraden afkortet til 2023-07 genskaber refitten 72c3371d (n_obs 267, "fuldmodel:
+  comparison unavailable", curve-only koerer videre). En vagt der afviste refitten blev forkastet i slut-reviewet:
+  den ville have bundet hovedbogen til multpl i hver maaned med en forfalden refit.
+- **Hovedbogens integritet:** `--allow-stale` logfoerer aldrig; et snapshot som en hovedbogsraekke bygger paa,
+  erstattes ikke af en genhentning samme dag; en `<dato>.ukomplet` fra et fejlet forsoeg ryddes af det komplette
+  (den blokerede ellers `--log` for evigt); kun dato-navngivne mapper er snapshots (`<dato>.ny` efter et nedbrud).
+- **Kontekstlinjer (ikke i P eller hovedbogen):** claims 12m maales paa maanedsmidlen (trin 4's spec, jf. erratum §5;
+  sept. 2026: -14,3 % mod -11,6 %), og en 5-loerdagsmaaned er foerst komplet efter sidste loerdag; Sahm-reglen
+  udloeser ved >= 0,50; 3m-bill minus Fed funds paa samme dag; inversionsnoten siger "igangvaerende", naar seneste
+  maaned er inverteret, og naevner en live-inversion.
+- **Datalag:** "REVIDERET historik" flages ikke for raekker, der falder af foran i rullende vinduer (SP500, HY OAS:
+  12 af 31 markeringer var falske); `cpi_huller` skelner aegte huller (2025-10) fra endnu ikke udgivne maaneder og
+  naevner nye huller hoejlydt; `--accept-outlier` kraever en begrundelse; `cape_multpl.csv` skrives med LF;
+  RIFSPPFAAD90NB's friskhedsgraense 10 -> 35 dage (aegte huller paa op til 29 dage gav FRISKHED-stoej).
+- **Dokumentation og vaerktoej:** se commit 18f8749 (datakontrakten, Koer-linjer, calibrate.py overskriver ikke
+  driftsvaegtene). `debate.py`/`raad501.py`: et fejlet genkald overskriver ikke laengere et arkiveret svar.
+- **Tests og CI (113 tests):** facit-tests regner P, baand og dom uafhaengigt efter paa pinnede inputs og laeser
+  hovedbogsraekken tilbage (29 af 30 plausible mutationer i motorens kerne overlevede foer; stikproeve efter: 6 af 6
+  draebt); taerskler taender/slukker monitorer og antaendings-kolonnen; september-reglen med frossen dato;
+  reserveserier kan mangle; diagnostik-sektionen; det committede manifest genskabes bit-identisk; alle committede
+  snapshots matcher deres hashes. TestMotor koerer paa en vaegtkopi med refit 'denne maaned', saa KUN
+  `test_frosne_vaegte_giver_ingen_reankrings_advarsel` er september-paamindelsen (foer gik tre tests roede).
+  CI: ugentlig koersel (paamindelsen kommer ogsaa uden push), alle sporede .py kompileres, legacy-replayet
+  fanger ogsaa nye ikke-sporede filer, og dashboard.json skal kunne genskabes bit-identisk fra sit snapshot.
+- **Drift:** september-refitten koeres paa et SEPTEMBER-snapshot (`refit_maaned` = snapshottets maaned): en refit paa
+  et august-snapshot taeller som august, og motor melder september-rekalibreringen forfalden igen.
+
+Bevidst IKKE aendret: trin-1's tekniske label bruges upurget i `weights_trin1_teknisk.json` (v4-reproduktion; en
+rettelse ville aendre en publiceret fil), diagnostik.json's tekst om prae-1979-onsets (rettes ved naeste
+regenerering), en output-identisk hastighedsoptimering af fit/diagnostik (65 -> 42 s pr. aarlig koersel; ikke
+risikoen vaerd i modellens kerne for ~25 s om aaret) og uendelig polling i `mirofish-sim/`-scripts ved en server der
+bliver ved med at svare 404/500 (arkiverede svaerm-koersler, ingen indflydelse paa P).
+
+Kendt fremtidigt problem (foreligger allerede, ikke indfoert her): omkring juli 2033 starter FRED's 10-aars
+SP500-vindue efter seamet 2023-07, og §1.2-overlappet har da ingen maaneder tilbage. Foer da skal rygraden baere
+forrige snapshots komposit videre (eller tjekket redefineres) — ellers bliver hvert snapshot ukomplet.

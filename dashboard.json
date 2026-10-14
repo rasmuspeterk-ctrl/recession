@@ -720,7 +720,7 @@
       "klasse": "operationel feature"
     },
     {
-      "navn": "Sahm > 0,50",
+      "navn": "Sahm >= 0,50",
       "tilstand": "inaktiv",
       "vaerdi": "0.00 (2026-09)",
       "klasse": "testet, ikke bestaaet (trin 4)"
@@ -728,7 +728,7 @@
     {
       "navn": "Claims-momentum",
       "tilstand": "kontekst",
-      "vaerdi": "4u-snit 198k; 12m -11.6% (2026-09)",
+      "vaerdi": "4u-snit 198k; 12m -14.3% (maanedssnit 2026-09)",
       "klasse": "testet, ikke bestaaet (trin 4)"
     },
     {
@@ -813,7 +813,7 @@
     },
     {
       "navn": "CPI (SA) 3m/6m/12m ann.",
-      "vaerdi": "0.2 / 4.1 / 3.7%"
+      "vaerdi": "0.2 / 4.1 / 3.4%"
     },
     {
       "navn": "10y = term-praemie + forventet",
