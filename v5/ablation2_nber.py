@@ -77,6 +77,10 @@ def load_announcements(eps):
         best = min(eps, key=lambda e: abs(e[0] - target))
         if abs(best[0] - target) <= 2:
             avail[best[0]] = midx(ay, am)
+        else:
+            sys.exit(f"FEJL: nber_announcements.csv-raekken {r['event']} ({r['cycle_month']}) matcher intet USREC-onset "
+                     "(+/-2 mdr) i snapshottet. Er USREC endnu ikke opdateret efter annonceringen? Koer fetch.py igen, "
+                     "naar FRED har opdateret USREC: en ny top maa ikke forbruge rekalibrerings-triggeren (§3.2b) uden at indgaa.")
     for onset, trough in eps:
         if onset not in avail:
             avail[onset] = trough + PRE1979_TROUGH_LAG

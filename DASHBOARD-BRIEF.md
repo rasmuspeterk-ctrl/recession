@@ -87,7 +87,7 @@ Struktur (eksempel: 10/10-2026-læsningen, forkortet):
 
   "monitors": [
     {"navn": "Kurven inverteret", "tilstand": "inaktiv", "vaerdi": "+1.11pp", "klasse": "operationel feature"},
-    {"navn": "Claims-momentum", "tilstand": "kontekst", "vaerdi": "4u-snit 198k; 12m -11.6% (2026-09)", "klasse": "testet, ikke bestaaet (trin 4)"},
+    {"navn": "Claims-momentum", "tilstand": "kontekst", "vaerdi": "4u-snit 198k; 12m -14.3% (maanedssnit 2026-09)", "klasse": "testet, ikke bestaaet (trin 4)"},
     {"navn": "CP-spaend 3m > 75bp", "tilstand": "inaktiv", "vaerdi": "3bp (2026-10-06)", "klasse": "svaerm-tripwire: funding-stress foer kreditspaend"}
   ],
 

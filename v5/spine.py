@@ -38,7 +38,7 @@ FRISKHED_DAGE = {
     "CPIAUCNS": 80, "CPIAUCSL": 80, "PCEPI": 100, "UNRATE": 70, "SAHMREALTIME": 70,
     "PERMIT": 90, "AWHMAN": 75, "FEDFUNDS": 70, "RECPROUSM156N": 130,
     # ugentlige / daglige
-    "ICSA": 21, "MORTGAGE30US": 14, "BAMLH0A0HYM2": 10, "DTB3": 10, "RIFSPPFAAD90NB": 10,
+    "ICSA": 21, "MORTGAGE30US": 14, "BAMLH0A0HYM2": 10, "DTB3": 10, "RIFSPPFAAD90NB": 35,
     "DGS10": 10, "DFF": 10,
     "THREEFYTP10": 21, "SP500": 10,
     # rygrad: sidste komposit-maaned skal vaere forrige lukkede maaned (stempel den 1.)
@@ -157,9 +157,15 @@ def build_spine(shiller_rows, sp500_m, cpi_m, gs10_m, cape_m):
     return out
 
 
+KENDTE_CPI_HULLER = {"2025-10"}            # BLS udgav aldrig oktober 2025 (shutdown); motor interpolerer hoejlydt
+
 def cpi_huller(rows):
-    """Komposit-maaneder uden CPI (aegte datahuller, fx 2025-10)."""
-    return [r[0] for r in rows if r[5] != "shiller" and r[2] is None]
+    """Komposit-maaneder uden CPI -> (aegte huller midt i serien, fx 2025-10; endnu ikke udgivne i halen).
+    Foer blev en ikke-udgivet sidste maaned (fx 2026-09 den 10/10) ogsaa kaldt et 'aegte hul'."""
+    komp = [r for r in rows if r[5] != "shiller"]
+    sidst = max((r[0] for r in komp if r[2] is not None), default="")
+    return ([r[0] for r in komp if r[2] is None and r[0] < sidst],
+            [r[0] for r in komp if r[2] is None and r[0] > sidst])
 
 
 def staleness(sidste_dato, today=None, regler=None):

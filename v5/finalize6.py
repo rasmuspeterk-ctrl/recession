@@ -195,6 +195,13 @@ def skriv_manifest(m):
 def rekalibrer(snap, spine_file=None, R=None, version=VERSION, kaldt_som="rekalibrering"):
     """Hele beregningen for een rygrad. Returnerer (manifest-dict uden hash, ekstra-dict til weights)."""
     meta = json.loads((snap / "meta.json").read_text(encoding="utf-8"))
+    # Curve-only-panelets maanedsindeks kommer fra rygraden (calibrate.build_monthly): en trunkeret rygrad
+    # (multpl/SP500 nede) gav ellers en stille refit paa det gamle panel (v5.0-vaegtene, n_obs 264), i strid med §2.
+    if spine_file is None:
+        sp_sidste = meta.get("spine", {}).get("sidste") or "0000-00"
+        if A2.midx(int(sp_sidste[:4]), int(sp_sidste[5:7])) < A2.midx(int(snap.name[:4]), int(snap.name[5:7])) - 1:
+            sys.exit(f"FEJL: rygraden i {snap.name} slutter {sp_sidste}, forventet forrige lukkede maaned (§1.7) — "
+                     "refit afvist; koer fetch.py igen naar multpl/SP500 er tilbage.")
     usrec = A2.load_usrec(snap)
     eps = A2.episodes_from_usrec(usrec)
     avail = A2.load_announcements(eps)
@@ -237,7 +244,7 @@ def rekalibrer(snap, spine_file=None, R=None, version=VERSION, kaldt_som="rekali
         created_utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         code_commit=git_commit(), kaldt_som=kaldt_som,
         snapshot=snap.name, snapshot_sha256=meta["snapshot_sha256"],
-        announcement_table_sha256=sha256_file(ann) if ann.exists() else None,
+        announcement_table_sha256=C.ann_sha256(ann) if ann.exists() else None,
         refit_maaned=f"{R // 12}-{R % 12 + 1:02d}",
         spine=dict(fil=spine_navn, sha256=sha256_file(snap / spine_navn) if (snap / spine_navn).exists() else None,
                    sidste=meta.get("spine", {}).get("sidste") if not spine_file else None),
@@ -291,6 +298,17 @@ def delta_vs_forrige(Dc, ny, gl):
                 dw_std=dw, max_abs_dw=round(max(abs(v) for v in dw), 4),
                 d_beta_pr_pp=round(ny["raa"]["beta_curve_pr_pp"] - gl["raa"]["beta_curve_pr_pp"], 4) if ny.get("raa") and gl.get("raa") else None,
                 d_alpha=round(ny["raa"]["alpha"] - gl["raa"]["alpha"], 4) if ny.get("raa") and gl.get("raa") else None)
+
+
+def kraev_ny_version(forrige):
+    """§3.3: hver ny kalibrering er en ny v5.0.x. Stopper FOER noget skrives: et manifest med samme version
+    som kalibreringen i drift ville ellers blive genbrugt uaendret ved naeste koersel (indholdet er det samme),
+    saa fejlen ikke kunne rettes ved blot at bumpe VERSION bagefter. Fanger ogsaa en finalize6-koersel uden
+    for en rekalibrering, som ellers ville loesne de frosne vaegte."""
+    if forrige and forrige.get("version") == VERSION:
+        sys.exit(f"FEJL (§3.3): dataene giver en ny kalibrering, men VERSION er stadig v{VERSION} som kalibreringen i "
+                 f"drift ({forrige.get('hash')}). Er det en rekalibrering (§3.2): bump VERSION i finalize6.py og koer "
+                 "igen. Ellers: stop — vaegtene er frosne mellem rekalibreringer. Intet er skrevet.")
 
 
 def bestem_trigger(m_ny, m_gl):
@@ -445,7 +463,10 @@ def main():
             mf.write_text(json.dumps(forrige, indent=1, ensure_ascii=False), encoding="utf-8")
             print(f"manifest {h}: proveniensfelter (delta_vs_forrige, trigger) skrevet igennem — hashen er uaendret.")
         m["trigger"] = forrige.get("trigger", m["trigger"])          # denne koersel skabte ingen ny kalibrering
+        m["refit_maaned"] = forrige["refit_maaned"]                   # weights.json baerer kalibreringens refit-maaned,
+                                                                      # ikke genkoerslens (§3.2a-fristen regnes derfra)
     else:
+        kraev_ny_version(forrige)
         if forrige:
             delta = delta_vs_forrige(ekstra["Dc"], m["modeller"]["curve_only"], forrige["modeller"]["curve_only"])
         m["delta_vs_forrige"] = delta

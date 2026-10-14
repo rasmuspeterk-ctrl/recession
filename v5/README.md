@@ -368,3 +368,45 @@ log-lineaert i de maanedlige prisindeks (CPI NSA/SA, PCE). Motor printer `DATAHU
 `(2025-10 interpoleret)` paa kontekstlinjerne, naar en interpoleret maaned faktisk indgaar. Det roerer kun
 realrate/d_infl (fuldmodellen, ikke operationel) og kontekstlinjer. Fem nye tests; den simulerede november-koersel
 (`test_oktober_cpi_2026_crasher_ikke_og_hullet_markeres`) er roed paa den gamle kode.
+
+### Kode-review 2026-10-14 (fem reviewere paa fire modeller; ingen modelaendring; P, baand, vaegte og manifest bit-identiske)
+
+Hvert fund er reproduceret foer rettelsen og har faaet en test, der er roed paa den gamle kode.
+
+- **Blocker, fetch (§1.2):** FRED's SP500 er et rullende 10-aars vindue, saa foerste maaned er et DELVIST middel.
+  Starter vinduet efter valgrallyet i nov. 2016 (hentninger 10.-30. nov. 2026), afviger den op til 1,8 % fra
+  Shillers hele-maaneds-middel, og 99 %-reglen (n ~80) gjorde snapshottet UKOMPLET: november-ritualet ville vaere
+  blokeret. Foerste SP500-maaned holdes nu uden for overlap-tjekket (`overlap.sp500_n` 82 -> 81).
+- **motor, CAPE stale:** naar finalize6 skriver fuldmodel = "unavailable — CAPE stale" (accepteret design), crashede
+  motor med `KeyError 'mu'` hver maaned til naeste refit, og dashboard.json fik en bar NaN. Nu koerer curve-only
+  videre, og dashboard.json er altid gyldig JSON (`endelig()`, `allow_nan=False`).
+- **§3.2a september-fristen:** `(aar+1, 9) if maaned <= 9 else (aar+2, 9)` var et aar for sent for alle refit-maaneder
+  undtagen september — en NBER-udloest refit i april 2027 ville springe september 2027 over, og allerede en
+  idempotent genkoersel af finalize6.py i oktober flyttede `refit_maaned` til 2026-10 og dermed fristen til 2028.
+  Nu `september_forfald()`, og weights.json baerer det genbrugte manifests refit-maaned.
+- **§3.2b NBER-trigger:** en ny top-raekke, som snapshottets USREC endnu ikke viser, blev ignoreret i stilhed, og
+  rekalibreringen "forbrugte" triggeren uden at toppen indgik. Nu stopper den hoejlydt. CRLF i
+  `nber_announcements.csv` (Windows-checkout) udloeser ikke laengere en rekalibrering (`C.ann_sha256`, LF-hashen er
+  uaendret; `.gitattributes` -text).
+- **§3.3 version:** finalize6 stopper foer noget skrives, hvis dataene giver en ny kalibrering med samme VERSION som
+  den i drift (ogsaa en vagt mod at loesne de frosne vaegte mellem rekalibreringer).
+- **§2 rygrad:** en rekalibrering paa en trunkeret rygrad (multpl/SP500 nede) gav stille v5.0-vaegtene (n_obs 264);
+  nu afvises den.
+- **Hovedbogens integritet:** `--allow-stale` logfoerer aldrig; et snapshot som en hovedbogsraekke bygger paa,
+  erstattes ikke af en genhentning samme dag; en `<dato>.ukomplet` fra et fejlet forsoeg ryddes af det komplette
+  (den blokerede ellers `--log` for evigt); kun dato-navngivne mapper er snapshots (`<dato>.ny` efter et nedbrud).
+- **Kontekstlinjer (ikke i P eller hovedbogen):** claims 12m maales paa maanedsmidlen (trin 4's spec, jf. erratum §5;
+  sept. 2026: -14,3 % mod -11,6 %), og en 5-loerdagsmaaned er foerst komplet efter sidste loerdag; Sahm-reglen
+  udloeser ved >= 0,50; 3m-bill minus Fed funds paa samme dag; inversionsnoten siger "igangvaerende", naar seneste
+  maaned er inverteret, og naevner en live-inversion.
+- **Datalag:** "REVIDERET historik" flages ikke for raekker, der falder af foran i rullende vinduer (SP500, HY OAS:
+  12 af 31 markeringer var falske); `cpi_huller` skelner aegte huller (2025-10) fra endnu ikke udgivne maaneder og
+  naevner nye huller hoejlydt; `--accept-outlier` kraever en begrundelse; `cape_multpl.csv` skrives med LF;
+  RIFSPPFAAD90NB's friskhedsgraense 10 -> 35 dage (aegte huller paa op til 29 dage gav FRISKHED-stoej).
+- **Dokumentation og vaerktoej:** se commit 18f8749 (datakontrakten, Koer-linjer, calibrate.py overskriver ikke
+  driftsvaegtene).
+
+Bevidst IKKE aendret: trin-1's tekniske label bruges upurget i `weights_trin1_teknisk.json` (v4-reproduktion; en
+rettelse ville aendre en publiceret fil), diagnostik.json's tekst om prae-1979-onsets (rettes ved naeste
+regenerering) og en output-identisk hastighedsoptimering af fit/diagnostik (65 -> 42 s pr. aarlig koersel; ikke
+risikoen vaerd i modellens kerne for ~25 s om aaret).

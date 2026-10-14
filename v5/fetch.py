@@ -27,7 +27,7 @@ Manuelle inputs (dokumenteret protokol, raadets Section 9):
 
 Kun stdlib. Koer:  python fetch.py
 """
-import csv, hashlib, io, json, shutil, sys, time, urllib.error, urllib.request
+import csv, hashlib, io, json, re, shutil, sys, time, urllib.error, urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -37,6 +37,7 @@ import spine as SP
 HERE = Path(__file__).parent
 RAW = HERE / "data" / "raw"
 MANUAL = HERE / "manual"
+LOG = HERE.parent / "LOG.md"
 WORKERS = 8          # parallelle FRED-kald: 20 serier tog ~12 s serielt, ~1 s parallelt
 
 # Serier og hvorfor de hentes (raadets blueprint, Section 8-9 + kandidatliste)
@@ -98,13 +99,20 @@ def fetch_series(sid, attempts=3):
             time.sleep(2 * (k + 1))
     raise RuntimeError(f"opgivet efter {attempts} forsoeg ({last_err})")
 
+def logget_snapshots():
+    """Snapshot-datoerne i hovedbogens snapshot-kolonne (LOG.md)."""
+    if not LOG.exists():
+        return set()
+    return {c[2].strip() for c in (ln.split("|") for ln in LOG.read_text(encoding="utf-8").splitlines()
+                                   if ln.startswith("| 2")) if len(c) > 2}
+
 def sha256(b):
     return hashlib.sha256(b).hexdigest()
 
 def snapshot_complete(d):
     """Komplethedsflaget som calibrate laeser det (dubleret her: fetch er stdlib-only, calibrate traekker numpy)."""
     m = d / "meta.json"
-    if not m.exists():
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", d.name) or not m.exists():    # '<dato>.ny'/'.ukomplet' er ikke snapshots
         return False
     try:
         return bool(json.loads(m.read_text(encoding="utf-8")).get("complete", True))
@@ -137,12 +145,17 @@ def diff_mark(prev_s, prev_dir, sid, data, cur):
     if pf and pf.exists():
         try:
             old = parse_rows(pf.read_bytes())
-            if data[:len(old)] != old:
+            o, n = old, [r for r in data if old and r[0] <= old[-1][0]]   # gamle raekker vs nye op til gammel sidste dato
+            if sid in ROLLING and o:                                      # licenseret rullende vindue: raekker falder af FORAN
+                lo = max(o[0][0], data[0][0])
+                o, n = [r for r in o if r[0] >= lo], [r for r in n if r[0] >= lo]
+            if o != n:
                 marks.append("REVIDERET historik")
         except Exception:
             marks.append("forrige fil ulaeselig")
     return "  <-- " + (", ".join(marks) if marks else "andet indhold")
 
+ROLLING = {"SP500", "BAMLH0A0HYM2"}       # FRED serverer kun et rullende vindue (~10 / ~3 aar): frafald foran er ingen revision
 RESERVE = {"GDPC1", "CPIAUCSL", "THREEFYTP10", "SP500", "DFF"}   # fejl her nedlaegger ikke veto
 # (SP500: rygraden stopper blot; DFF: motor falder tilbage til FEDFUNDS-maanedssnittet)
 KRAEVEDE_MANUAL = ("manual.json",)                 # calibrate/motor kan ikke koere uden
@@ -194,7 +207,7 @@ def byg_rygrad(outdir, series_data, argv, today):
         info["multpl"] = dict(sha256=sha256(html), bytes=len(html), maaneder=len(cape_m),
                               foerste=min(cape_m), sidste=max(cape_m))
         (outdir / "cape_multpl.csv").write_text(
-            "Date,CAPE\n" + "".join(f"{k},{cape_m[k]}\n" for k in sorted(cape_m)), encoding="utf-8")
+            "Date,CAPE\n" + "".join(f"{k},{cape_m[k]}\n" for k in sorted(cape_m)), encoding="utf-8", newline="\n")
     except Exception as e:
         info["multpl"] = dict(fejl=str(e)[:300])
         cape_m = {}
@@ -207,7 +220,11 @@ def byg_rygrad(outdir, series_data, argv, today):
 
     # §1.2 overlap (kun hvis begge kilder kom hjem)
     if sp500_m and cape_m:
-        ov = SP.overlap_check(yale, sp500_m, cape_m)
+        # FRED's SP500 er et rullende 10-aars vindue: foerste maaned er et DELVIST middel (fx fra den 14.) og kan
+        # ikke sammenlignes med Shillers hele-maaneds-middel. Starter vinduet efter valgrallyet i nov. 2016 (fetch
+        # 10.-30. nov. 2026), afviger den >1 %, og 99 %-reglen (n ~80) goer ellers snapshottet ukomplet.
+        foerste_md = sp_d[0][0][:7]
+        ov = SP.overlap_check(yale, {k: v for k, v in sp500_m.items() if k != foerste_md}, cape_m)
         info["overlap"] = ov
         if not ov["bestaaet"]:
             kritiske.append("rygrad: overlap-tolerancer (§1.2) ikke overholdt")
@@ -216,6 +233,8 @@ def byg_rygrad(outdir, series_data, argv, today):
     if probs:
         if "--accept-outlier" in argv:
             begr = argv[argv.index("--accept-outlier") + 1] if len(argv) > argv.index("--accept-outlier") + 1 else ""
+            if not begr.strip() or begr.startswith("--"):
+                sys.exit('FEJL: --accept-outlier kraever en begrundelse (§1.6): --accept-outlier "<hvad blev tjekket; hvorfor>"')
             info["outlier_override"] = dict(observationer=[f"{k}: {p}" for k, p in probs],
                                             tjekket="multpl CAPE mod FRED SP500-maanedsmiddel og CPIAUCNS (ingen uafhaengig CAPE-kilde findes)",
                                             begrundelse=begr)
@@ -238,8 +257,13 @@ def byg_rygrad(outdir, series_data, argv, today):
                 f = lambda v: "" if v is None else f"{v:.6f}"
                 fh.write(f"{k},{f(sp)},{f(cpi)},{f(ltr)},{f(cape)},{kilde}\n")
     komposit = [r for r in rows if r[5] != "shiller"]
+    huller, ikke_udgivet = SP.cpi_huller(rows)
+    nye = sorted(set(huller) - SP.KENDTE_CPI_HULLER)
+    if nye:
+        print(f"rygrad: NYT CPI-hul midt i serien {nye} (kendte: {sorted(SP.KENDTE_CPI_HULLER)}) — motor interpolerer "
+              "hoejlydt; tjek BLS/FRED og tilfoej det til spine.KENDTE_CPI_HULLER naar aarsagen er kendt.")
     info.update(seam=SP.SEAM, raekker=len(rows), sidste=rows[-1][0] if rows else None,
-                komposit_maaneder=len(komposit), cpi_huller=SP.cpi_huller(rows),
+                komposit_maaneder=len(komposit), cpi_huller=huller, cpi_ikke_udgivet=ikke_udgivet,
                 sha256=sha256((outdir / "spine.csv").read_bytes()))
     seam_f = MANUAL / "seam_check_2023.json"          # §1.4: engangs-krydstjek af de to erstattede maaneder
     if seam_f.exists():
@@ -252,6 +276,9 @@ def byg_rygrad(outdir, series_data, argv, today):
 def main():
     today = date.today().isoformat()
     final_dir = RAW / today
+    if final_dir.exists() and today in logget_snapshots():
+        sys.exit(f"FEJL: snapshot {today} er grundlaget for en hovedbogsraekke i LOG.md og erstattes ikke "
+                 "(raekkens tal skal kunne genskabes fra sit snapshot). Hent igen i morgen.")
     outdir = RAW / f"{today}.ny"          # arbejdsmappe: et eksisterende komplet dagssnapshot roeres foerst ved succes
     if outdir.exists():
         shutil.rmtree(outdir)
@@ -351,6 +378,7 @@ def main():
     if final_dir.exists():
         shutil.rmtree(final_dir)              # dagens tidligere snapshot erstattes foerst NU — af et komplet
     outdir.rename(final_dir)
+    shutil.rmtree(RAW / f"{today}.ukomplet", ignore_errors=True)   # et mislykket forsoeg samme dag er overhalet
     print(f"\nSnapshot-hash: {meta['snapshot_sha256'][:16]}...  ({final_dir})")
 
 if __name__ == "__main__":
