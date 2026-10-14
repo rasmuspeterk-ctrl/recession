@@ -456,7 +456,8 @@ def main():
             gl = None
         if gl == "5.0-final":
             print("\nweights.json er de frosne driftsvaegte (protokol 5.0-final) og overskrives IKKE af "
-                  "trin-1-reproduktionen. --overskriv for at overskrive bevidst (derefter: finalize6.py foer motor.py).")
+                  "trin-1-reproduktionen. --overskriv for at overskrive bevidst (gendan derefter driftsvaegtene med "
+                  "'git checkout weights.json' foer motor.py).")
             return
     out = dict(protocol_version=PROTOCOL,
                created_utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),

@@ -387,6 +387,7 @@ class TestFetchMain(unittest.TestCase):
             self._run_rigtige_data(argv=("fetch.py", "--accept-outlier"), outlier=[("2026-09", "test")])
         with self.assertRaisesRegex(SystemExit, "kraever en begrundelse"):
             self._run_rigtige_data(argv=("fetch.py", "--accept-outlier", "--allow-stale"), outlier=[("2026-09", "test")])
+        self.assertFalse((self.raw / f"{self.today}.ny").exists())     # afvist FOER noget skrives (et .ny blokerede --log)
 
     def test_genkoersel_samme_dag_erstatter_det_komplette_dagssnapshot(self):
         self._run()
@@ -592,16 +593,20 @@ class TestFinalize6Main(unittest.TestCase):
         self.assertEqual(Wn, Wc)
         self.assertEqual({p.name: p.read_bytes() for p in (self.here / "kalibreringer").iterdir()}, foer)
 
-    def test_refit_paa_trunkeret_rygrad_afvises(self):
-        """Curve-only-panelets maanedsindeks kommer fra rygraden: med multpl nede (rygrad t.o.m. 2023-07) gav
-        rekalibrer ellers v5.0-vaegtene (n_obs 264) uden fejl — i strid med §2."""
+    def test_curve_only_panelet_afhaenger_ikke_af_rygradens_laengde(self):
+        """§1.7/§2: curve-only maa aldrig afhaenge af CAPE-kilden. Med multpl nede ender rygraden 2023-07; foer gav en
+        refit da stille det gamle panel (v5.0-vaegtene, n_obs 264), og en vagt mod det ville have blokeret hovedbogen i
+        hver refit-maaned. Nu er curve-only-panelet identisk, mens fuldmodellens panel (med CAPE) afkortes."""
         with tempfile.TemporaryDirectory() as t:
             snap = Path(t) / REAL_SNAP.name; shutil.copytree(REAL_SNAP, snap)
-            meta = json.loads((snap / "meta.json").read_text(encoding="utf-8"))
-            meta["spine"]["sidste"] = "2023-07"
-            (snap / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
-            with self.assertRaisesRegex(SystemExit, "rygraden i"):
-                F6.rekalibrer(snap)
+            ln = (snap / "spine.csv").read_text(encoding="utf-8").splitlines()
+            (snap / "spine.csv").write_text(chr(10).join([ln[0]] + [r for r in ln[1:] if r[:7] <= "2023-07"]) + chr(10),
+                                            encoding="utf-8")
+            fuld, trunk = A2.build_dataset(REAL_SNAP, ["curve"]), A2.build_dataset(snap, ["curve"])
+            self.assertEqual(trunk["qk"], fuld["qk"])
+            self.assertTrue(np.array_equal(trunk["F"], fuld["F"]))
+            self.assertTrue(np.array_equal(trunk["Y_tek"], fuld["Y_tek"], equal_nan=True))
+            self.assertLess(len(A2.build_dataset(snap)["qk"]), len(A2.build_dataset(REAL_SNAP)["qk"]))
 
     def test_ny_kalibrering_kraever_nyt_versionsnummer(self):
         """§3.3: hver rekalibrering er en ny v5.0.x. Uden stop fik et nyt manifest samme version som det i drift

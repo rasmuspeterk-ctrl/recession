@@ -195,13 +195,6 @@ def skriv_manifest(m):
 def rekalibrer(snap, spine_file=None, R=None, version=VERSION, kaldt_som="rekalibrering"):
     """Hele beregningen for een rygrad. Returnerer (manifest-dict uden hash, ekstra-dict til weights)."""
     meta = json.loads((snap / "meta.json").read_text(encoding="utf-8"))
-    # Curve-only-panelets maanedsindeks kommer fra rygraden (calibrate.build_monthly): en trunkeret rygrad
-    # (multpl/SP500 nede) gav ellers en stille refit paa det gamle panel (v5.0-vaegtene, n_obs 264), i strid med §2.
-    if spine_file is None:
-        sp_sidste = meta.get("spine", {}).get("sidste") or "0000-00"
-        if A2.midx(int(sp_sidste[:4]), int(sp_sidste[5:7])) < A2.midx(int(snap.name[:4]), int(snap.name[5:7])) - 1:
-            sys.exit(f"FEJL: rygraden i {snap.name} slutter {sp_sidste}, forventet forrige lukkede maaned (§1.7) — "
-                     "refit afvist; koer fetch.py igen naar multpl/SP500 er tilbage.")
     usrec = A2.load_usrec(snap)
     eps = A2.episodes_from_usrec(usrec)
     avail = A2.load_announcements(eps)
@@ -308,7 +301,9 @@ def kraev_ny_version(forrige):
     if forrige and forrige.get("version") == VERSION:
         sys.exit(f"FEJL (§3.3): dataene giver en ny kalibrering, men VERSION er stadig v{VERSION} som kalibreringen i "
                  f"drift ({forrige.get('hash')}). Er det en rekalibrering (§3.2): bump VERSION i finalize6.py og koer "
-                 "igen. Ellers: stop — vaegtene er frosne mellem rekalibreringer. Intet er skrevet.")
+                 "igen. Ellers: stop — vaegtene er frosne mellem rekalibreringer; driftsvaegtene gendannes med "
+                 f"'git checkout weights.json' eller 'python finalize6.py --snapshot data/raw/{forrige.get('snapshot')}'. "
+                 "Intet er skrevet.")
 
 
 def bestem_trigger(m_ny, m_gl):

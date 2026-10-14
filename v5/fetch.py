@@ -206,8 +206,8 @@ def byg_rygrad(outdir, series_data, argv, today):
         cape_m = SP.parse_multpl(html, today)
         info["multpl"] = dict(sha256=sha256(html), bytes=len(html), maaneder=len(cape_m),
                               foerste=min(cape_m), sidste=max(cape_m))
-        (outdir / "cape_multpl.csv").write_text(
-            "Date,CAPE\n" + "".join(f"{k},{cape_m[k]}\n" for k in sorted(cape_m)), encoding="utf-8", newline="\n")
+        with (outdir / "cape_multpl.csv").open("w", encoding="utf-8", newline="\n") as fh:   # LF paa alle maskiner
+            fh.write("Date,CAPE\n" + "".join(f"{k},{cape_m[k]}\n" for k in sorted(cape_m)))
     except Exception as e:
         info["multpl"] = dict(fejl=str(e)[:300])
         cape_m = {}
@@ -232,9 +232,7 @@ def byg_rygrad(outdir, series_data, argv, today):
     probs = SP.outlier_check(cape_m, fra=SP.SEAM) if cape_m else []
     if probs:
         if "--accept-outlier" in argv:
-            begr = argv[argv.index("--accept-outlier") + 1] if len(argv) > argv.index("--accept-outlier") + 1 else ""
-            if not begr.strip() or begr.startswith("--"):
-                sys.exit('FEJL: --accept-outlier kraever en begrundelse (§1.6): --accept-outlier "<hvad blev tjekket; hvorfor>"')
+            begr = argv[argv.index("--accept-outlier") + 1]          # valideret i main() foer noget skrives
             info["outlier_override"] = dict(observationer=[f"{k}: {p}" for k, p in probs],
                                             tjekket="multpl CAPE mod FRED SP500-maanedsmiddel og CPIAUCNS (ingen uafhaengig CAPE-kilde findes)",
                                             begrundelse=begr)
@@ -274,6 +272,10 @@ def byg_rygrad(outdir, series_data, argv, today):
     return info, kritiske
 
 def main():
+    if "--accept-outlier" in sys.argv:                  # §1.6: begrundelsen er obligatorisk — tjekkes foer <dato>.ny oprettes
+        i = sys.argv.index("--accept-outlier") + 1
+        if i >= len(sys.argv) or not sys.argv[i].strip() or sys.argv[i].startswith("--"):
+            sys.exit('FEJL: --accept-outlier kraever en begrundelse (§1.6): --accept-outlier "<hvad blev tjekket; hvorfor>"')
     today = date.today().isoformat()
     final_dir = RAW / today
     if final_dir.exists() and today in logget_snapshots():

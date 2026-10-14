@@ -184,7 +184,8 @@ def main():
         if (date.today().year, date.today().month) >= september_forfald(W["refit_maaned"]):
             rekal_paakraevet.append(f"den aarlige september-rekalibrering er forfalden (sidste refit {W['refit_maaned']}, §3.2a)")
     for r in rekal_paakraevet:
-        print(f"REKALIBRERING PAAKRAEVET: {r} — koer finalize6.py && diagnostik.py foer --log.")
+        print(f"REKALIBRERING PAAKRAEVET: {r} — bump VERSION i finalize6.py (§3.3), koer finalize6.py && diagnostik.py "
+              "foer --log.")
     if W.get("manifest_hash"):
         print(f"vaegte frosne: manifest {W['manifest_hash']} (refit {W.get('refit_maaned', '?')}); "
               f"snapshot {snap.name} er nyere end kalibreringen — det er forventet (§3).")

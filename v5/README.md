@@ -29,6 +29,7 @@ pr. maaned, skrevet FOER udfaldet kendes; historiske raekker roeres aldrig.
 ## Rekalibrering (RAADETS_V501 §3) — hver september, eller naar nber_announcements.csv faar en ny top/bund
 
 ```
+# foerst: bump VERSION i finalize6.py (5.0.1 -> 5.0.2 ...) — finalize6 stopper ellers foer noget skrives (§3.3)
 python finalize6.py      # gulv + audit mod forrige manifest + bro + nyt manifest -> weights.json
 python diagnostik.py     # §4-diagnostik -> diagnostik.json (~95 s)
 python motor.py --json   # verificer; naeste --log-raekke faar automatisk bro-noten
@@ -390,8 +391,11 @@ Hvert fund er reproduceret foer rettelsen og har faaet en test, der er roed paa 
   uaendret; `.gitattributes` -text).
 - **§3.3 version:** finalize6 stopper foer noget skrives, hvis dataene giver en ny kalibrering med samme VERSION som
   den i drift (ogsaa en vagt mod at loesne de frosne vaegte mellem rekalibreringer).
-- **§2 rygrad:** en rekalibrering paa en trunkeret rygrad (multpl/SP500 nede) gav stille v5.0-vaegtene (n_obs 264);
-  nu afvises den.
+- **§1.7/§2 rygrad:** curve-only-panelets maanedsindeks kom fra rygraden, saa en rekalibrering paa en trunkeret rygrad
+  (multpl/SP500 nede) gav stille v5.0-vaegtene (n_obs 264). Indekset forlaenges nu med GS10/TB3MS-maanederne efter
+  rygradens sidste maaned: med rygraden afkortet til 2023-07 genskaber refitten 72c3371d (n_obs 267, "fuldmodel:
+  comparison unavailable", curve-only koerer videre). En vagt der afviste refitten blev forkastet i slut-reviewet:
+  den ville have bundet hovedbogen til multpl i hver maaned med en forfalden refit.
 - **Hovedbogens integritet:** `--allow-stale` logfoerer aldrig; et snapshot som en hovedbogsraekke bygger paa,
   erstattes ikke af en genhentning samme dag; en `<dato>.ukomplet` fra et fejlet forsoeg ryddes af det komplette
   (den blokerede ellers `--log` for evigt); kun dato-navngivne mapper er snapshots (`<dato>.ny` efter et nedbrud).
@@ -421,3 +425,7 @@ rettelse ville aendre en publiceret fil), diagnostik.json's tekst om prae-1979-o
 regenerering), en output-identisk hastighedsoptimering af fit/diagnostik (65 -> 42 s pr. aarlig koersel; ikke
 risikoen vaerd i modellens kerne for ~25 s om aaret) og uendelig polling i `mirofish-sim/`-scripts ved en server der
 bliver ved med at svare 404/500 (arkiverede svaerm-koersler, ingen indflydelse paa P).
+
+Kendt fremtidigt problem (foreligger allerede, ikke indfoert her): omkring juli 2033 starter FRED's 10-aars
+SP500-vindue efter seamet 2023-07, og §1.2-overlappet har da ingen maaneder tilbage. Foer da skal rygraden baere
+forrige snapshots komposit videre (eller tjekket redefineres) — ellers bliver hvert snapshot ukomplet.

@@ -61,7 +61,7 @@ python -m unittest test_v5             # 113 tests
 ```
 
 Vægtene er frosne mellem rekalibreringer (hver september, eller når NBER daterer en ny top/bund):
-`python finalize6.py && python diagnostik.py`. Se [RAADETS_V501.md](RAADETS_V501.md).
+`python finalize6.py && python diagnostik.py` (bump først `VERSION` i finalize6.py, §3.3). Se [RAADETS_V501.md](RAADETS_V501.md).
 
 Kræver Python 3 og numpy. Intet andet.
 

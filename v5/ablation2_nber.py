@@ -96,6 +96,13 @@ def build_dataset(snap, feats=None, spine_file=None):
     gs10 = C.read_fred(snap, "GS10")
     tb3ms = C.read_fred(snap, "TB3MS")
     gdp_g = C.read_fred(snap, "A191RL1Q225SBEA")
+    if spine_file is None and feats == ["curve"]:
+        # Curve-only maa aldrig afhaenge af CAPE-kilden (§1.7, §2): er rygraden trunkeret (multpl/SP500 nede), ville
+        # maanedsindekset ende med den, og en refit stille falde tilbage til det gamle panel (v5.0-vaegtene, n_obs 264).
+        # Indekset forlaenges derfor med GS10/TB3MS-maanederne efter rygradens sidste maaned (rygrad-felterne NaN).
+        # Med en frisk rygrad tilfoejes intet (samme sidste maaned); legacy-replayet (spine_file) roeres ikke.
+        sidst = shiller[-1][0] if shiller else (0, 0)
+        shiller = shiller + [(k, np.nan, np.nan, np.nan, np.nan) for k in sorted(set(gs10) & set(tb3ms)) if k > sidst]
     keys, M = C.build_monthly(shiller, gs10, tb3ms)
     qkeys, cols = C.to_quarterly(keys, M, gdp_g)
     rec_now, Y_tek = C.make_labels(cols)          # teknisk label til diagnostik
