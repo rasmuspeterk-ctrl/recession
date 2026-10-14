@@ -1,4 +1,4 @@
-# MOTOR v5.0 — sandsynlighed for amerikansk recessionsstart
+# MOTOR v5.0.1 — sandsynlighed for amerikansk recessionsstart
 
 [![tests](https://github.com/rasmuspeterk-ctrl/recession/actions/workflows/tests.yml/badge.svg)](https://github.com/rasmuspeterk-ctrl/recession/actions/workflows/tests.yml)
 
@@ -10,7 +10,8 @@ is in Danish.*
 
 Modellen estimerer P(NBER-dateret recession begynder inden for fire kvartaler). Den
 operationelle model er en curve-only-logit, valgt mekanisk fordi den slog fuldmodellen i
-walk-forward (+34,3 % mod +33,2 % log-loss-forbedring over basisraten). Syv
+walk-forward (+34,3 % mod +33,2 % log-loss-forbedring over basisraten ved valget i v5.0; på det
+udvidede panel i v5.0.1 +27,1 % mod +23,2 %). Syv
 feature-kandidater er testet, publiceret og afvist; søgningen er lukket.
 
 **Seneste logførte læsning (2026-10-10, v5.0.1, daglig kurve):** P = 15,1 % [10,4–21,6 %] mod basisrate
@@ -30,7 +31,7 @@ månedstallene, uden op til en måneds forsinkelse). Tripwires og Fed funds læs
 | Fil | Indhold |
 |---|---|
 | [v5/README.md](v5/README.md) | Byggelog: acceptancetests, alle seks trin, vedligehold |
-| [v5/](v5/) | Koden: fetch → calibrate → ablation → finalize → diagnostik → motor. 76 tests. |
+| [v5/](v5/) | Koden: fetch → calibrate → ablation → finalize → diagnostik → motor (calibrate.py er trin-1-reproduktionen og overskriver ikke driftsvægtene). 76 tests. |
 | [LOG.md](LOG.md) | Hovedbogen — én række pr. måned, logført før udfaldet kendes. Redigeres aldrig. |
 | [RAADETS_KONSENSUS.md](RAADETS_KONSENSUS.md) | Blueprintet, ratificeret 7/7 af et råd af sprogmodeller efter seks debatrunder |
 | [RAADETS_REVIEW.md](RAADETS_REVIEW.md) | Grand review med 18 modeller |

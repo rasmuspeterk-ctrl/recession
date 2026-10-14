@@ -33,7 +33,7 @@ FORHAANDSREGISTRERET (fastlagt FOER koersel — blueprint Section 4-5):
   Multi-optagelse: stoerste dLL foerst; oevrige bestaaede faar EEN retest mod
   ny baseline; haard cap 6 features i alt.
 
-Kun stdlib + numpy.  Koer:  python ablation4_features.py [--check] [--promote]
+Kun stdlib + numpy.  Koer:  python ablation4_features.py [--check] [--erratum]   (--erratum: v5.0.1 §5-genkoersel)
 """
 import json, sys
 from datetime import datetime, timezone

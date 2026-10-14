@@ -8,7 +8,7 @@ walk-forward som v4 — men reproducerbart og uden haandkopierede konstanter.
 
 | Fil | Rolle |
 |---|---|
-| `fetch.py` | Henter 20 FRED-serier noeglefrit (parallelt), skriver byte-eksakt hashet snapshot i `data/raw/<dato>/`, printer diff mod forrige snapshot (ny obs / aendret vaerdi / revideret historik) |
+| `fetch.py` | Henter 23 FRED-serier noeglefrit (parallelt), skriver byte-eksakt hashet snapshot i `data/raw/<dato>/`, printer diff mod forrige snapshot (ny obs / aendret vaerdi / revideret historik) |
 | `calibrate.py` | Genopbygger v4's kalibrering fra snapshottet, skriver `weights.json` (vaegte + datahash + protokolversion). `--check` koerer determinisme-test. Indbygget acceptancetest mod v4's konstanter |
 | `motor.py` | Maanedlig aflaesning: laeser weights.json + snapshot + manual.json. Naegter snapshots >40 dage (`--allow-stale` for at overstyre). CAPE-percentil beregnes af snapshottets egen historik — ingen 2026-knuder |
 | `nber_announcements.csv` | Committet tabel over NBERs annonceringsdatoer (til trin 2's mekaniske label-regel) |
@@ -37,12 +37,15 @@ Vaegte, standardisering og basisrate er frosne mellem rekalibreringer. Et skift 
 operationelle model kraever `kalibreringer/raadsbeslutning.json` (§6). Legacy-replay til
 enhver tid: `python finalize6.py --legacy` (skal give w=[-2.1755,-1.6907], n_obs 264).
 
-Test (stdlib unittest, ingen netvaerk, ~3 s): `cd v5 && python -m unittest -v test_v5`
+Test (stdlib unittest, ingen netvaerk, ca. 15 s): `cd v5 && python -m unittest -v test_v5`
 — daekker snapshot-livscyklussen (.ny/.ukomplet, retry, diff-markering), komplethedsgaten,
 finalize6's permanente linjer og promotion-bevaring, motor's --log-guards og debate.py's
 arkiv-layout. Koer den efter enhver kodeaendring, foer maanedsritualet.
 
 ## MANGLER FOER ACCEPTANCETESTEN KAN KOERES: manual/shiller.csv
+
+*Opfyldt: acceptancetesten blev koert 2026-08-09 (nedenfor). Fra v5.0.1 ligger Yale-filen som
+`manual/shiller_yale_2023-09.csv` (uforanderlig), og hvert snapshot bygger `spine.csv` af den.*
 
 v4's kalibrering brugte Shiller-historikken 1871+ (data/spx.csv), som ikke fulgte
 med i zippen. Laeg filen som `manual/shiller.csv` med header:
@@ -117,7 +120,7 @@ er acceptancetestens reelle formaal, og DEN er bestaaet.
 ## v5.0 ER KOMPLET — alle 6 trin gennemfoert 2026-08-09
 
 Rekalibreringskaede (sjaelden): `fetch.py` → `ablation2_nber.py --promote` →
-`finalize6.py`. Maanedligt ritual uaendret: `fetch.py` + manual.json + `motor.py`.
+`finalize6.py`. *(v5.0-kaeden; fra v5.0.1 er rekalibreringen `finalize6.py && diagnostik.py`, se ovenfor.)* Maanedligt ritual uaendret: `fetch.py` + manual.json + `motor.py`.
 
 ## v5.2-testen: AWHMAN — TESTET, IKKE BESTAAET; INFORMATIONSSOEGNINGEN LUKKET
 
@@ -206,7 +209,7 @@ begrundelse (praeregistreret i ablation7's header). Resultat: ablation7_resultat
   `C.read_fred` kollapser ugeserier til maanedens sidste obs og derfor ikke kan give et
   4-ugers snit) og `ann_rate`.
 
-**BEMAERKET, IKKE RETTET:** `ablation4_features.monthly_mean` er reelt en no-op —
+**BEMAERKET, IKKE RETTET** *(genkoert som erratum 2026-09-19, se v5.0.1 §5 nedenfor)*: `ablation4_features.monthly_mean` er reelt en no-op —
 `C.read_fred` har allerede kollapset ICSA til een vaerdi pr. maaned, saa der er kun eet
 element pr. gruppe at tage middel af. Trin 4's `claims_mom` blev derfor testet paa
 maanedens SIDSTE uge, ikke paa maanedsmidlen som modulets header angiver. Afvisningen var
@@ -306,10 +309,10 @@ aendres af dette.
 
 - Maanedsritualet er nu `fetch.py` -> manual.json -> `motor.py --log --json`. **Ingen maanedlig re-ankring.** Vaegte, standardisering og basisrate er frosne til naeste rekalibrering: hver september, eller ved hash-aendring i `nber_announcements.csv` (ny top/bund), eksekveret ved naeste maanedskoersel: `python finalize6.py && python diagnostik.py`.
 - Hovedbogen har faaet kolonnen `kalibrering` (manifest-hash) — **kun fremadrettet**. De to historiske raekker er byte-identiske; `kalibreringer/legacy_mapping.json` kobler dem til v5.0-manifestet (6baeade4). Den foerste raekke under 72c3371d (oktober) faar automatisk en bro-note med P under begge vaegtsaet ved identiske inputs.
-- Rygraden: `manual/shiller_yale_2023-09.csv` (uforanderlig) + `spine.csv` i hvert snapshot (komposit m. proveniens). Friskheds-guarden (§1.7) koerer i fetch: GS10/TB3MS/USREC nedlaegger veto, resten staar i meta. Er multpl nede, printer fuldmodel-linjen "unavailable — CAPE stale", og curve-only koerer videre. **Det er accepteret design, ikke en defekt** (Kimi R5): multpl er en enkelt, ukontraheret kilde uden noeglefrit alternativ; fuldmodellen er ikke operationel, og et permanent fravaer af dens linje maa ikke laeses som et pipeline-svigt.
+- Rygraden: `manual/shiller_yale_2023-09.csv` (uforanderlig) + `spine.csv` i hvert snapshot (komposit m. proveniens). Friskheds-guarden (§1.7) koerer i fetch: GS10/TB3MS/USREC nedlaegger veto (fra 2026-09-28 ogsaa DGS10/DTB3), resten staar i meta. Er multpl nede, printer fuldmodel-linjen "unavailable — CAPE stale", og curve-only koerer videre. **Det er accepteret design, ikke en defekt** (Kimi R5): multpl er en enkelt, ukontraheret kilde uden noeglefrit alternativ; fuldmodellen er ikke operationel, og et permanent fravaer af dens linje maa ikke laeses som et pipeline-svigt.
 - Kimis Δ-diagnostik (R5 #2): hver kalibrering baerer `delta_vs_forrige` — max|ΔP| og max|Δw| over ALLE origins i raekkeuniverset mellem to kalibreringer, ikke kun ved eet inputpunkt. v5.0 -> v5.0.1: max|ΔP| 7,8pp ved 1974Q1, middel 1,7pp, 10 % af 316 origins flytter >5pp, Δβ +0,21 pr. pp. Feltet og `trigger` (nber-datering / september / manuel) ligger uden for manifest-hashen (proveniens om aendringen, ikke kalibreringsindhold). Bro-noten i hovedbogen naevner triggeren.
 - Motor haandhaever de frosne vaegte (§3): et nyere snapshot end kalibreringen er forventet og giver ingen advarsel; en aendret `nber_announcements.csv` eller en forfalden september-koersel blokerer `--log` ("REKALIBRERING PAAKRAEVET") indtil `finalize6.py && diagnostik.py` er koert — triggeren er deterministisk, ikke skoensmaessig. En genkoersel uden dataaendring genbruger manifestet (idempotent).
-- CI: `.github/workflows/tests.yml` koerer suiten + legacy-replay ved hvert push.
+- CI: `.github/workflows/tests.yml` koerer suiten + legacy-replay ved push til main og ved hver PR.
 - Nye filer: `spine.py`, `diagnostik.py`, `kalibreringer/` (manifester + index + legacy_mapping), `manual/seam_check_2023.json`, `ablation4_erratum_resultat.json`. Tests: 66.
 
 Commit-historikken viser de fejlende tests foer reparationen (928748f -> 8165745), som §8 kraever.

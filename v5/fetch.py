@@ -8,7 +8,7 @@ mod forrige snapshot til menneskeligt eftersyn (raadets T6): ny observation,
 aendret sidste vaerdi eller stille revision af historikken.
 
 Snapshottet bygges i data/raw/<dato>.ny og flyttes foerst paa plads naar alt er
-hentet: fejler en kraevet serie (reserveserierne GDPC1/CPIAUCSL/THREEFYTP10
+hentet: fejler en kraevet serie (reserveserierne GDPC1/CPIAUCSL/THREEFYTP10/SP500/DFF
 undtaget) eller mangler shiller.csv/manual.json, gemmes forsoeget som
 data/raw/<dato>.ukomplet ("complete": false; ignoreres af calibrate/motor), og et
 eksisterende komplet dagssnapshot roeres ikke (koer fetch.py igen).

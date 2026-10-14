@@ -303,6 +303,20 @@ class TestCalibrate(unittest.TestCase):
         X = rng.normal(size=(300, 3)); y = (X @ [1.0, -0.5, 0.2] + rng.normal(size=300) > 0).astype(float)
         self.assertTrue(np.allclose(C.fit(X, y), C.fit(X, y, tol=0.0), atol=1e-9))
 
+    def test_main_overskriver_ikke_driftsvaegtene(self):
+        """calibrate.py skrev ubetinget et 5.0-trin1-weights.json oven i de frosne 5.0-final-vaegte;
+        motor.py afviste det derefter ('koer finalize6.py')."""
+        with tempfile.TemporaryDirectory() as t:
+            here = Path(t)
+            shutil.copy(HERE / "weights.json", here / "weights.json")
+            foer = (here / "weights.json").read_bytes()
+            with mock.patch.object(C, "HERE", here), \
+                 mock.patch.object(sys, "argv", ["calibrate.py", "--snapshot", str(REAL_SNAP)]), \
+                 contextlib.redirect_stdout(io.StringIO()) as out:
+                C.main()
+            self.assertEqual((here / "weights.json").read_bytes(), foer)
+            self.assertIn("overskrives IKKE", out.getvalue())
+
     def test_read_fred_positionel_og_springer_manglende_over(self):
         with tempfile.TemporaryDirectory() as t:
             (Path(t) / "X.csv").write_bytes(fred_bytes([("2020-01-01", "1.5"), ("2020-02-01", ".")], header="DATE,VALUE"))

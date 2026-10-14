@@ -11,7 +11,12 @@ og er BEVIDST ikke med her.
 Acceptancetest (indbygget): reproducerede MU/SD/W og walk-forward-metrikker
 sammenlignes med v4's publicerede konstanter; afvigelser printes.
 
-Kun stdlib + numpy.  Koer:  python calibrate.py [--check] [--snapshot data/raw/YYYY-MM-DD]
+Kun stdlib + numpy.  Koer:  python calibrate.py [--check] [--snapshot data/raw/YYYY-MM-DD] [--overskriv]
+
+I drift (v5.0.1) er calibrate.py kun trin-1-reproduktionen og et modul for resten af kaeden.
+Indeholder weights.json de frosne driftsvaegte (protokol 5.0-final), skrives trin-1-resultatet
+IKKE (motor.py ville afvise et 5.0-trin1-weights.json) — kun med --overskriv, og derefter
+skal finalize6.py koeres foer motor.py igen virker.
 """
 import calendar, csv, hashlib, json, sys
 from datetime import datetime, timezone
@@ -437,11 +442,21 @@ def main():
     acc_text, acc_ok = acceptance(res)
     print(acc_text)
 
+    wf = HERE / "weights.json"
+    if wf.exists() and "--overskriv" not in sys.argv:
+        try:
+            gl = json.loads(wf.read_text(encoding="utf-8")).get("protocol_version")
+        except ValueError:
+            gl = None
+        if gl == "5.0-final":
+            print("\nweights.json er de frosne driftsvaegte (protokol 5.0-final) og overskrives IKKE af "
+                  "trin-1-reproduktionen. --overskriv for at overskrive bevidst (derefter: finalize6.py foer motor.py).")
+            return
     out = dict(protocol_version=PROTOCOL,
                created_utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),
                snapshot=snap.name, snapshot_sha256=meta["snapshot_sha256"],
                acceptance_bestaaet=acc_ok, **res)
-    (HERE / "weights.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
+    wf.write_text(json.dumps(out, indent=1), encoding="utf-8")
     print(f"\nweights.json skrevet ({'acceptance BESTAAET' if acc_ok else 'acceptance IKKE bestaaet'}).")
 
 if __name__ == "__main__":

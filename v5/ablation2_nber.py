@@ -21,7 +21,8 @@ FORHAANDSREGISTREREDE GATES (fastlagt FOER koersel, jf. Sol R6/Kimi R3):
   Alle tre bestaaet -> NBER-onset promoveres til v5.0-label (weights.json).
   Ellers: teknisk label bestaar, resultatet publiceres som "testet, ikke bestaaet".
 
-Kun stdlib + numpy.  Koer:  python ablation2_nber.py [--check] [--snapshot ...]
+Kun stdlib + numpy.  Koer:  python ablation2_nber.py [--check] [--snapshot ...] [--promote]
+(--promote overskriver weights.json med v5.0-trin2-vaegte: kun som led i v5.0-kaeden efterfulgt af finalize6.py)
 """
 import csv, json, sys
 from datetime import datetime, timezone

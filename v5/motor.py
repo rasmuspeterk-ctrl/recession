@@ -8,7 +8,7 @@ curve-only, realtids-Sahm, Chauvet-Piger separat, v4-arv), monitors uden
 taellinger, market conditions-sektion, skabelon-genereret dom der aldrig
 overstiger tallene. Sprogregler (Section 6) haandhaeves mekanisk.
 
-Koer:  python motor.py [--allow-stale] [--log]
+Koer:  python motor.py [--allow-stale] [--log] [--json [sti]] [--snapshot data/raw/YYYY-MM-DD]
 """
 import json, sys
 from datetime import date
