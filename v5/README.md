@@ -21,7 +21,7 @@ walk-forward som v4 — men reproducerbart og uden haandkopierede konstanter.
 python fetch.py                  # hent + rygrad + guards + diff-tjek med oejnene
 # opdater manual/manual.json (3 tal); koer fetch.py igen saa snapshottet baerer dem
 python motor.py --log --json     # aflaesning, prospektiv logfoering i ../LOG.md, dashboard.json
-python -m unittest test_v5       # 76 tests
+python -m unittest test_v5       # 113 tests
 ```
 Hovedbogen (`../LOG.md`) er den eneste aegte out-of-sample-eksamen: een raekke
 pr. maaned, skrevet FOER udfaldet kendes; historiske raekker roeres aldrig.
@@ -404,9 +404,20 @@ Hvert fund er reproduceret foer rettelsen og har faaet en test, der er roed paa 
   naevner nye huller hoejlydt; `--accept-outlier` kraever en begrundelse; `cape_multpl.csv` skrives med LF;
   RIFSPPFAAD90NB's friskhedsgraense 10 -> 35 dage (aegte huller paa op til 29 dage gav FRISKHED-stoej).
 - **Dokumentation og vaerktoej:** se commit 18f8749 (datakontrakten, Koer-linjer, calibrate.py overskriver ikke
-  driftsvaegtene).
+  driftsvaegtene). `debate.py`/`raad501.py`: et fejlet genkald overskriver ikke laengere et arkiveret svar.
+- **Tests og CI (113 tests):** facit-tests regner P, baand og dom uafhaengigt efter paa pinnede inputs og laeser
+  hovedbogsraekken tilbage (29 af 30 plausible mutationer i motorens kerne overlevede foer; stikproeve efter: 6 af 6
+  draebt); taerskler taender/slukker monitorer og antaendings-kolonnen; september-reglen med frossen dato;
+  reserveserier kan mangle; diagnostik-sektionen; det committede manifest genskabes bit-identisk; alle committede
+  snapshots matcher deres hashes. TestMotor koerer paa en vaegtkopi med refit 'denne maaned', saa KUN
+  `test_frosne_vaegte_giver_ingen_reankrings_advarsel` er september-paamindelsen (foer gik tre tests roede).
+  CI: ugentlig koersel (paamindelsen kommer ogsaa uden push), alle sporede .py kompileres, legacy-replayet
+  fanger ogsaa nye ikke-sporede filer, og dashboard.json skal kunne genskabes bit-identisk fra sit snapshot.
+- **Drift:** september-refitten koeres paa et SEPTEMBER-snapshot (`refit_maaned` = snapshottets maaned): en refit paa
+  et august-snapshot taeller som august, og motor melder september-rekalibreringen forfalden igen.
 
 Bevidst IKKE aendret: trin-1's tekniske label bruges upurget i `weights_trin1_teknisk.json` (v4-reproduktion; en
 rettelse ville aendre en publiceret fil), diagnostik.json's tekst om prae-1979-onsets (rettes ved naeste
-regenerering) og en output-identisk hastighedsoptimering af fit/diagnostik (65 -> 42 s pr. aarlig koersel; ikke
-risikoen vaerd i modellens kerne for ~25 s om aaret).
+regenerering), en output-identisk hastighedsoptimering af fit/diagnostik (65 -> 42 s pr. aarlig koersel; ikke
+risikoen vaerd i modellens kerne for ~25 s om aaret) og uendelig polling i `mirofish-sim/`-scripts ved en server der
+bliver ved med at svare 404/500 (arkiverede svaerm-koersler, ingen indflydelse paa P).

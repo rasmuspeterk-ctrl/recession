@@ -31,7 +31,7 @@ månedstallene, uden op til en måneds forsinkelse). Tripwires og Fed funds læs
 | Fil | Indhold |
 |---|---|
 | [v5/README.md](v5/README.md) | Byggelog: acceptancetests, alle seks trin, vedligehold |
-| [v5/](v5/) | Koden: fetch → calibrate → ablation → finalize → diagnostik → motor (calibrate.py er trin-1-reproduktionen og overskriver ikke driftsvægtene). 76 tests. |
+| [v5/](v5/) | Koden: fetch → calibrate → ablation → finalize → diagnostik → motor (calibrate.py er trin-1-reproduktionen og overskriver ikke driftsvægtene). 113 tests. |
 | [LOG.md](LOG.md) | Hovedbogen — én række pr. måned, logført før udfaldet kendes. Redigeres aldrig. |
 | [RAADETS_KONSENSUS.md](RAADETS_KONSENSUS.md) | Blueprintet, ratificeret 7/7 af et råd af sprogmodeller efter seks debatrunder |
 | [RAADETS_REVIEW.md](RAADETS_REVIEW.md) | Grand review med 18 modeller |
@@ -57,7 +57,7 @@ python fetch.py                        # FRED-snapshot, hashet
 # opdatér manual/manual.json: CAPE, marginlån y/y, S&P vs 12-mdr-høj
 python fetch.py                        # igen, så snapshottet bærer de nye manuelle tal
 python motor.py --log --json           # læsning, hovedbogsrække, dashboard.json
-python -m unittest test_v5             # 76 tests
+python -m unittest test_v5             # 113 tests
 ```
 
 Vægtene er frosne mellem rekalibreringer (hver september, eller når NBER daterer en ny top/bund):

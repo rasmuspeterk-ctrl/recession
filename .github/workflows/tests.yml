@@ -1,17 +1,23 @@
 name: tests
 
-# Koerer v5's testsuite ved push til main og ved hver PR. Ingen netvaerk: fetch-tests bruger mocks,
-# og motor/finalize6/diagnostik-tests koerer mod det committede snapshot.
+# Koerer v5's testsuite ved push til main, ved hver PR og ugentligt. Ingen netvaerk: fetch-tests bruger
+# mocks, og motor/finalize6/diagnostik-tests koerer mod det committede snapshot.
 #
 # Bemaerk (v5.0.1 §3.2a): test_frosne_vaegte_giver_ingen_reankrings_advarsel gaar ROED naar den
 # aarlige september-rekalibrering er forfalden (foerste gang september 2027). Det er med vilje:
-# CI'en er da paamindelsen — koer `python finalize6.py && python diagnostik.py` og commit.
+# CI'en er da paamindelsen — koer `python finalize6.py && python diagnostik.py` og commit. Den
+# ugentlige koersel sikrer, at paamindelsen kommer, ogsaa uden et push.
 
 on:
   push:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: "17 5 * * 1"      # ugentligt: september-paamindelsen og numpy-/Python-drift mellem de maanedlige commits
+
+permissions:
+  contents: read
 
 jobs:
   unittest:
@@ -24,7 +30,7 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install --upgrade pip numpy
       - name: Kompilering
-        run: python -m py_compile v5/*.py debat/*.py
+        run: git ls-files '*.py' | xargs python -m py_compile      # alle sporede scripts, ogsaa debat/v501, mirofish-sim og v4
       - name: Testsuite (v5)
         working-directory: v5
         env:
@@ -35,7 +41,14 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
         run: |
-          cp weights.json /tmp/weights.json.bak
           python finalize6.py --legacy
-          cmp weights.json /tmp/weights.json.bak
-          git diff --exit-code -- kalibreringer/   # ren verifikation: ingen proveniens-omskrivning, ingen index-flytning
+          # ren verifikation: intet aendret OG intet nyt (git diff ser ikke ikke-sporede filer, fx et nyt manifest)
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Dashboard-replay (dashboard.json genskabes bit-identisk fra sit eget snapshot)
+        working-directory: v5
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          snap=$(python -c "import json; print(json.load(open('../dashboard.json'))['snapshot'])")
+          python motor.py --snapshot data/raw/$snap --allow-stale --json /tmp/dashboard.json > /dev/null
+          cmp /tmp/dashboard.json ../dashboard.json

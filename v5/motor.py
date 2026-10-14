@@ -111,6 +111,8 @@ def inversionsnote(fkeys, curve_m, live_kurve):
             start = fkeys[run0]
             note = (f"igangvaerende siden {start[0]}-{start[1]:02d} ({li - run0 + 1} mdr t.o.m. "
                     f"{slut[0]}-{slut[1]:02d}), dybde hidtil {float(np.min(curve_m[run0:li+1])):+.2f}pp")
+            if live_kurve >= 0:                           # maanedstallet halter: live-kurven er allerede positiv
+                note = f"paa maanedstal {note}; live-kurven er ikke laengere inverteret ({live_kurve:+.2f}pp)"
         else:
             note = (f"sluttede {slut[0]}-{slut[1]:02d} ({len(curve_m)-1-li} mdr siden), "
                     f"dybde {float(np.min(curve_m[run0:li+1])):+.2f}pp")
@@ -312,9 +314,9 @@ def main():
         star = "  <- operationel" if f in op["features"] else ""
         print(f"   {NAVN[f]:<26}{x[f]:>8.2f}{z:>9.2f}{star}")
     if cpi_hul:
-        print(f"   DATAHUL: CPIAUCNS {', '.join(f'{y}-{m:02d}' for y, m in cpi_hul)} mangler i FRED (BLS udgav aldrig "
-              "oktober 2025, shutdown) —\n   interpoleret log-lineaert mellem nabomaanederne. Roerer kun realrate/"
-              "d_infl (fuldmodellen), ikke P.")
+        aarsag = "BLS udgav aldrig oktober 2025, shutdown" if (2025, 10) in cpi_hul else "tomt felt i FRED"
+        print(f"   DATAHUL: CPIAUCNS {', '.join(f'{y}-{m:02d}' for y, m in cpi_hul)} mangler ({aarsag}) —\n"
+              "   interpoleret log-lineaert mellem nabomaanederne. Roerer kun realrate/d_infl (fuldmodellen), ikke P.")
 
     print("\n3) BENCHMARK-TABEL (printes ogsaa naar den er usmigrende):")
     print(f"   {'model':<34}{'wf-skill':>10}{'live-P':>9}")
