@@ -60,12 +60,41 @@ def tal_af(txt, faktor=1.0):
 
 
 
-def ann_rate(series, n):
-    """Annualiseret aendring over n maaneder. Kun paa SAESONKORRIGEREDE serier."""
+def mdr_foer(k, n):
+    """(aar, maaned) n kalendermaaneder foer k."""
+    i = k[0] * 12 + k[1] - 1 - n
+    return (i // 12, i % 12 + 1)
+
+
+def udfyld_huller(series):
+    """Maanedligt prisindeks {(aar, maaned): niveau} -> (kopi, udfyldte maaneder): interne huller
+    udfyldes log-lineaert mellem nabomaanederne. FRED har tomme felter for 2025-10 i CPI (BLS udgav
+    aldrig oktober 2025, shutdown): uden udfyldning fejler y/y-opslag paa (aar-1, maaned) med KeyError,
+    og et positionelt vindue bliver en maaned for langt. Kun til maanedlige niveauserier."""
     ks = sorted(series)
-    if len(ks) < n + 1:
+    ud, fyldt = dict(series), []
+    for a, b in zip(ks, ks[1:]):
+        n = (b[0] - a[0]) * 12 + b[1] - a[1]
+        for j in range(1, n):
+            k = mdr_foer(b, n - j)
+            ud[k] = series[a] * (series[b] / series[a]) ** (j / n)
+            fyldt.append(k)
+    return ud, fyldt
+
+
+def hul_mrk(fyldt, k0, ns):
+    """' (2025-10 interpoleret)' naar startmaaneden i et af vinduerne k0-n (n i ns) er udfyldt."""
+    brugt = sorted({mdr_foer(k0, n) for n in ns} & set(fyldt))
+    return f" ({', '.join(f'{y}-{m:02d}' for y, m in brugt)} interpoleret)" if brugt else ""
+
+
+def ann_rate(series, n):
+    """Annualiseret aendring over n KALENDERmaaneder (ikke n observationer: et hul i serien maa ikke
+    forlaenge vinduet). Kun paa SAESONKORRIGEREDE serier. Mangler startmaaneden -> nan."""
+    ks = sorted(series)
+    if not ks or mdr_foer(ks[-1], n) not in series:
         return float("nan")
-    return ((series[ks[-1]] / series[ks[-1 - n]]) ** (12 / n) - 1) * 100
+    return ((series[ks[-1]] / series[mdr_foer(ks[-1], n)]) ** (12 / n) - 1) * 100
 
 
 def p_of(x, feats, mu, sd, w):
@@ -111,7 +140,7 @@ def main():
                  "Laeg den i manual/ og koer fetch.py igen.")
     man = json.loads(manual_f.read_text(encoding="utf-8"))
     gs10 = C.read_fred(snap, "GS10"); tb3 = C.read_fred(snap, "TB3MS")
-    cpi = C.read_fred(snap, "CPIAUCNS")
+    cpi, cpi_fyldt = udfyld_huller(C.read_fred(snap, "CPIAUCNS"))
     # Live-input (drift fra 2026-09-28): kurven maales som TRAILING kalendermaaned af de daglige
     # DGS10/DTB3 — samme statistik som GS10/TB3MS, uden op til en maaneds publiceringsforsinkelse
     # (se C.live_kurve). Tripwire-niveauer og ERP bruger seneste daglige 10Y. Vaegtene er uaendrede.
@@ -126,6 +155,7 @@ def main():
     k2 = (k1[0] - 1, k1[1])
     cpi_yoy = (cpi[k0] / cpi[k1] - 1) * 100
     cpi_yoy_1 = (cpi[k1] / cpi[k2] - 1) * 100
+    cpi_hul = sorted(set(cpi_fyldt) & {k1, k2})             # interpolerede maaneder der faktisk indgaar
 
     shiller = C.read_shiller(snap)
     cape_hist = np.array([r[4] for r in shiller])
@@ -170,7 +200,7 @@ def main():
     else:
         (_fy, _fm), ff_v = latest(C.read_fred(snap, "FEDFUNDS"))
         ff_dato, ff_kilde = f"{_fy}-{_fm:02d}", "FEDFUNDS maanedssnit"
-    pce = C.read_fred(snap, "PCEPI"); pk = sorted(pce)
+    pce, pce_fyldt = udfyld_huller(C.read_fred(snap, "PCEPI")); pk = sorted(pce)
     pce_yoy = (pce[pk[-1]] / pce[(pk[-1][0] - 1, pk[-1][1])] - 1) * 100
 
     fkeys = sorted(set(gs10) & set(tb3))
@@ -237,6 +267,10 @@ def main():
         z = (x[f] - fm["mu"][f]) / fm["sd"][f]
         star = "  <- operationel" if f in op["features"] else ""
         print(f"   {NAVN[f]:<26}{x[f]:>8.2f}{z:>9.2f}{star}")
+    if cpi_hul:
+        print(f"   DATAHUL: CPIAUCNS {', '.join(f'{y}-{m:02d}' for y, m in cpi_hul)} mangler i FRED (BLS udgav aldrig "
+              "oktober 2025, shutdown) —\n   interpoleret log-lineaert mellem nabomaanederne. Roerer kun realrate/"
+              "d_infl (fuldmodellen), ikke P.")
 
     print("\n3) BENCHMARK-TABEL (printes ogsaa naar den er usmigrende):")
     print(f"   {'model':<34}{'wf-skill':>10}{'live-P':>9}")
@@ -341,13 +375,16 @@ def main():
     # Momentum kun paa saesonkorrigerede serier (PCEPI, CPIAUCSL). Modellens egen
     # cpi_yoy bruger CPIAUCNS — korrekt for y/y, forkert for 3m/6m.
     pol = [("Fed funds (effektiv)", f"{ff_v:.2f}% ({ff_dato}, {ff_kilde})"),
-           ("Realt kontantafkast FF - PCE", f"{ff_v - pce_yoy:+.2f}pp (PCE y/y {pk[-1][0]}-{pk[-1][1]:02d})"),
+           ("Realt kontantafkast FF - PCE", f"{ff_v - pce_yoy:+.2f}pp (PCE y/y {pk[-1][0]}-{pk[-1][1]:02d})"
+                                            + hul_mrk(pce_fyldt, pk[-1], (12,))),
            ("3m-bill minus Fed funds", f"{(tb_r - ff_v) * 100:+.0f}bp ({tb_dato}, diskonto)"),
-           ("PCE-infl. 3m/6m/12m ann.", f"{ann_rate(pce, 3):.1f} / {ann_rate(pce, 6):.1f} / {pce_yoy:.1f}%")]
+           ("PCE-infl. 3m/6m/12m ann.", f"{ann_rate(pce, 3):.1f} / {ann_rate(pce, 6):.1f} / {pce_yoy:.1f}%"
+                                        + hul_mrk(pce_fyldt, pk[-1], (3, 6, 12)))]
     if (snap / "CPIAUCSL.csv").exists():
-        cpi_sa = C.read_fred(snap, "CPIAUCSL")
+        cpi_sa, sa_fyldt = udfyld_huller(C.read_fred(snap, "CPIAUCSL"))
         pol.append(("CPI (SA) 3m/6m/12m ann.",
-                    f"{ann_rate(cpi_sa, 3):.1f} / {ann_rate(cpi_sa, 6):.1f} / {ann_rate(cpi_sa, 12):.1f}%"))
+                    f"{ann_rate(cpi_sa, 3):.1f} / {ann_rate(cpi_sa, 6):.1f} / {ann_rate(cpi_sa, 12):.1f}%"
+                    + hul_mrk(sa_fyldt, max(cpi_sa), (3, 6, 12))))
     if tp10 is not None:                                     # 10Y paa TP-datoen (eller naermeste tidligere)
         _d10 = dict(C.read_fred_daily(snap, "DGS10") or [])
         _prior = [d for d in _d10 if d <= tp_dato]

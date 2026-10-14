@@ -584,6 +584,37 @@ class TestMotor(unittest.TestCase):
             with self.assertRaisesRegex(SystemExit, "vaerste_fejlalarm"):
                 self._motor([], here=here)
 
+    def test_cpi_12m_er_tolv_kalendermaaneder(self):
+        out = self._motor([])
+        s = M.udfyld_huller(C.read_fred(self.raw / self.today, "CPIAUCSL"))[0]
+        k = max(s)
+        linje = next(ln for ln in out.splitlines() if "CPI (SA) 3m/6m/12m ann." in ln)
+        self.assertIn(f"/ {(s[k] / s[(k[0] - 1, k[1])] - 1) * 100:.1f}%", linje)
+
+    def test_oktober_cpi_2026_crasher_ikke_og_hullet_markeres(self):
+        """FRED har tomme felter for CPI 2025-10 (BLS-shutdown). Naar oktober-CPI 2026 er udgivet, slog motor
+        (2025, 10) op og fejlede med KeyError — november-ritualet ville vaere blokeret."""
+        with tempfile.TemporaryDirectory() as t:
+            raw = Path(t) / "raw"; snap = raw / self.today
+            shutil.copytree(self.raw / self.today, snap)
+            nl = chr(10)
+            for sid in ("CPIAUCNS", "CPIAUCSL"):
+                f = snap / f"{sid}.csv"
+                linjer = f.read_text(encoding="utf-8").splitlines()
+                rk = [ln.split(",")[0] + "," if ln.startswith("2025-10-01") else ln      # hullet, uanset vintage
+                      for ln in linjer[1:] if ln[:7] < "2026-10"]
+                y, m, v = int(rk[-1][:4]), int(rk[-1][5:7]), float(rk[-1].split(",")[1])
+                while (y, m) < (2026, 10):
+                    y, m, v = (y, m + 1, v * 1.003) if m < 12 else (y + 1, 1, v * 1.003)
+                    rk.append(f"{y}-{m:02d}-01,{v:.3f}")
+                f.write_text(linjer[0] + nl + nl.join(rk) + nl, encoding="utf-8")
+            out = self._motor([], raw=raw)
+            sa = C.read_fred(snap, "CPIAUCSL")
+        self.assertIn("DATAHUL: CPIAUCNS 2025-10", out)
+        okt25 = (sa[(2025, 9)] * sa[(2025, 11)]) ** 0.5
+        linje = next(ln for ln in out.splitlines() if "CPI (SA) 3m/6m/12m ann." in ln)
+        self.assertIn(f"/ {(sa[(2026, 10)] / okt25 - 1) * 100:.1f}% (2025-10 interpoleret)", linje)
+
 
 # ============================================================== debate.py
 class TestMotorHelpers(unittest.TestCase):
@@ -649,6 +680,31 @@ class TestMotorHelpers(unittest.TestCase):
 
     def test_ann_rate_for_kort_serie_giver_nan(self):
         self.assertTrue(np.isnan(M.ann_rate({(2026, 1): 100.0}, 3)))
+
+    def test_mdr_foer_krydser_aarsskifte(self):
+        self.assertEqual(M.mdr_foer((2026, 1), 1), (2025, 12))
+        self.assertEqual(M.mdr_foer((2026, 10), 12), (2025, 10))
+        self.assertEqual(M.mdr_foer((2026, 3), 27), (2023, 12))
+
+    def test_udfyld_huller_interpolerer_log_lineaert(self):
+        s, fyldt = M.udfyld_huller({(2025, 9): 100.0, (2025, 11): 121.0})
+        self.assertEqual(fyldt, [(2025, 10)])
+        self.assertAlmostEqual(s[(2025, 10)], 110.0)
+        s, fyldt = M.udfyld_huller({(2025, 12): 100.0, (2026, 3): 133.1})
+        self.assertEqual(fyldt, [(2026, 1), (2026, 2)])
+        self.assertAlmostEqual(s[(2026, 1)], 110.0)
+        self.assertAlmostEqual(s[(2026, 2)], 121.0)
+        self.assertEqual(M.udfyld_huller({(2026, 1): 1.0, (2026, 2): 2.0}), ({(2026, 1): 1.0, (2026, 2): 2.0}, []))
+
+    def test_ann_rate_er_kalenderbaseret_ved_hul(self):
+        """FRED mangler 2025-10 (BLS-shutdown). 12m fra 2026-09 skal maales fra 2025-09; positionelt
+        blev det 2025-08 (13 maaneder) — 10/10-dashboardet viste CPI 12m 3,7 % mod sande 3,4 %."""
+        s = {M.mdr_foer((2026, 9), n): 100 * 1.003 ** (13 - n) for n in range(14) if n != 11}
+        self.assertNotIn((2025, 10), s)
+        self.assertAlmostEqual(M.ann_rate(s, 12), (1.003 ** 12 - 1) * 100, places=9)
+        s[(2026, 10)] = s[(2026, 9)] * 1.003            # startmaaneden er selve hullet
+        self.assertTrue(np.isnan(M.ann_rate(s, 12)))
+        self.assertAlmostEqual(M.ann_rate(M.udfyld_huller(s)[0], 12), (1.003 ** 12 - 1) * 100, places=9)
 
 
 class TestSpine(unittest.TestCase):

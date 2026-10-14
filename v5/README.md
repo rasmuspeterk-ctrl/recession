@@ -348,3 +348,20 @@ for kaeden — som ved tidligere serieudvidelser. Foerste hovedbogsraekke paa da
 motor laeste versionen i manifestets model-blok i stedet for i toppen. Hashen 6baeade4 identificerer v5.0
 entydigt, og ingen tal er beroert. Raekken er IKKE redigeret (historiske raekker roeres aldrig); fejlen er
 rettet i koden efter logfoeringen og daekket af en test.
+
+## Vedligehold 2026-10-14: CPI-hullet 2025-10 (ingen modelaendring; P, baand og vaegte bit-identiske)
+
+FRED har tomme felter for 2025-10 i CPIAUCSL, CPIAUCNS, UNRATE og SAHMREALTIME: BLS udgav aldrig oktober 2025
+(shutdown). To fejl i `motor.py`, begge rettet:
+
+- **November-ritualet ville crashe.** `cpi_yoy` slog (aar-1, maaned) op direkte og fejlede med `KeyError: (2025, 10)`,
+  saa snart oktober-CPI 2026 var udgivet (reproduceret; samme fejl ville ramme `cpi_yoy_1` i oktober 2027).
+- **"CPI (SA) 12m" var et 13-maaneders vindue.** `ann_rate` talte observationer, ikke kalendermaaneder. 10/10-
+  dashboardet viste 3,7 % mod sande 3,4 % (`dashboard.json` regenereret fra samme snapshot; det er den eneste
+  aendrede vaerdi). Hovedbogen har ingen CPI-kolonne og er uroert.
+
+Rettelse: `ann_rate` maaler over kalendermaaneder (`mdr_foer`), og `udfyld_huller` interpolerer interne huller
+log-lineaert i de maanedlige prisindeks (CPI NSA/SA, PCE). Motor printer `DATAHUL: ...` under model-inputs og
+`(2025-10 interpoleret)` paa kontekstlinjerne, naar en interpoleret maaned faktisk indgaar. Det roerer kun
+realrate/d_infl (fuldmodellen, ikke operationel) og kontekstlinjer. Fem nye tests; den simulerede november-koersel
+(`test_oktober_cpi_2026_crasher_ikke_og_hullet_markeres`) er roed paa den gamle kode.
