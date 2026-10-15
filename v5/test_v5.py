@@ -2101,5 +2101,151 @@ class TestRaad2027SkillSaetning(unittest.TestCase):
         self.assertIn(M.STYRKEKLAUSUL, s)
 
 
+
+# ============================================================== RAADETS_2027: de forseglede specs (protokol2027.py)
+import protokol2027 as P27
+
+
+class TestRaad2027Forsegling(unittest.TestCase):
+    """RAADETS_2027 §12 trin 3: hver spec i spec2027/ er forseglet (sha256 laast i koden) og pushet foer koden."""
+
+    def test_alle_specs_matcher_deres_forsegling(self):
+        for navn, h in P27.SPECS.items():
+            self.assertEqual(P27.spec_sha256(navn), h, navn)
+            self.assertEqual(P27.kraev_forseglet(navn), h)
+
+    def test_aendret_spec_stopper_hoejlydt(self):
+        with tempfile.TemporaryDirectory() as t:
+            d = Path(t) / "spec2027"; shutil.copytree(P27.SPEC_DIR, d)
+            navn = sorted(P27.SPECS)[0]
+            (d / navn).write_bytes((d / navn).read_bytes() + b"tilfoejet efter forseglingen\n")
+            with mock.patch.object(P27, "SPEC_DIR", d):
+                with self.assertRaisesRegex(SystemExit, "aendret efter forseglingen"):
+                    P27.kraev_forseglet(navn)
+                (d / navn).unlink()
+                with self.assertRaisesRegex(SystemExit, "mangler"):
+                    P27.kraev_forseglet(navn)
+
+    def test_crlf_arbejdskopi_giver_samme_forsegling(self):
+        navn = sorted(P27.SPECS)[0]
+        with tempfile.TemporaryDirectory() as t:
+            d = Path(t) / "spec2027"; d.mkdir()
+            lf = (P27.SPEC_DIR / navn).read_bytes().replace(b"\r\n", b"\n")
+            (d / navn).write_bytes(lf.replace(b"\n", b"\r\n"))
+            with mock.patch.object(P27, "SPEC_DIR", d):
+                self.assertEqual(P27.spec_sha256(navn), P27.SPECS[navn])
+
+    def test_ikrafttraeden_er_september_2027(self):
+        self.assertFalse(P27.i_kraft(A2.midx(2027, 8)))
+        self.assertTrue(P27.i_kraft(A2.midx(2027, 9)))
+        self.assertFalse(P27.i_kraft_maaned("2026-09"))
+        self.assertTrue(P27.i_kraft_maaned("2027-09"))
+        self.assertFalse(P27.i_kraft_maaned(None))
+
+
+class TestRaad2027Gate(unittest.TestCase):
+    """RAADETS_2027 §2.3 (spec2027/1_gate.md): ensidet gate mod egen kritisk vaerdi -> kun et dagsordenspunkt."""
+
+    FELTER = {"protokol", "spec_sha256", "identiske_origins", "n_origins", "curve_only_wf", "curve_only_brier",
+              "fuldmodel_wf", "fuldmodel_brier", "delta_pp", "sd_block_pp", "kritisk_vaerdi_pp", "dagsordenspunkt",
+              "mde80_pp", "mde80_note", "uden_stoerste_blok", "ved_start", "note"}
+
+    @classmethod
+    def setUpClass(cls):
+        TestMotor.setUpClass.__func__(cls)
+
+    @classmethod
+    def tearDownClass(cls):
+        TestMotor.tearDownClass.__func__(cls)
+
+    _motor = TestMotor._motor
+
+    def test_reglen_er_ensidet(self):
+        over, K, mde80 = P27.regel(0.0, 10.0)
+        self.assertAlmostEqual(K, 19.6)
+        self.assertAlmostEqual(mde80, 28.01585)
+        self.assertFalse(P27.regel(-500.0, 10.0)[0])          # et stort negativt Delta udloeser intet
+        self.assertFalse(P27.regel(K, 10.0)[0])               # Delta = K udloeser ikke
+        self.assertTrue(P27.regel(K + 1e-9, 10.0)[0])         # Delta lige over K udloeser
+
+    def test_uparrede_lister_stopper_refitten(self):
+        a = [(1970, 1, 0.2, 0.0), (1970, 2, 0.3, 1.0)]
+        with self.assertRaisesRegex(SystemExit, "uparret"):
+            P27.parret(a, [(1970, 1, 0.2, 0.0), (1970, 3, 0.3, 1.0)])
+        with self.assertRaisesRegex(SystemExit, "uparret"):
+            P27.parret(a, [(1970, 1, 0.2, 0.0), (1970, 2, 0.3, 0.0)])          # samme origin, anden label
+        self.assertEqual(P27.parret(a, a), [(1970, 1, 0.2, 0.2, 0.0), (1970, 2, 0.3, 0.3, 1.0)])
+
+    def test_stoerst_bidragende_blok(self):
+        eps = [(A2.midx(1970, 1), A2.midx(1970, 12)), (A2.midx(1980, 1), A2.midx(1980, 12)),
+               (A2.midx(1990, 1), A2.midx(1990, 12))]
+        rng = np.random.default_rng(1)
+        par = []
+        for y in list(range(1962, 1970)) + list(range(1971, 1980)) + list(range(1981, 1990)):
+            for q in (1, 2, 3, 4):
+                yy = float(rng.random() < 0.3)
+                p_5 = (0.8 if yy else 0.1) if 1971 <= y <= 1979 else 0.3     # F5 bedre KUN i blok 1
+                par.append((y, q, p_5, 0.3, yy))
+        rk, top = P27.uden_blokke(par, eps)
+        self.assertEqual(top["blok"], 1)
+        delta = P27._skill_diff([(a, b, c) for (_, _, a, b, c) in par])
+        self.assertLess(top["delta_uden_pp"], delta)
+        self.assertEqual(top["bidrag_pp"], max(r["bidrag_pp"] for r in rk))
+        self.assertEqual(sum(r["n_origins"] for r in rk), len(par))
+
+    def _finalize(self, ikraft):
+        with tempfile.TemporaryDirectory() as t:
+            here = Path(t)
+            for fn in ("ablation7_resultat.json", "ablation8_resultat.json"):     # NB: ablation3_resultat.json kopieres ikke
+                shutil.copy(HERE / fn, here / fn)
+            with mock.patch.object(F6, "HERE", here), mock.patch.object(P27, "IKRAFT", ikraft), \
+                 mock.patch.object(sys, "argv", ["finalize6.py", "--snapshot", str(C.RAW / "2026-09-19")]), quiet():
+                F6.main()
+            return json.loads((here / "weights.json").read_text(encoding="utf-8"))
+
+    def test_2027_gate_paa_kalibreringens_snapshot(self):
+        W = self._finalize(A2.midx(2026, 1))         # ikrafttraeden flyttet frem: 2027-reglen koerer paa 72c3371d's data
+        g = W["gate"]
+        self.assertEqual(set(g), self.FELTER)
+        self.assertEqual(g["protokol"], "RAADETS_2027 §2.3")
+        self.assertEqual(g["spec_sha256"], P27.SPECS["1_gate.md"])
+        self.assertEqual((g["n_origins"], g["curve_only_wf"], g["fuldmodel_wf"]), (198, 27.05, 23.16))
+        self.assertEqual(g["delta_pp"], -3.89)
+        self.assertEqual(g["kritisk_vaerdi_pp"], 21.06)         # repoets gamle "MDE" var en kritisk vaerdi (§2.2)
+        self.assertAlmostEqual(g["mde80_pp"], 2.801585 * g["sd_block_pp"], delta=0.02)
+        self.assertFalse(g["dagsordenspunkt"])
+        self.assertEqual(g["ved_start"]["1953Q2"]["delta_pp"], -31.0)    # = analyser/universstart.py
+        self.assertIn("delta_pp", g["ved_start"]["1960Q1"])
+        top = g["uden_stoerste_blok"]["blok"]
+        self.assertEqual(top["bidrag_pp"], max(r["bidrag_pp"] for r in g["uden_stoerste_blok"]["alle"]
+                                               if r["bidrag_pp"] is not None))
+        tekst = json.dumps(g) + json.dumps(W["fuldmodel"])
+        for forbudt in ("4.42", "4,42", "mde_pp", "raadsbeslutning_paakraevet", "RAADSBESLUTNING"):
+            self.assertNotIn(forbudt, tekst)
+        self.assertIn("kaldes aldrig evidens og skifter intet", g["note"])
+        self.assertIn("frossen benchmark", W["fuldmodel"]["status"])
+        self.assertEqual(W["operationel"], "curve_only")
+
+    def test_foer_ikrafttraeden_er_gaten_v501s(self):
+        W = self._finalize(P27.IKRAFT)
+        self.assertNotIn("protokol", W["gate"])
+        self.assertIn("raadsbeslutning_paakraevet", W["gate"])
+        self.assertEqual(W["op"]["w"], json.loads((HERE / "weights.json").read_text(encoding="utf-8"))["op"]["w"])
+
+    def test_motor_printer_ikke_laant_stoejgulv_under_2027_gate(self):
+        """Spec 1 §5: under en 2027-gate printer motor ikke trin 3's 4,42 (stoejgulv-linjen fra diagnostik.gate_mde)."""
+        with tempfile.TemporaryDirectory() as t:
+            here = Path(t) / "v5"; shutil.copytree(self.here, here)
+            W = json.loads((here / "weights.json").read_text(encoding="utf-8"))
+            W["gate"] = dict(protokol="RAADETS_2027 §2.3", identiske_origins=True,
+                             note="Delta -3.89pp <= kritisk vaerdi 21.06pp")
+            W["fuldmodel"]["note"] = W["gate"]["note"]
+            (here / "weights.json").write_text(json.dumps(W), encoding="utf-8")
+            ud = self._motor(["--allow-stale"], here=here)
+        self.assertNotIn("Stoejgulvet", ud)
+        self.assertNotIn("4.42", ud)
+        self.assertIn("Stoejgulvet", self._motor(["--allow-stale"]))     # kontrol: v5.0.1-gaten printer den stadig
+
+
 if __name__ == "__main__":
     unittest.main()

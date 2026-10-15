@@ -43,6 +43,7 @@ import numpy as np
 import calibrate as C
 import ablation2_nber as A2
 import finalize6 as F6
+import protokol2027 as P27
 
 HERE = Path(__file__).parent
 L = A2.L_EMBARGO
@@ -381,7 +382,8 @@ def main():
 
     gate_mde = None
     D5 = A2.build_dataset(snap, C.F5)
-    if A2.samme_origins(Dc, D5):
+    # RAADETS_2027 §2.3 (spec2027/1_gate.md §5): en 2027-kalibrering har gaten i manifestet uden trin 3's 4,42
+    if A2.samme_origins(Dc, D5) and not P27.i_kraft_maaned(W.get("refit_maaned")):
         r5, _, _ = A2.wf_nber(D5, eps, avail, usrec, L, R_score=R)
         paired = [(y, q, p5, pc, yy) for (y, q, p5, yy), (_, _, pc, _) in zip(r5, ref)]
         _md, sd_g, _lo, _hi = F6.A3.mde_bootstrap(paired, eps)

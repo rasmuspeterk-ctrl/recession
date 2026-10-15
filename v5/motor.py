@@ -31,6 +31,7 @@ import numpy as np
 import calibrate as C
 import spine as SP
 import ablation2_nber as A2
+import protokol2027 as P27
 
 HERE = Path(__file__).parent
 STALE_DAYS = 40
@@ -688,7 +689,7 @@ def main():
           f"{(str(cp[0][0]) + '-' + format(cp[0][1], '02d')) if cp else '?'}, publiceringslag — anden disciplin]")
     print(f"   Note: {fm.get('note', '')}")
     mg_ = (diag or {}).get("gate_mde")
-    if mg_ and "laant" not in str(fm.get("note", "")):
+    if mg_ and "laant" not in str(fm.get("note", "")) and not P27.er_2027_gate(W.get("gate")):   # 2027: 4,42 er ude (§2.3)
         print(f"   (Stoejgulvet {mg_.get('mde_trin3_pp')}pp er trin 3's MDE, laant fra frekvenstesten; gatens EGEN MDE paa "
               f"kalibreringens panel er {mg_['mde_gate_pp']}pp (diagnostik, F8). Beslutningsreglen aendres kun af raadet.)")
     if fm_ok:

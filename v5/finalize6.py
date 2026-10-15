@@ -20,6 +20,8 @@ det en raadsbeslutning om en v5.1-protokol, aldrig et automatisk skift.
     skal vaere refit-klar (meta.spine.refit_klar, F5); annonceringstabellen skal vaere i synk med
     USREC (F7).
 §3.5 Kun modne origins (vinduets slut + 18 mdr <= refit-maaned) fittes OG scores.
+RAADETS_2027 (refit-maaned >= 2027-09; protokol2027.py, forseglede specs i spec2027/): §2.3 gaten er ensidet mod
+    sin egen kritiske vaerdi 1,96 x SD_block og udloeser kun et obligatorisk dagsordenspunkt (den laante 4,42 er ude).
 §7  Bro ved fast inputvektor: (i) legacy-rygrad, (ii) korrigerede kilder paa samme origins,
     (iii) udvidet panel. Raa koefficienter (beta = w1/s, alpha = w0 - w1*mu/s) ved siden af.
 
@@ -36,6 +38,7 @@ import numpy as np
 import calibrate as C
 import ablation2_nber as A2
 import ablation3_frekvens as A3
+import protokol2027 as P27
 
 HERE = Path(__file__).parent
 def kal():
@@ -264,7 +267,15 @@ def rekalibrer(snap, spine_file=None, R=None, version=VERSION, kaldt_som="rekali
     fac = vaerste_fejlalarm(resc)
     identiske = A2.samme_origins(Dc, D5)
     gate = dict(identiske_origins=identiske, curve_only_wf=round(impc, 2), curve_only_brier=round(brc, 2))
-    if identiske:
+    if P27.i_kraft(R):
+        # RAADETS_2027 §2.3 (spec2027/1_gate.md): ensidet gate mod egen kritisk vaerdi -> dagsordenspunkt; 4,42 er ude
+        gate, res5 = P27.gate(Dc, D5, eps, avail, usrec, R, resc)
+        if res5:
+            _, _, imp5, br5 = C.metrics(res5)
+            fa5 = vaerste_fejlalarm(res5)
+        else:
+            imp5, br5, fa5 = None, None, None
+    elif identiske:
         res5, _, _ = A2.wf_nber(D5, eps, avail, usrec, A2L, R_score=R)
         _, _, imp5, br5 = C.metrics(res5)
         fa5 = vaerste_fejlalarm(res5)
@@ -423,6 +434,8 @@ def legacy_manifest():
 
 def fuldmodel_status(g):
     """G1.7 (V501 §6): statusteksten foelger gatens beslutning, ikke en vilkaarlig lille foering."""
+    if P27.er_2027_gate(g):
+        return P27.fuldmodel_status(g)
     if g.get("raadsbeslutning_paakraevet"):
         return "slaar curve-only med mere end MDE — RAADSBESLUTNING PAAKRAEVET (v5.1), ikke operationel (§6)"
     if g.get("fuldmodel_slaar"):
@@ -519,7 +532,11 @@ def main():
     print(f"curve-only: +{g['curve_only_wf']:.1f}%/+{g['curve_only_brier']:.1f}%  "
           + (f"fuldmodel: +{g['fuldmodel_wf']:.1f}%/+{g['fuldmodel_brier']:.1f}%  (identiske origins)" if g["identiske_origins"]
              else "fuldmodel: comparison unavailable"))
-    if g.get("raadsbeslutning_paakraevet"):
+    if P27.er_2027_gate(g):
+        for ln in P27.gate_linjer(g):
+            print(ln)
+        print("Operationel model: curve_only (laast, RAADETS_V501 §6; ingen selektor, RAADETS_2027 §2.1).")
+    elif g.get("raadsbeslutning_paakraevet"):
         print("!!! Fuldmodellen slaar curve-only med mere end MDE: RAADSBESLUTNING PAAKRAEVET (v5.1) — intet skiftes automatisk (§6).")
     else:
         print("Operationel model: curve_only (laast, §6). " + g.get("note", ""))
