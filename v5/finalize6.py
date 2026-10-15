@@ -21,7 +21,8 @@ det en raadsbeslutning om en v5.1-protokol, aldrig et automatisk skift.
     USREC (F7).
 §3.5 Kun modne origins (vinduets slut + 18 mdr <= refit-maaned) fittes OG scores.
 RAADETS_2027 (refit-maaned >= 2027-09; protokol2027.py, forseglede specs i spec2027/): §2.3 gaten er ensidet mod
-    sin egen kritiske vaerdi 1,96 x SD_block og udloeser kun et obligatorisk dagsordenspunkt (den laante 4,42 er ude).
+    sin egen kritiske vaerdi 1,96 x SD_block og udloeser kun et obligatorisk dagsordenspunkt (den laante 4,42 er ude);
+    §9 L_R-auditten (max(18, top-lag, bund-lag - 12); eligibility med info ved R; finalitet) stopper refitten ved brud.
 §7  Bro ved fast inputvektor: (i) legacy-rygrad, (ii) korrigerede kilder paa samme origins,
     (iii) udvidet panel. Raa koefficienter (beta = w1/s, alpha = w0 - w1*mu/s) ved siden af.
 
@@ -521,10 +522,19 @@ def main():
                      "og annonceringstabellen er uaendret siden manifest "
                      f"{forrige.get('hash')}. Vaegtene er frosne. En reparation kraever "
                      '--reparation "<begrundelse>" (skrives i manifestet).')
-    lr = L_R_audit()
-    print(f"L_R-audit (blueprint §1): stoerste top-annonceringslag {lr['stoerste_top_lag']} mdr ({lr['fra']}) -> "
-          f"L_R = {lr['L_R']} {'= gulvet 18 (OK)' if lr['ok'] else '> 18: EMBARGOGULV OG PROTOKOLVERSION SKAL OP (raadet)'}")
+    lr = None
+    if not P27.i_kraft(A2.midx(int(snap.name[:4]), int(snap.name[5:7]))):
+        lr = L_R_audit()
+        print(f"L_R-audit (blueprint §1): stoerste top-annonceringslag {lr['stoerste_top_lag']} mdr ({lr['fra']}) -> "
+              f"L_R = {lr['L_R']} {'= gulvet 18 (OK)' if lr['ok'] else '> 18: EMBARGOGULV OG PROTOKOLVERSION SKAL OP (raadet)'}")
     m, ekstra = rekalibrer(snap)
+    if P27.i_kraft(ekstra["R"]):
+        # RAADETS_2027 §9 (spec2027/2_L_R_audit.md): begge uligheder + eligibility med info ved R; stop ved brud
+        lr = P27.L_R_audit(ekstra["Dc"], ekstra["eps"], ekstra["avail"], ekstra["usrec"], ekstra["R"],
+                           rows=A2.laes_annonceringer(ann_fil()))
+        for ln in P27.L_R_linjer(lr):
+            print(ln)
+        P27.stop_ved_brud(lr)
     m["L_R_audit"] = lr
     if reparation is not None:
         m["reparation"] = reparation

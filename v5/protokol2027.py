@@ -9,7 +9,8 @@ efter forseglingen. Er spec og kode uenige, gaelder spec'en (§3.4).
 Intet her aendrer P, baand eller vaegte foer refitten: reglerne gaelder kun for kalibreringer med refit-maaned
 R >= IKRAFT (2027-09). En kalibrering med R < IKRAFT (fx reproduktionen af 72c3371d) koerer v5.0.1-reglerne.
 
-  spec2027/1_gate.md   §2.1-2.3  ensidet benchmark-gate mod kritisk vaerdi -> obligatorisk dagsordenspunkt
+  spec2027/1_gate.md        §2.1-2.3  ensidet benchmark-gate mod kritisk vaerdi -> obligatorisk dagsordenspunkt
+  spec2027/2_L_R_audit.md   §9        L_R = max(18, top-lag, bund-lag - 12); eligibility med info ved R; stop ved brud
 
 Kun stdlib + numpy.
 """
@@ -28,6 +29,7 @@ IKRAFT = A2.midx(2027, 9)          # september-refitten 2027 (RAADETS_2027 §0)
 # sha256 af de forseglede specs (LF-normaliserede bytes); en spec er forseglet, naar den er pushet foer koden
 SPECS = {
     "1_gate.md": "127f46beb9212a3ede057f17c8fccdd364b1175f5e09f79b3d2c1a0cdcb4620c",
+    "2_L_R_audit.md": "017f1f3152b32e367e4f67d77be696bf5944a93691ca37dd8462bebb66c0a2e3",
 }
 
 Z_975, Z_80 = 1.959964, 0.841621   # spec 1 §4.1: 80 %-MDE = (z_0,975 + z_0,80) x SD_block (normalteori)
@@ -206,3 +208,136 @@ def gate_linjer(g):
         ud.append("DAGSORDENSPUNKT (RAADETS_2027 §2.3): F5 slaar curve-only med mere end den kritiske vaerdi — "
                   "obligatorisk punkt paa raadets dagsorden. Intet skiftes; refitten fortsaetter.")
     return ud
+
+
+# ------------------------------------------------------------------ spec 2: L_R-audit og eligibility (§9)
+INF = 10 ** 9
+
+
+def _md(tekst):
+    """'YYYY-MM[-DD]' -> midx (maanedsgranularitet, som ablation2_nber.load_announcements)."""
+    return A2.midx(int(tekst[:4]), int(tekst[5:7]))
+
+
+def L_R_formel(rows, L=A2.L_EMBARGO):
+    """Spec 2 §2-3: L_R = max(18, max lag_peak, max lag_trough - 12) fra tabellens raekker, og de to uligheder mod
+    den operationelle embargo L. Top-leddet og bund-leddet rapporteres hver for sig."""
+    lag = lambda r: _md(r["announcement_date"]) - _md(r["cycle_month"])
+    top = max(((lag(r), r["event"]) for r in rows if r["event"].startswith("peak")), default=(0, "-"))
+    bund = max(((lag(r), r["event"]) for r in rows if r["event"].startswith("trough")), default=(0, "-"))
+    return dict(L_embargo=L, L_R=max(18, top[0], bund[0] - 12),
+                top_led=dict(max_lag=top[0], raekke=top[1], graense=L, ok=top[0] <= L),
+                bund_led=dict(max_lag=bund[0], max_lag_minus_12=bund[0] - 12, raekke=bund[1], graense=L,
+                              ok=bund[0] - 12 <= L))
+
+
+def episode_info(eps, rows, avail, usrec):
+    """Spec 2 §4: [(O, T, aP, aT)] pr. USREC-episode. aP = maaneden toppen er kendt (avail; pre-1979 T + 18),
+    aT = maaneden bunden er kendt (trough-raekke +/- 2 mdr; pre-1979 T + 18; aaben episode/ingen raekke: aldrig)."""
+    aaben = A2.aaben_episode(usrec) if usrec else None
+    bunde = [(_md(r["cycle_month"]), _md(r["announcement_date"])) for r in rows if r["event"].startswith("trough")]
+    info = []
+    for O, T in eps:
+        aP = avail.get(O, INF)
+        if O == aaben:
+            aT = INF
+        elif O < A2.POST1979:
+            aT = T + A2.PRE1979_TROUGH_LAG
+        else:
+            hit = [a for t, a in bunde if abs(t - T) <= 2]
+            aT = min(hit) if hit else INF
+        info.append((O, T, aP, aT))
+    return info
+
+
+def censur_status(q, R, info):
+    """Spec 2 §4: origin-maaned q's censurstatus med KUN den information, der er tilgaengelig ved R:
+    'censureret' (inde i en episode med kendt bund), 'aaben' (inde i en aaben episode — motorens
+    aabne-episode-regel; ikke afgjort) eller 'fri'. T bruges kun, naar bunden er kendt ved R."""
+    for O, T, aP, aT in info:
+        if aP > R or q < O:
+            continue
+        if aT <= R:
+            if q <= T:
+                return "censureret"
+        else:
+            return "aaben"
+    return "fri"
+
+
+def eligible_2027(D, info, avail, win_onsets, R, L_R):
+    """Spec 2 §5 (§9.2): eligible iff qend + 12 + L_R <= R OG censur_status == 'fri'. -> (maske, labels ved R)."""
+    n = len(D["qend"])
+    elig, yR = np.zeros(n, bool), np.zeros(n)
+    for j in range(n):
+        q = int(D["qend"][j])
+        if q + 12 + L_R > R or censur_status(q, R, info) != "fri":
+            continue
+        elig[j] = True
+        yR[j] = 1.0 if any(avail[o] <= R for o in win_onsets[j]) else 0.0
+    return elig, yR
+
+
+def L_R_audit(D, eps, avail, usrec, R, rows, L=A2.L_EMBARGO):
+    """Spec 2 §6: (1) ulighederne, (2) eligible_fit == eligible_2027 for hver maaned 1979-01..R, (3) finalitet: et
+    origin, der er modent ved R', har samme (eligibility, label) ved R' som ved R. Returnerer audit-dict; stoppet
+    sker i stop_ved_brud (finalize6 printer foerst)."""
+    h = kraev_forseglet("2_L_R_audit.md")
+    a = dict(protokol="RAADETS_2027 §9", spec_sha256=h, **L_R_formel(rows, L))
+    a["interval"] = [f"{A2.POST1979 // 12}-{A2.POST1979 % 12 + 1:02d}", f"{R // 12}-{R % 12 + 1:02d}"]
+    if not (a["top_led"]["ok"] and a["bund_led"]["ok"]):
+        a.update(konflikter=dict(n=None), finalitetsbrud=dict(n=None), ok=False)
+        return a
+    info = episode_info(eps, rows, avail, usrec)
+    _, win, _ = A2.nber_labels(D, eps, usrec)
+    qk = lambda j: f"{D['qk'][j][0]}Q{D['qk'][j][1]}"
+    eR, yR = eligible_2027(D, info, avail, win, R, a["L_R"])
+    konf, brud = [], []
+    for Rp in range(A2.POST1979, R + 1):
+        e1, _ = A2.eligible_fit(D, eps, avail, usrec, Rp, L=L)
+        e2, y2 = eligible_2027(D, info, avail, win, Rp, a["L_R"])
+        mp = f"{Rp // 12}-{Rp % 12 + 1:02d}"
+        for j in np.where(e1 != e2)[0]:
+            konf.append(f"{qk(j)} ved {mp}: eligible_fit {bool(e1[j])}, §9.2 {bool(e2[j])} "
+                        f"(status {censur_status(int(D['qend'][j]), Rp, info)})")
+        moden = D["qend"] + 12 + a["L_R"] <= Rp
+        for j in np.where(moden)[0]:
+            if (bool(e2[j]), y2[j] if e2[j] else None) != (bool(eR[j]), yR[j] if eR[j] else None):
+                brud.append(f"{qk(j)}: ved {mp} (eligible {bool(e2[j])}, label {int(y2[j])}) != ved refit "
+                            f"(eligible {bool(eR[j])}, label {int(yR[j])})")
+    a.update(konflikter=dict(n=len(konf), foerste=konf[:10]), finalitetsbrud=dict(n=len(brud), foerste=brud[:10]),
+             n_origins=len(D["qend"]), ok=not konf and not brud)
+    return a
+
+
+def L_R_linjer(a):
+    t, b = a["top_led"], a["bund_led"]
+    ud = [f"L_R-audit (RAADETS_2027 §9): L_R = max(18, {t['max_lag']}, {b['max_lag']} - 12) = {a['L_R']} | top-leddet: "
+          f"max lag_peak {t['max_lag']} ({t['raekke']}) <= {t['graense']}: {'OK' if t['ok'] else 'BRUDT'} | bund-leddet: "
+          f"max lag_trough {b['max_lag']} ({b['raekke']}) - 12 = {b['max_lag_minus_12']} <= {b['graense']}: "
+          f"{'OK' if b['ok'] else 'BRUDT'}"]
+    if a["konflikter"]["n"] is not None:
+        ud.append(f"   eligible_fit mod §9.2-eligibility {a['interval'][0]}..{a['interval'][1]}: {a['konflikter']['n']} konflikter; "
+                  f"finalitet: {a['finalitetsbrud']['n']} brud")
+        for x in a["konflikter"]["foerste"] + a["finalitetsbrud"]["foerste"]:
+            ud.append(f"   - {x}")
+    return ud
+
+
+def stop_ved_brud(a):
+    """Spec 2 §3/§6: brud -> refitten stopper (intet skrevet) indtil raadet har taget stilling. Et brud paa top-
+    leddet stopper alene."""
+    grunde = []
+    if not a["top_led"]["ok"]:
+        grunde.append(f"top-leddet er brudt (max lag_peak {a['top_led']['max_lag']} > {a['top_led']['graense']}, "
+                      f"{a['top_led']['raekke']}) — stopper refitten alene (DeepSeek)")
+    if not a["bund_led"]["ok"]:
+        grunde.append(f"bund-leddet er brudt (max lag_trough - 12 = {a['bund_led']['max_lag_minus_12']} > "
+                      f"{a['bund_led']['graense']}, {a['bund_led']['raekke']})")
+    if a["konflikter"]["n"]:
+        grunde.append(f"{a['konflikter']['n']} konflikter mellem eligible_fit og §9.2 (spec og kode uenige, §3.4)")
+    if a["finalitetsbrud"]["n"]:
+        grunde.append(f"{a['finalitetsbrud']['n']} modne origins er redigeret efter modning")
+    if grunde:
+        raise SystemExit("FEJL (RAADETS_2027 §9.3): L_R-auditten er brudt — " + "; ".join(grunde)
+                         + ". Refitten stopper; intet er skrevet. Raadet skal tage stilling.")

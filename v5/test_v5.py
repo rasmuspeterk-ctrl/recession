@@ -2247,5 +2247,138 @@ class TestRaad2027Gate(unittest.TestCase):
         self.assertIn("Stoejgulvet", self._motor(["--allow-stale"]))     # kontrol: v5.0.1-gaten printer den stadig
 
 
+
+def koer_finalize6_2027(ikraft, snapshot="2026-09-19", ann_bytes=None):
+    """finalize6 i en temp-mappe med RAADETS_2027's ikrafttraeden flyttet til `ikraft` (tests af 2027-stien paa
+    kalibreringens egne data). -> (weights.json, manifest, stdout)."""
+    with tempfile.TemporaryDirectory() as t:
+        here = Path(t)
+        for fn in ("ablation7_resultat.json", "ablation8_resultat.json"):
+            shutil.copy(HERE / fn, here / fn)
+        if ann_bytes is not None:
+            (here / "nber_announcements.csv").write_bytes(ann_bytes)
+        out = io.StringIO()
+        with mock.patch.object(F6, "HERE", here), mock.patch.object(P27, "IKRAFT", ikraft), \
+             mock.patch.object(sys, "argv", ["finalize6.py", "--snapshot", str(C.RAW / snapshot)]), \
+             contextlib.redirect_stdout(out):
+            F6.main()
+        W = json.loads((here / "weights.json").read_text(encoding="utf-8"))
+        m = json.loads((here / "kalibreringer" / f"manifest_{W['manifest_hash']}.json").read_text(encoding="utf-8"))
+        return W, m, out.getvalue()
+
+
+class TestRaad2027LR(unittest.TestCase):
+    """RAADETS_2027 §9 (spec2027/2_L_R_audit.md): datostemplede eligibility-tests for 1990-91, 2001 og 1980-81 med
+    graensetests R-1/R (Fable) og negative kontroller paa censureringen — skal bestaa, foer auditten koerer."""
+
+    @classmethod
+    def setUpClass(cls):
+        snap = C.RAW / "2026-09-19"
+        cls.usrec = A2.load_usrec(snap)
+        cls.eps = A2.episodes_from_usrec(cls.usrec)
+        cls.avail = A2.load_announcements(cls.eps, usrec=cls.usrec)
+        cls.rows = A2.laes_annonceringer()
+        cls.info = P27.episode_info(cls.eps, cls.rows, cls.avail, cls.usrec)
+        cls.D = A2.build_dataset(snap, ["curve"])
+        _, cls.win, _ = A2.nber_labels(cls.D, cls.eps, cls.usrec)
+
+    def _o(self, y, q, R):
+        """(eligible, label, status) for origin yQq ved refit-maaned R; produktionens eligible_fit skal vaere enig."""
+        j = self.D["qk"].index((y, q))
+        e, yR = P27.eligible_2027(self.D, self.info, self.avail, self.win, R, 18)
+        e1, y1 = A2.eligible_fit(self.D, self.eps, self.avail, self.usrec, R)
+        self.assertEqual(bool(e[j]), bool(e1[j]), f"{y}Q{q} ved {R}")
+        if e[j]:
+            self.assertEqual(yR[j], y1[j])
+        return bool(e[j]), int(yR[j]), P27.censur_status(int(self.D["qend"][j]), R, self.info)
+
+    def _modning(self, y, q, label):
+        """Alder maales fra vinduets slutning: ude ved qend + 18 (Sols fejl) og ved H + L_R - 1, inde ved H + L_R."""
+        qe = A2.qend_idx(y, q)
+        self.assertFalse(self._o(y, q, qe + 18)[0])
+        self.assertFalse(self._o(y, q, qe + 12 + 18 - 1)[0])
+        self.assertEqual(self._o(y, q, qe + 12 + 18), (True, label, "fri"))
+
+    def _inde(self, y, q, aP, aT):
+        """Negativ kontrol: 'aaben' ved hver R fra topannonceringen til maaneden foer bundannonceringen, derefter
+        'censureret'; aldrig eligible."""
+        for R in range(aP, aT):
+            self.assertEqual(self._o(y, q, R)[::2], (False, "aaben"), f"{y}Q{q} ved {R}")
+        for R in (aT, aT + 1, A2.qend_idx(y, q) + 30, A2.midx(2026, 9)):
+            self.assertEqual(self._o(y, q, R)[::2], (False, "censureret"), f"{y}Q{q} ved {R}")
+
+    def _efter_bund(self, y, q, aT):
+        """Afgoerelse ved bundannonceringen: 'aaben' ved aT - 1, 'fri' ved aT."""
+        qe = A2.qend_idx(y, q)
+        self.assertEqual(P27.censur_status(qe, aT - 1, self.info), "aaben")
+        self.assertEqual(P27.censur_status(qe, aT, self.info), "fri")
+
+    def test_1990_91(self):
+        m = A2.midx
+        self._modning(1990, 1, 1)                          # positivt origin foer toppen (onset 1990-08)
+        for q in ((1990, 4), (1991, 1)):
+            self._inde(*q, aP=m(1991, 4), aT=m(1992, 12))  # top 1991-04-25, bund 1992-12-22
+        self._efter_bund(1991, 2, m(1992, 12))
+        self._modning(1991, 2, 0)                          # modner 1993-12, bunden kendt siden 1992-12
+
+    def test_2001(self):
+        m = A2.midx
+        self._modning(2000, 2, 1)                          # onset 2001-04 i vinduet
+        for q in ((2001, 2), (2001, 3)):
+            self._inde(*q, aP=m(2001, 11), aT=m(2003, 7))  # top 2001-11-26, bund 2003-07-17
+        self._efter_bund(2001, 4, m(2003, 7))
+        self._modning(2001, 4, 0)
+
+    def test_1980_81_dobbeltdyk(self):
+        m = A2.midx
+        for q in ((1980, 1), (1980, 2)):
+            self._inde(*q, aP=m(1980, 6), aT=m(1981, 7))   # top 1980-06-03, bund 1981-07-08
+        for q in ((1980, 3), (1981, 2)):                   # efter 1980-bunden: aaben indtil 1981-07, label 1 fra 1981-onsettet
+            self._efter_bund(*q, m(1981, 7))
+            self._modning(*q, 1)
+        self._inde(1981, 3, aP=m(1982, 1), aT=m(1983, 7))  # inde i 1981-82 (top 1982-01-06, bund 1983-07-08)
+        self._efter_bund(1982, 4, m(1983, 7))
+        self._modning(1982, 4, 0)
+
+    def test_audit_paa_det_committede_snapshot(self):
+        a = P27.L_R_audit(self.D, self.eps, self.avail, self.usrec, A2.midx(2026, 9), self.rows)
+        self.assertEqual(a["L_R"], 18)
+        self.assertEqual((a["top_led"]["max_lag"], a["top_led"]["raekke"]), (12, "peak_2007"))
+        self.assertEqual((a["bund_led"]["max_lag"], a["bund_led"]["raekke"]), (21, "trough_1991"))
+        self.assertTrue(a["top_led"]["ok"] and a["bund_led"]["ok"])
+        self.assertEqual((a["konflikter"]["n"], a["finalitetsbrud"]["n"]), (0, 0))
+        self.assertTrue(a["ok"])
+        P27.stop_ved_brud(a)                                # ingen undtagelse
+
+    def _rows(self, event, dato):
+        return [dict(r, announcement_date=dato) if r["event"] == event else dict(r) for r in self.rows]
+
+    def test_brud_paa_hvert_led_stopper(self):
+        top = P27.L_R_audit(self.D, self.eps, self.avail, self.usrec, A2.midx(2026, 9), self._rows("peak_2007", "2009-07-15"))
+        self.assertEqual((top["L_R"], top["top_led"]["ok"], top["bund_led"]["ok"]), (19, False, True))
+        with self.assertRaisesRegex(SystemExit, "top-leddet er brudt .* stopper refitten alene"):
+            P27.stop_ved_brud(top)                          # top-bruddet stopper, selv om bund-leddet er ok
+        bund = P27.L_R_audit(self.D, self.eps, self.avail, self.usrec, A2.midx(2026, 9), self._rows("trough_1991", "1993-10-15"))
+        self.assertEqual((bund["L_R"], bund["top_led"]["ok"], bund["bund_led"]["ok"]), (19, True, False))
+        with self.assertRaisesRegex(SystemExit, "bund-leddet er brudt"):
+            P27.stop_ved_brud(bund)
+        self.assertEqual(P27.L_R_formel(self._rows("trough_1991", "1993-09-15"))["bund_led"]["ok"], True)   # lag 30: graensen
+
+    def test_finalize6_koerer_auditten_fra_2027_og_stopper_ved_brud(self):
+        W, m, ud = koer_finalize6_2027(A2.midx(2026, 1))
+        a = m["L_R_audit"]
+        self.assertEqual((a["protokol"], a["L_R"], a["ok"]), ("RAADETS_2027 §9", 18, True))
+        self.assertEqual(a["spec_sha256"], P27.SPECS["2_L_R_audit.md"])
+        self.assertIn("L_R-audit (RAADETS_2027 §9)", ud)
+        self.assertNotIn("blueprint §1", ud)
+        tabel = (HERE / "nber_announcements.csv").read_bytes().replace(b"peak_2007,2007-12,2008-12-01", b"peak_2007,2007-12,2009-07-01")
+        self.assertIn(b"2009-07-01", tabel)
+        with self.assertRaisesRegex(SystemExit, "L_R-auditten er brudt"):
+            koer_finalize6_2027(A2.midx(2026, 1), ann_bytes=tabel)
+        _, m0, ud0 = koer_finalize6_2027(P27.IKRAFT)        # foer ikrafttraeden: v5.0.1's top-only-print
+        self.assertIn("blueprint §1", ud0)
+        self.assertNotIn("protokol", m0["L_R_audit"])
+
+
 if __name__ == "__main__":
     unittest.main()
