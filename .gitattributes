@@ -2,5 +2,5 @@
 # ingen linjeskift-konvertering, saa hash paa disk == hash i repo paa alle maskiner.
 v5/data/** -text
 v5/manual/** -text
-# F15: annonceringstabellen hashes (kanonisk i dag, raat i v5.0.1-manifestet) — ingen CRLF-konvertering
+# Annonceringstabellen hashes (rekalibrerings-trigger §3.2b; kanonisk fra kode-review F15): ingen linjeskift-konvertering.
 v5/nber_announcements.csv -text

@@ -6,7 +6,8 @@ ADVARSEL OM OPHAV (permanent): hypotesen er DATA-FORESLAAET — affoedt af trin 
 drop-analyse og trin 6's benchmark paa samme walk-forward som doemmer den her.
 Derfor er gates STRAMMERE end trin 4's, og resultatet baerer stemplet uanset udfald.
 Der findes ingen tiende delmaengde-hypotese efter denne uden ny oekonomisk
-begrundelse (nedskrevet i README foer koersel).
+begrundelse. (Erratum 2026-10-15, G1.5: der stod "nedskrevet i README foer koersel", men reglen og gates
+blev committet SAMMEN med resultatet og kan ikke verificeres udefra som praeregistrering.)
 
 FORHAANDSREGISTREREDE GATES (alle skal bestaas; fastlagt FOER koersel):
   G1  determinisme (to koersler identiske)

@@ -2,7 +2,9 @@
 
 **Præregistreret 2026-10-15, før hovedbogsrække 4** (kode-review 2026-10-15, G3.1–G3.6). Nøglen
 fastlægger, hvordan rækkerne i [LOG.md](LOG.md) en dag skal bedømmes. Den er skrevet, før nogen
-af rækkerne kan afgøres: række 1 (2026-08-12) har tidligst sit udfald ved udgangen af 2028.
+af rækkerne kan afgøres: række 1 (2026-08-12, vindue 2026-08..2027-07) kan efter (c) tidligst afgøres positivt
+ved en NBER-topannoncering (historisk 4-12 måneder efter toppen, dvs. tidligst i løbet af 2027) og negativt
+først, når 2029-01 (2027-07 + L_R 18 mdr.) er passeret.
 
 Nøglens hash (sha256 af filen med LF-linjeskift, første 8 tegn) skrives automatisk i noten
 `noegle <hash>` i den første række, der logges under den. En ændring af nøglen giver en ny hash og
@@ -43,7 +45,8 @@ oracle-fri variant (se pkt. 3), og de to tolkes i tandem.
 
 **(e) Alle rækker scores som logget.** Manifest (`kalibrering`) og måleinstrument (`input`:
 månedstal før 2026-09-28, daglig trailing måned derefter) er strata. De rapporteres separat, men
-bruges aldrig til at udelukke rækker. `ikke logget`-rækker er manglende data: de imputeres ikke,
+bruges aldrig til at udelukke rækker. `ikke logget`-rækker er manglende data: de imputeres ikke, deres `kalibrering`-celle er tom (ingen P blev
+beregnet),
 og antallet rapporteres ved siden af resultatet.
 
 **(f) Udfald føres i [UDFALD.csv](UDFALD.csv)** (append-only: rækkens logget-dato, Y,
@@ -96,7 +99,10 @@ siden af det, aldrig ved siden af +27,1 % alene.
 
 ## 4. Logning
 
-**(i) Én række pr. måned, logget i logvinduet dag 10–20.** Første kørsel i vinduet efter
+**(i) Én række pr. måned, logget på logdagen.** Logdagen er den første hverdag fra og med den 10. i
+måneden (oktober 2026: mandag 12.; november: tirsdag 10.). `--log` er tilladt på logdagen og de tre
+følgende dage, så en blokering (pkt. k) kan løses — et smalt, forudbestemt vindue, så logdagen ikke kan
+vælges efter at have set mellemlæsninger. Første kørsel i vinduet efter
 `fetch.py` er den, der logges. Motor afviser `--log` uden for vinduet. Undtagelse kun med
 `--log-uden-for-vindue "<begrundelse>"`, og begrundelsen skrives i rækkens note.
 

@@ -155,6 +155,16 @@ Tre nye **firewallede monitor-linjer** (mærket "svaerm-tripwire", ingen indflyd
 
 **Bevidst IKKE tilføjet:** BIS-kreditgab (lang publikationslag), NFCI (kraftigt revideret — vintage-audittens lektion), SLOOS (kvartalsvis, kort historik — allerede afvist som feature-klasse). Sværmens CAPE/ERP/margin-tærskler er allerede i market conditions-blokken.
 
+## Kreditkanalen ud over HY OAS (tilføjet 2026-10-15, kode-review F36/F37)
+
+Sværmen pegede på kredit (HY OAS-zonen, kanal 3), men MOTOR så kun kreditkanalen gennem ICE's HY OAS — en
+serie med kun ~3 års rullende historik på FRED. Fra 2026-10-15 viser motoren som **kontekst** også
+Gilchrist-Zakrajseks **excess bond premium** og GZ-spændet (Fed Board, månedlig 1973-) og **Baa minus 10Y**
+(Moody's, 1986-). EBP er noteret som **åben præregistreringskandidat** (v5/README.md): kreditudbuddets pris,
+renset for default-risiko, har en økonomisk begrundelse uafhængig af den aktuelle læsning. Den kommer kun i P
+via rådsmandat, forseglet spec (niveau, lag, forventet fortegn +) pushet før kørsel, G5-æra-split og en
+deklaration af, at EBP's værdier op til onsets er set i reviewet. Indtil da: kontekstlinje, ingen tærskel.
+
 ## Læsevejledning
 
 Atlasset besvarer "hvad skal jeg kigge efter, og hvornår begynder et scenarie at ligne virkelighed" — ikke "hvad sker der". Sværmens enighed på tværs af kanaler om funding-spænd og HY OAS-zonen er atlassets stærkeste resultat *[E1: for HY-zonen holder det (5 kanaler); funding-spænd holder som begreb, ikke som 75bp-tærskel]*; dens tidslinjer ~~(3-4 kvartaler fra finansiel aktivering til onset) matcher i øvrigt MOTOR's 4-kvartals-vindue pænt~~ *[E2: spænder fra ca. 3 måneder til 4 kvartaler; 3-4 kvartaler var én agents tal]*. Og modstemmen fra kontrolkørslen fortjener at blive husket hver gang panelet er helt grønt: rolige antændings-signaler er også præcis hvad man ville se, hvis Fed-puttet virker og boblen bare fortsætter.

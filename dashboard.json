@@ -85,9 +85,10 @@
     "fuldmodel_brier": 23.69,
     "forskel_pp": -3.89,
     "mde_pp": 4.42,
+    "mde_gate_pp": 21.06,
     "fuldmodel_slaar": false,
     "raadsbeslutning_paakraevet": false,
-    "note": "LL-forskel 3.9pp < stoejgulv 4.42pp (trin 3-MDE). Gaten er mekanisk og kan ikke flytte den operationelle model (RAADETS_V501 §6)."
+    "note": "LL-forskel 3.9pp < stoejgulv 4.42pp (trin 3-MDE, laant fra frekvenstesten; gatens egen MDE 21.06pp). Gaten er mekanisk og kan ikke flytte den operationelle model (RAADETS_V501 §6)."
   },
   "stale": null,
   "diagnostik": {
@@ -95,7 +96,7 @@
     "manifest_hash": "72c3371d",
     "snapshot": "2026-09-19",
     "refit_maaned": "2026-09",
-    "created_utc": "2026-10-15T12:46:23+00:00",
+    "created_utc": "2026-10-15T13:37:24+00:00",
     "primaer": {
       "n": 198,
       "n_pos": 32,
@@ -259,7 +260,7 @@
           "origins": "2020Q2..2024Q1"
         }
       ],
-      "blokdefinition": "blok k = origins fra forrige onset frem til onset k (finalize6.boot_weights); blok 12 = efter sidste onset"
+      "blokdefinition": "blok k = origins fra forrige onset frem til onset k (finalize6.boot_weights); k indekserer HELE USREC-episodelisten (1854-), saa sidste blok = efter sidste onset"
     },
     "loeo": {
       "blokke": [
@@ -562,6 +563,12 @@
       ],
       "note": "faelles origins har identiske traeningssaet i begge paneler; forskellen er per konstruktion de tilfoejede origins"
     },
+    "gate_mde": {
+      "mde_gate_pp": 21.06,
+      "forskel_pp": -3.89,
+      "mde_trin3_pp": 4.42,
+      "note": "1,96 x episode-blok-bootstrap-SD af den parrede skill-forskel F5 - curve-only (F8). Beslutningsreglen bruger fortsat trin 3's MDE; et skift kraever raadet."
+    },
     "sti": {
       "raekker": [
         {
@@ -769,8 +776,9 @@
       }
     },
     "kimi_r6": {
-      "median_episoder_i_traening": 32,
-      "min_episoder_i_traening": 27,
+      "median_episoder_i_traening": 9,
+      "min_episoder_i_traening": 4,
+      "max_episoder_i_traening": 12,
       "skill_uden_nyeste_episode": {
         "n": 156,
         "n_pos": 28,
@@ -779,7 +787,8 @@
         "improvement": 20.52,
         "brier": 17.25
       },
-      "nyeste_blok": 34
+      "nyeste_blok": 34,
+      "note": "episoder = onsets efter raekkeuniversets start (1947Q2) der er annonceret og modne (onset + L <= origin); skill_uden_nyeste_episode udelader de SCOREDE origins i den nyeste blok med en onset (scoring, ikke traening)"
     },
     "styrke": {
       "middel_d": 0.1197,
@@ -899,9 +908,6 @@
   },
   "koersel": null,
   "rekalibrering_paakraevet": [],
-  "log_blokeringer": [
-    "2026-10 er allerede logget (2026-10-10) — historiske raekker roeres ikke"
-  ],
   "snapshot": "2026-10-15",
   "snapshot_hash": "c14c62cbc1",
   "model": "curve-only-logit",
@@ -951,8 +957,8 @@
     },
     {
       "navn": "S&P vs 12-mdr hoejde",
-      "vaerdi": 0.0,
-      "z": 0.5996,
+      "vaerdi": -0.0054,
+      "z": 0.4955,
       "operationel": false
     },
     {
@@ -968,7 +974,7 @@
       "operationel": false
     }
   ],
-  "dd_kilde": "kalibreringsstatistik (trailing maanedsmiddel fra 2026-09-15 mod 12-mdr max af maanedsmidler)",
+  "dd_kilde": "kalibreringsstatistik paa rygradens seneste lukkede maaned 2026-09 (maanedsmiddel mod 12-mdr max)",
   "benchmarks": [
     {
       "navn": "intercept (basisrate)",
@@ -988,7 +994,7 @@
     {
       "navn": "fuldmodel (5 features)",
       "wf": 23.16,
-      "live_p": 0.065601,
+      "live_p": 0.066825,
       "status": "testet, ikke bestaaet mod benchmark (trin 6; genkoert v5.0.1)",
       "panel": "fuld sti t.o.m. 2024Q1"
     },
@@ -1016,7 +1022,7 @@
     {
       "navn": "v4-arv (teknisk label)",
       "wf": null,
-      "live_p": 0.03526,
+      "live_p": 0.037198,
       "status": "andet maal - arv",
       "panel": null
     },
@@ -1044,7 +1050,7 @@
       "klasse": "operationel feature"
     },
     {
-      "navn": "Sahm > 0,50",
+      "navn": "Sahm >= 0,50",
       "tilstand": "inaktiv",
       "vaerdi": "0.00 (2026-09)",
       "klasse": "testet, ikke bestaaet (trin 4)"
@@ -1070,7 +1076,7 @@
     {
       "navn": "Claims-momentum",
       "tilstand": "kontekst",
-      "vaerdi": "4u-snit 198k; maanedssnit 12m -14.3% (2026-09); fortsatte 1.71M (12m -12.2%); vikarer 12m +0.6%",
+      "vaerdi": "4u-snit 198k; 12m -14.3% (maanedssnit 2026-09)",
       "klasse": "testet, ikke bestaaet (trin 4)"
     },
     {
@@ -1078,6 +1084,12 @@
       "tilstand": "kontekst",
       "vaerdi": "1403 (2026-08); 12m +4.2%",
       "klasse": "testet, ikke bestaaet (trin 4)"
+    },
+    {
+      "navn": "Fortsatte ansoegninger / vikarer",
+      "tilstand": "kontekst",
+      "vaerdi": "fortsatte 1.71M (2026-10-03); maanedssnit 2026-09 12m -11.0%; vikarer 2026-09 12m +0.6%",
+      "klasse": "utestet monitor (kontekst, F58) — ingen taerskel"
     },
     {
       "navn": "Arbejdstimer industri (6m ann.)",
@@ -1102,13 +1114,13 @@
     {
       "navn": "CP-spaend 3m > 75bp i 2+ uger",
       "tilstand": "inaktiv",
-      "vaerdi": "-1bp (2026-10-13); >75bp 0/10 seneste dage; siden 2026-10-10: max -1bp (2026-10-13), 0/1 dage over",
+      "vaerdi": "-1bp (2026-10-13); >75bp 0/10 seneste dage; efter 2026-10-06: max -1bp (2026-10-13), 0/1 dage over",
       "klasse": "svaerm-tripwire, 1-2 kanaler (funding); atlas-def. alle 10 seneste faelles handelsdage"
     },
     {
       "navn": "10Y > 5,25%",
       "tilstand": "inaktiv",
-      "vaerdi": "5.21% (2026-10-13) / KW TP +1.07pp (Kim-Wright, Fed Board, 10-09); siden 2026-10-10: max 5.21% (2026-10-13), 0/1 dage over",
+      "vaerdi": "5.21% (2026-10-13) / KW TP +1.07pp (Kim-Wright, Fed Board, 10-09); efter 2026-10-08: max 5.24% (2026-10-09), 0/2 dage over",
       "klasse": "1 kanal (fiskal); kanalens ANTAGNE trigger, ikke Q2-varsel; maaleregel: seneste daglige niveau"
     },
     {
@@ -1187,7 +1199,7 @@
     },
     {
       "navn": "WTI y/y (regimekontekst, R2)",
-      "vaerdi": "$96.24 (2026-10-06); maanedssnit 2026-10 y/y +60% — nettoproducent; ikke feature, ikke tripwire"
+      "vaerdi": "$96.24 (2026-10-06); maanedssnit 2026-09 y/y +52% — nettoproducent; ikke feature, ikke tripwire"
     }
   ],
   "kredit": [
@@ -1258,7 +1270,8 @@
     },
     "spx_vs_hi": {
       "dato": "2026-10-14",
-      "alder_dage": 1
+      "alder_dage": 1,
+      "stale": false
     },
     "margin_yoy": {
       "periode": "2026-08",
@@ -1337,7 +1350,12 @@
     "bidrag_10Y_pp": -0.64,
     "bidrag_3m_pp": 0.44,
     "maerke": "lang-ende-drevet (bear steepening)",
-    "input_foer": "daglig"
+    "input_foer": "daglig",
+    "dTP_pp": -0.0118,
+    "dTP_datoer": [
+      "2026-10-02",
+      "2026-10-09"
+    ]
   },
   "advarsler": {
     "vaerste_fejlalarm": {
@@ -1411,6 +1429,11 @@
       "p_maanedlig_tal": null
     }
   ],
+  "hovedbog_reference": {
+    "improvement": 20.37,
+    "kilde": "diagnostik 4.5 alle live-publicerbare (realtidscensurering)",
+    "note": "ikke wf_log_loss — se BEDOEMMELSESNOEGLE.md §3"
+  },
   "hovedbog_note": "Den eneste fuldt prospektive test — beskytter mod look-ahead, men statistisk svag: der kraeves mange komplette konjunkturcykler foer den kan skelne modellen fra basisraten (BEDOEMMELSESNOEGLE.md). Vises uden samlet score eller dom.",
-  "noegle": "3d2e218f"
+  "noegle": "f9ad45db"
 }

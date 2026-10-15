@@ -181,6 +181,8 @@ def main():
     round_name = sys.argv[1] if len(sys.argv) > 1 else ""
     if round_name not in ROUNDS:
         sys.exit("brug: python raad501.py round1..round6 [--only slug]")
+    if "--only" in sys.argv and sys.argv.index("--only") + 1 >= len(sys.argv):
+        sys.exit("brug: --only <slug>")
     only = sys.argv[sys.argv.index("--only") + 1] if "--only" in sys.argv else None
     active = [m for m in EXTERNAL if only is None or m["slug"] == only]
     if not active:
@@ -199,7 +201,11 @@ def main():
             m = futs[fut]
             r = fut.result()
             results[m["slug"]] = r
-            (outdir / f"{m['slug']}.md").write_text(r["text"], encoding="utf-8")
+            arkiv = outdir / f"{m['slug']}.md"           # et fejlet genkald overskriver aldrig et arkiveret svar
+            if not r["ok"] and arkiv.exists() and not arkiv.read_text(encoding="utf-8").startswith("[KALD FEJLEDE"):
+                print(f"  [FEJL] {m['name']}: kaldet fejlede — det arkiverede svar i {arkiv.name} bevares", flush=True)
+                continue
+            arkiv.write_text(r["text"], encoding="utf-8")
             if r["raw"] is not None:
                 (outdir / f"{m['slug']}.json").write_text(json.dumps(r["raw"], indent=1)[:200000], encoding="utf-8")
             cost = (r["prompt_tokens"] * m["price"][0] + r["completion_tokens"] * m["price"][1]) / 1e6

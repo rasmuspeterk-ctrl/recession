@@ -4,7 +4,7 @@ Den eneste fuldt prospektive test af modellen: hver læsning logges **før** udf
 beskytter mod look-ahead, men er statistisk svag — der kræves mange komplette konjunkturcykler, før
 den kan skelne modellen fra basisraten. Hvordan rækkerne scores, står i
 [BEDOEMMELSESNOEGLE.md](BEDOEMMELSESNOEGLE.md) (præregistreret 2026-10-15, før række 4).
-Én række pr. måned via `python v5/motor.py --log`, i logvinduet dag 10–20. Historiske rækker
+Én række pr. måned via `python v5/motor.py --log` på logdagen (første hverdag fra og med den 10.) eller de tre følgende dage. Historiske rækker
 redigeres ALDRIG — heller ikke note-feltet: udfald føres i den separate, append-only
 [UDFALD.csv](UDFALD.csv). Hver række har også en fuld record i [hovedbog.jsonl](hovedbog.jsonl) (fra række 4).
 

@@ -41,7 +41,7 @@ ud af repoet, sværm-tripwires ud af hovedbogens antændings-kolonne (rådets R3
 | Fil | Indhold |
 |---|---|
 | [v5/README.md](v5/README.md) | Ritualer, filoversigt, afvigelser fra blueprintet, byggelog |
-| [v5/](v5/) | Koden: fetch → (finalize6 → diagnostik ved rekalibrering) → motor. 111 tests. |
+| [v5/](v5/) | Koden: fetch → (finalize6 → diagnostik ved rekalibrering) → motor (calibrate.py er trin-1-reproduktionen og overskriver ikke driftsvægtene). 147 tests. |
 | [LOG.md](LOG.md) | Hovedbogen — én række pr. måned, logført før udfaldet kendes. Redigeres aldrig. |
 | [BEDOEMMELSESNOEGLE.md](BEDOEMMELSESNOEGLE.md) | Hvordan hovedbogen scores — præregistreret før række 4, med styrketabel |
 | [UDFALD.csv](UDFALD.csv) / [hovedbog.jsonl](hovedbog.jsonl) | Append-only udfald pr. række / fuld record pr. række |
@@ -62,7 +62,7 @@ ud af repoet, sværm-tripwires ud af hovedbogens antændings-kolonne (rådets R3
 - Sproget om resultatet genereres mekanisk og kan ikke blive skarpere end tallene.
 - Fejlslagne forsøg publiceres ved siden af det der virkede.
 
-## Månedsritual (logvindue dag 10–20)
+## Månedsritual (logdag: første hverdag fra den 10., + 3 dage)
 
 ```bash
 cd v5
@@ -70,12 +70,12 @@ cd v5
 python fetch.py                        # snapshot (FRED + Fed Board EBP), hashet
 # opdatér manual/manual.json: S&P vs 12-mdr-høj, CAPE, marginlån y/y — med deres datoer
 python fetch.py                        # igen, så snapshottet bærer de nye manuelle tal
-python motor.py --log --json           # læsning, hovedbogsrække (kun dag 10–20), dashboard.json
-python -m unittest test_v5             # 111 tests
+python motor.py --log --json           # læsning, hovedbogsrække (kun i logvinduet), dashboard.json
+python -m unittest test_v5             # 147 tests
 ```
 
 Vægtene er frosne mellem rekalibreringer (hver september, eller når NBER daterer en ny top/bund):
-`python finalize6.py && python diagnostik.py`. Se [RAADETS_V501.md](RAADETS_V501.md).
+`python finalize6.py && python diagnostik.py` (bump først `VERSION` i finalize6.py, §3.3). Se [RAADETS_V501.md](RAADETS_V501.md).
 
 Kræver Python 3 og numpy. Intet andet.
 
@@ -94,14 +94,14 @@ samme bytes, kan efterprøve hashen.
 | U.S. Census Bureau; U.S. Employment and Training Administration; U.S. Energy Information Administration | PERMIT; ICSA, CCSA; DCOILWTICO | Public domain; kildeangivelse ønskes | ja |
 | NBER via Federal Reserve Bank of St. Louis | USREC | Copyright, kildeangivelse påkrævet | ja |
 | Federal Reserve Bank of St. Louis | CMRMTSPL | Copyright, kildeangivelse påkrævet | ja |
-| Freddie Mac | MORTGAGE30US | © Freddie Mac; kildeangivelse påkrævet | ja |
+| Freddie Mac | MORTGAGE30US | "Freddie Mac, 30-Year Fixed Rate Mortgage Average in the United States" — copyright Freddie Mac; kildeangivelse påkrævet (FRED: Citation Required) | ja |
 | Claudia Sahm; Marcelle Chauvet og Jeremy Piger (via FRED) | SAHMREALTIME; RECPROUSM156N | Public domain; kildeangivelse ønskes | ja |
 | **ICE Data Indices, LLC** | BAMLH0A0HYM2 (HY OAS) | "Copyrighted: Pre-Approval Required" — reproduktion forbudt uden skriftlig tilladelse | **nej (lokal)** |
 | **S&P Dow Jones Indices LLC** | SP500 | "Copyrighted: Pre-Approval Required" | **nej (lokal)**; kun de afledte månedssnit i `spine.csv` (kalibreringen kræver dem) |
 | **Moody's** | BAA10Y | "May not be copied or otherwise reproduced" | **nej (lokal)** |
 | Robert J. Shiller (Yale) | Rygraden t.o.m. 2023-07 (`manual/shiller_yale_2023-09.csv`) | Data courtesy of Robert J. Shiller | ja |
 | multpl.com | Månedlig Shiller-CAPE efter 2023-07 | Siden kopieres ikke; kun afledte månedstal i `spine.csv` | **siden: nej (lokal)** |
-| NY Fed (Adrian-Crump-Moench) | `manual/acm.csv` (ACM-termpræmien, kun trin 4-testen) | © Federal Reserve Bank of New York; kildeangivelse | ja |
+| NY Fed (Adrian, Crump og Moench 2013) | `manual/acm.csv` (ACM-termpræmien, kun trin 4-testen) | © Federal Reserve Bank of New York; videregivet under NY Fed's Terms of Use med kildeangivelse ("Source: Federal Reserve Bank of New York, ACM Treasury term premia") | ja |
 | FINRA | Marginlån y/y i `manual.json` (et afledt tal) | FINRA Margin Statistics | ja |
 
 Kildeangivelse for FRED-serier: *Federal Reserve Bank of St. Louis, [serienavn] [ID], retrieved from FRED,

@@ -21,7 +21,8 @@ FORHAANDSREGISTREREDE GATES (fastlagt FOER koersel, jf. Sol R6/Kimi R3):
   Alle tre bestaaet -> NBER-onset promoveres til v5.0-label (weights.json).
   Ellers: teknisk label bestaar, resultatet publiceres som "testet, ikke bestaaet".
 
-Kun stdlib + numpy.  Koer:  python ablation2_nber.py [--check] [--snapshot ...]
+Kun stdlib + numpy.  Koer:  python ablation2_nber.py [--check] [--snapshot ...] [--promote]
+(--promote overskriver weights.json med v5.0-trin2-vaegte: kun som led i v5.0-kaeden efterfulgt af finalize6.py)
 """
 import csv, json, sys
 from datetime import datetime, timezone
@@ -91,6 +92,19 @@ def tabel_hash(f=None):
                   for r in laes_annonceringer(f))
     return hashlib.sha256(json.dumps(rows).encode("utf-8")).hexdigest()
 
+# F15: kalibreringerne v5.0 (6baeade4) og v5.0.1 (72c3371d) baerer kun den raa (LF-)hash af tabellen. Denne
+# afbildning giver deres kanoniske hash (samme indhold), saa en ren formaterings- eller source-aendring heller
+# ikke for dem udloeser en falsk 'nber-datering'. Manifesternes hashes roeres ikke.
+KANONISK_FOR_RAA = {"17ed8d7b6b22f3f4385b2e9662c9c0bb874a7c83da521920b2ec774e7bf22084":
+                    "74bfd00a229c3c51236d3df9ab563da095adfa35ae4504ee61d5bf2577c5614a"}
+
+
+def kanonisk_af(m):
+    """Den kanoniske tabelhash for et manifest/weights-dict: eget felt, ellers via KANONISK_FOR_RAA."""
+    m = m or {}
+    return m.get("announcement_table_kanonisk") or KANONISK_FOR_RAA.get(m.get("announcement_table_sha256"))
+
+
 def tabel_aendret(gl_sha=None, gl_kanonisk=None, f=None):
     """Er annonceringstabellen aendret siden en kalibrering (§3.2b)? Kanonisk sammenligning naar den
     gamle kanoniske hash findes (F15); ellers raa bytes ELLER LF-normaliserede bytes (CRLF-konvertering
@@ -99,6 +113,7 @@ def tabel_aendret(gl_sha=None, gl_kanonisk=None, f=None):
     f = f or HERE / "nber_announcements.csv"
     if not f.exists():
         return False
+    gl_kanonisk = gl_kanonisk or KANONISK_FOR_RAA.get(gl_sha)
     if gl_kanonisk:
         return tabel_hash(f) != gl_kanonisk
     if not gl_sha:
@@ -149,6 +164,10 @@ def load_announcements(eps, f=None, usrec=None):
         best = min(eps, key=lambda e: abs(e[0] - target))
         if abs(best[0] - target) <= 2:
             avail[best[0]] = midx(ay, am)
+        else:
+            sys.exit(f"FEJL: nber_announcements.csv-raekken {r['event']} ({r['cycle_month']}) matcher intet USREC-onset "
+                     "(+/-2 mdr) i snapshottet. Er USREC endnu ikke opdateret efter annonceringen? Koer fetch.py igen, "
+                     "naar FRED har opdateret USREC: en ny top maa ikke forbruge rekalibrerings-triggeren (§3.2b) uden at indgaa.")
     aaben = aaben_episode(usrec) if usrec else None
     for onset, trough in eps:
         if onset not in avail:
@@ -178,6 +197,13 @@ def build_dataset(snap, feats=None, spine_file=None):
     gs10 = C.read_fred(snap, "GS10")
     tb3ms = C.read_fred(snap, "TB3MS")
     gdp_g = C.read_fred(snap, "A191RL1Q225SBEA")
+    if spine_file is None and feats == ["curve"]:
+        # Curve-only maa aldrig afhaenge af CAPE-kilden (§1.7, §2): er rygraden trunkeret (multpl/SP500 nede), ville
+        # maanedsindekset ende med den, og en refit stille falde tilbage til det gamle panel (v5.0-vaegtene, n_obs 264).
+        # Indekset forlaenges derfor med GS10/TB3MS-maanederne efter rygradens sidste maaned (rygrad-felterne NaN).
+        # Med en frisk rygrad tilfoejes intet (samme sidste maaned); legacy-replayet (spine_file) roeres ikke.
+        sidst = shiller[-1][0] if shiller else (0, 0)
+        shiller = shiller + [(k, np.nan, np.nan, np.nan, np.nan) for k in sorted(set(gs10) & set(tb3ms)) if k > sidst]
     keys, M = C.build_monthly(shiller, gs10, tb3ms)
     qkeys, cols = C.to_quarterly(keys, M, gdp_g)
     rec_now, Y_tek = C.make_labels(cols)          # teknisk label til diagnostik

@@ -8,8 +8,9 @@ laesningen og ALDRIG aendrer gate, vaegte eller dom.
       raekke med alle negative origins; additivt bidrag 100*sum(L0-Lm)/sum(L0) der summerer eksakt
       til den poolede forbedring; negative ogsaa pr. kronologisk bootstrap-blok.
   4.2 LOEO: walk-forward hvor blok k er udelukket fra traeningen naar blok k scores (ingen
-      fremtidsdata, eksplicit udelukkelse) — sensitivitet, aldrig co-primaer. Kun blokke med scorede
-      origins (1981-blokken har kun positive origins -> udefineret skill).
+      fremtidsdata, eksplicit udelukkelse) — sensitivitet, aldrig co-primaer. 7 blokke: 1970-blokken
+      udgaar, fordi traeningen uden den har < 60 raekker eller < 6 positive; 1981-blokken har kun positive
+      origins (udefineret skill), saa medianen er over 6 definerede blokke.
   4.3 Backtest af begge domsregler over hele walk-forward'en, samme origins, samme
       bootstrap-struktur (seed 42, episodeblokke): baandreglen (P-baand indeholder traenings-
       basisraten) vs den parrede regel (baand af P_b - base_b indeholder 0). Uenigheder listes.
@@ -213,13 +214,17 @@ def kimi_r6(recs, eps, D, avail, usrec):
     """Kimis R6-krav (G1.8): effektivt episodeantal i traeningssaettet pr. scoret origin, og skill med
     og uden origins fra den nyeste episode-blok."""
     n_ep = []
+    q0 = int(D["qend"][0])                 # kun onsets der kan ligge i et label-vindue i raekkeuniverset (efter 1947Q2)
     for r in recs:
         R0 = A2.qend_idx(r["y"], r["q"])
-        n_ep.append(sum(1 for o, _ in eps if avail.get(o, 10 ** 9) <= R0 and o + L <= R0))
+        n_ep.append(sum(1 for o, _ in eps if o > q0 and avail.get(o, 10 ** 9) <= R0 and o + L <= R0))
     sidste_blok = max(blok_af(A2.qend_idx(r["y"], r["q"]), eps) for r in recs if r["Y"] == 1.0)
     uden = [r for r in recs if blok_af(A2.qend_idx(r["y"], r["q"]), eps) != sidste_blok]
     return dict(median_episoder_i_traening=int(np.median(n_ep)), min_episoder_i_traening=int(min(n_ep)),
-                skill_uden_nyeste_episode=skill(uden), nyeste_blok=sidste_blok)
+                max_episoder_i_traening=int(max(n_ep)),
+                skill_uden_nyeste_episode=skill(uden), nyeste_blok=sidste_blok,
+                note="episoder = onsets efter raekkeuniversets start (1947Q2) der er annonceret og modne (onset + L <= origin); "
+                     "skill_uden_nyeste_episode udelader de SCOREDE origins i den nyeste blok med en onset (scoring, ikke traening)")
 
 
 def styrke_tabel(d, bl, recs):
@@ -262,8 +267,8 @@ def main():
     else:
         snap = C.RAW / W["snapshot"]
     klar, grunde = F6.rygrad_klar(snap, json.loads((snap / "meta.json").read_text(encoding="utf-8")))
-    if not klar:
-        sys.exit(f"FEJL: snapshot {snap.name} er ikke refit-klar (F5): {'; '.join(grunde)}.")
+    if not klar:                       # curve-only er uafhaengig af rygraden (PR #1); kun fuldmodel-dele beroeres
+        print(f"ADVARSEL (F5): rygraden i {snap.name} er ikke komplet: {'; '.join(grunde)}.")
     print(f"=== diagnostik — v{W.get('version', '?')} manifest {W.get('manifest_hash', '?')} — snapshot {snap.name} ===")
     usrec = A2.load_usrec(snap); eps = A2.episodes_from_usrec(usrec); avail = A2.load_announcements(eps, usrec=usrec)
     if W.get("refit_maaned"):
@@ -374,6 +379,18 @@ def main():
           f"({len(faelles)}), tilfoejede {[(t['origin'], t['p']) for t in s73['tilfoejede_origins']]}")
     print(f"§3.6: expanding-intercept-baseline giver +{ex36['improvement_expanding']}% (publiceret, poolet: +{S['improvement']}%)")
 
+    gate_mde = None
+    D5 = A2.build_dataset(snap, C.F5)
+    if A2.samme_origins(Dc, D5):
+        r5, _, _ = A2.wf_nber(D5, eps, avail, usrec, L, R_score=R)
+        paired = [(y, q, p5, pc, yy) for (y, q, p5, yy), (_, _, pc, _) in zip(r5, ref)]
+        _md, sd_g, _lo, _hi = F6.A3.mde_bootstrap(paired, eps)
+        f3 = HERE / "ablation3_resultat.json"
+        gate_mde = dict(mde_gate_pp=round(1.96 * sd_g, 2), forskel_pp=round(float(_md), 2),
+                        mde_trin3_pp=json.loads(f3.read_text(encoding="utf-8")).get("mde_pp") if f3.exists() else None,
+                        note="1,96 x episode-blok-bootstrap-SD af den parrede skill-forskel F5 - curve-only (F8). "
+                             "Beslutningsreglen bruger fortsat trin 3's MDE; et skift kraever raadet.")
+        print(f"gate-MDE (F8): gatens egen MDE {gate_mde['mde_gate_pp']}pp (trin 3: {gate_mde['mde_trin3_pp']}pp)")
     sti = sti_foer_onsets(recs, eps, Dc)
     print(f"sti (F11): P under sin top ved sidste origin foer onset i {sti['n_under_top']}/{sti['n_onsets']} onsets; "
           f"median fald {sti['median_fald_pp']}pp, median {sti['median_mdr_top_til_onset']} mdr fra top til onset")
@@ -395,11 +412,11 @@ def main():
               created_utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),
               primaer=S | ex36, base_rate_poolet=round(float(base), 4),
               episode_tabel=dict(raekker=tab, sum_bidrag_pp=total, negative_pr_blok=neg_blok,
-                                 blokdefinition="blok k = origins fra forrige onset frem til onset k (finalize6.boot_weights); blok 12 = efter sidste onset"),
+                                 blokdefinition="blok k = origins fra forrige onset frem til onset k (finalize6.boot_weights); k indekserer HELE USREC-episodelisten (1854-), saa sidste blok = efter sidste onset"),
               loeo=dict(blokke=loeo, median=round(float(np.median(imps)), 2), min=round(float(min(imps)), 2),
                         udefinerede=udef, status="sensitivitet, aldrig co-primaer"),
               parret_loss_bootstrap=hist, domsregler_backtest=bt, oracle_fri=oracle, skill_73=s73,
-              sti=sti, pre_onset_analoger=analoger, start_sensitivitet=start, flips=flips, kimi_r6=r6, styrke=styrke,
+              gate_mde=gate_mde, sti=sti, pre_onset_analoger=analoger, start_sensitivitet=start, flips=flips, kimi_r6=r6, styrke=styrke,
               erklaering_36="Publiceret baseline = poolet basisrate over scorede origins (C.metrics). Konsensustekstens 'expanding intercept' var sekretaerens fejl; expanding printes som ekstra kolonne, gaten aendres ikke.")
     (HERE / "diagnostik.json").write_text(json.dumps(ud, indent=1, ensure_ascii=False), encoding="utf-8")
     print(f"diagnostik.json skrevet ({time.time() - t0:.0f} s)")

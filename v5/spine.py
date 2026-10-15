@@ -38,7 +38,7 @@ FRISKHED_DAGE = {
     "CPIAUCNS": 80, "CPIAUCSL": 80, "PCEPI": 100, "UNRATE": 70, "SAHMREALTIME": 70,
     "PERMIT": 90, "AWHMAN": 75, "FEDFUNDS": 70, "RECPROUSM156N": 130,
     # ugentlige / daglige
-    "ICSA": 21, "MORTGAGE30US": 14, "BAMLH0A0HYM2": 10, "DTB3": 10, "RIFSPPFAAD90NB": 10,
+    "ICSA": 21, "MORTGAGE30US": 14, "BAMLH0A0HYM2": 10, "DTB3": 10, "RIFSPPFAAD90NB": 35,
     "DGS10": 10, "DFF": 10,
     "THREEFYTP10": 21, "SP500": 10,
     # rygrad: sidste komposit-maaned skal vaere forrige lukkede maaned (stempel den 1.)
@@ -125,7 +125,9 @@ def monthly_mean(rows):
 
 
 def parse_multpl(html, today=None):
-    """multpl 'by-month'-tabel -> {YYYY-MM: cape}, kun raekker dateret den 1. i en LUKKET maaned.
+    """multpl 'by-month'-tabel -> {YYYY-MM: cape}, kun raekker dateret den 1. i en LUKKET maaned. Bemaerk (F25):
+    'lukket' er et datofilter; multpl's seneste maanedsraekke er foreloebig og kan revideres — fetch
+    diff'er derfor mod forrige snapshot og gemmer reviderede maaneder i meta.spine.multpl.revideret.
     Haarde assertions: formatet maa ikke drive stille."""
     if isinstance(html, bytes):
         html = html.decode("utf-8", "replace")
@@ -204,7 +206,8 @@ def outlier_check(cape_m, fra=None, accepterede=None):
 def build_spine(shiller_rows, sp500_m, cpi_m, gs10_m, cape_m, tidligere_sp500=None):
     """-> [(YYYY-MM, sp500, cpi, ltr, cape, kilde)], Shiller t.o.m. SEAM, komposit derefter saa
     langt SP500 og CAPE begge findes (de to kilder der definerer kompositten; en delvis
-    komposit-maaned uden dem accepteres aldrig, §1.7). CPI maa mangle for en enkelt maaned
+    komposit-maaned uden dem accepteres aldrig, §1.7). CPI maa mangle (KENDTE_CPI_HULLER; et NYT hul
+    meldes hoejlydt af fetch) for en maaned
     (BLS udgav aldrig oktober 2025) — feltet skrives tomt -> NaN, som Shillers egne huller;
     kvartalsaggregeringen tager sidste ikke-NaN maaned, saa ingen kvartalsfeature tabes.
 
@@ -232,14 +235,15 @@ def build_spine(shiller_rows, sp500_m, cpi_m, gs10_m, cape_m, tidligere_sp500=No
     return out
 
 
+KENDTE_CPI_HULLER = {"2025-10"}            # BLS udgav aldrig oktober 2025 (shutdown); motor interpolerer hoejlydt
+
 def cpi_huller(rows):
-    """Komposit-maaneder uden CPI, delt i to (F50): 'huller' = aegte interne huller (en SENERE
-    komposit-maaned har CPI — fx BLS's aldrig udgivne 2025-10) og 'afventer_udgivelse' =
-    afsluttende maaneder hvor CPI blot ikke er udgivet endnu."""
+    """Komposit-maaneder uden CPI -> (aegte huller midt i serien, fx 2025-10; endnu ikke udgivne i halen).
+    Foer blev en ikke-udgivet sidste maaned (fx 2026-09 den 10/10) ogsaa kaldt et 'aegte hul'."""
     komp = [r for r in rows if r[5] != "shiller"]
-    sidste_med = max((i for i, r in enumerate(komp) if r[2] is not None), default=-1)
-    return dict(huller=[r[0] for i, r in enumerate(komp) if r[2] is None and i < sidste_med],
-                afventer_udgivelse=[r[0] for i, r in enumerate(komp) if r[2] is None and i > sidste_med])
+    sidst = max((r[0] for r in komp if r[2] is not None), default="")
+    return ([r[0] for r in komp if r[2] is None and r[0] < sidst],
+            [r[0] for r in komp if r[2] is None and r[0] > sidst])
 
 
 def staleness(sidste_dato, today=None, regler=None):

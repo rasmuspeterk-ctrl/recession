@@ -117,7 +117,6 @@ eksempler, ikke den aktuelle læsning. Feltrækkefølgen er motorens.
   },
   "koersel": null,
   "rekalibrering_paakraevet": [],
-  "log_blokeringer": ["2026-10 er allerede logget (2026-10-10) — historiske raekker roeres ikke"],
   "snapshot": "2026-10-15",
   "snapshot_hash": "d3a14a99b5",
   "model": "curve-only-logit",
@@ -322,13 +321,16 @@ eksempler, ikke den aktuelle læsning. Feltrækkefølgen er motorens.
 - `delta_vs_forrige`: hvor meget rekalibreringen flyttede de historiske P'er (`max_abs_dP`,
   `origin_max`, `mean_abs_dP`, `andel_over_5pp`, vægtændringer m.m.). Det er ændret
   estimation, ikke ændret risiko, og vises kun sammen med `bro`.
-- `rekalibrering_paakraevet`: liste af tekster. Er den ikke tom, er en §3.2-rekalibrering
-  forfalden (september eller ny NBER-annoncering). Læsningen vises stadig, men med en tydelig
-  tekstnote "REKALIBRERING PÅKRÆVET" og listens tekst ordret.
-- `log_blokeringer`: grunde til at en `--log` med netop denne læsning ville blive afvist (fx
-  måneden er allerede logget, dagen ligger uden for logvinduet, eller rekalibrering er
-  påkrævet). En ikke-tom liste betyder, at læsningen er en mellemlæsning og ikke en
-  hovedbogsrække. Vis det i lille tekst. Kun `hovedbog` viser logførte læsninger.
+- `rekalibrering_paakraevet`: liste af tekster, opgjort pr. snapshottets dato (dashboard.json er en
+  deterministisk funktion af snapshot, vægte, diagnostik og LOG.md — CI genskaber den bit-identisk, så
+  intet i den afhænger af den dag, motoren kørte). Er den ikke tom, er en §3.2-rekalibrering forfalden
+  (september eller ny NBER-annoncering). Læsningen vises stadig, men med en tydelig tekstnote
+  "REKALIBRERING PÅKRÆVET" og listens tekst ordret.
+- `hovedbog_reference`: hovedbogens referencetal (`improvement`, i dag +20,4 % — diagnostik 4.5,
+  realtidscensurering) med kilde. Vis det ved hovedbogen i stedet for `wf_log_loss`; hovedbogen må
+  aldrig stå ved siden af +27,1 % alene (BEDOEMMELSESNOEGLE.md §3).
+- Om en læsning er logført, ses KUN af `hovedbog` (en række med `snapshot` = dette snapshot). Alt
+  andet er en mellemlæsning; vis det i lille tekst.
 - `diagnostik`: RAADETS_V501 §4-diagnostik (episode-tabel, LOEO, domsregel-backtest,
   oracle-fri varianter, trunkeret panel m.m.). Valgfri kontekst, aldrig én samlet score,
   se regel 11.
@@ -399,7 +401,7 @@ eksempler, ikke den aktuelle læsning. Feltrækkefølgen er motorens.
 
 Felter der styrer betinget visning og ikke må ignoreres: `baand_udelukker_basisrate`,
 `ratio` (kan være `null`), `censureret.aktiv`, `monitors[].tilstand` (`aktiv` / `inaktiv` /
-`kontekst` / `utilgaengelig`), `rekalibrering_paakraevet`, `log_blokeringer`, `stale` og `noegle`.
+`kontekst` / `utilgaengelig`), `rekalibrering_paakraevet`, `stale` og `noegle`.
 
 ## SEKTIONER — i prioriteret rækkefølge
 
@@ -422,6 +424,8 @@ Felter der styrer betinget visning og ikke må ignoreres: `baand_udelukker_basis
 5. **Model-inputs.** De fem features med værdi og z-score. Markér hvilken der
    faktisk er operationel (kun én er).
 6. **Monitorer.** Individuelle linjer grupperet efter `klasse`. Aldrig talt sammen.
+   `klasse` er fritekst; gruppér på leddet før kolon/parentes (operationel feature /
+   testet, ikke bestaaet / svaerm-tripwire / uvalideret / ineligible / fuldmodel-feature / utestet monitor).
 7. **Market conditions** (inkl. forudsætnings-tripwires), **Pengepolitik & inflation**,
    **Kredit** og **NBER-indikatorer**. Alle med deres firewall-mærkat synlig.
 8. **De stående advarsler.** Værste fejlalarm, sti-advarsel, lang ende, eksogene chok.
@@ -430,7 +434,7 @@ Felter der styrer betinget visning og ikke må ignoreres: `baand_udelukker_basis
    (regel 15).
 
 Kalibreringsdetaljer (`bro`, `delta_vs_forrige`, `trigger`, `koersel`, `diagnostik`) og
-dataalder (`stale`, `manual_friskhed`, `utilgaengelige`, `log_blokeringer`) må gerne
+dataalder (`stale`, `manual_friskhed`, `utilgaengelige`) må gerne
 samles i en rolig fodnote-sektion.
 
 ## UFRAVIGELIGE REGLER
@@ -505,7 +509,9 @@ se ud som information.
 - **Lys og mørk baggrund.** Begge skal fungere.
 - **Skal kunne screenshottes** og stadig give mening som ét billede i en tråd.
 - **Sprog:** dansk med rigtige æ, ø og å. Kildedataene staver "baand", "aendring",
-  "paakraevet" osv. af konsol-hensyn — det skal ikke slå igennem i dashboardet.
+  "paakraevet" osv. af konsol-hensyn — det skal ikke slå igennem i dashboardet. Det gælder også `dom`:
+  translitteration (aa→å, ae→æ, oe→ø) og dansk talformat (15,1 %) er de eneste tilladte
+  ændringer af den ordrette tekst (regel 7).
 
 ## LEVERANCE
 

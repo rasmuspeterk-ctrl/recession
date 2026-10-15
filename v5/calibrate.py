@@ -11,14 +11,14 @@ og er BEVIDST ikke med her.
 Acceptancetest (indbygget): reproducerede MU/SD/W og walk-forward-metrikker
 sammenlignes med v4's publicerede konstanter; afvigelser printes.
 
-HISTORISK (trin 1): i drift er vaegtene frosne i weights.json (finalize6, v5.0.1). Denne fil
-skriver derfor sit resultat til calibrate_resultat.json og naegter at roere en v5.0-final
-weights.json (kode-review 2026-10-15, F45). Hjaelpefunktionerne (read_fred, live_kurve, fit,
-walk_forward ...) bruges af hele kaeden.
+Kun stdlib + numpy.  Koer:  python calibrate.py [--check] [--snapshot data/raw/YYYY-MM-DD] [--overskriv]
 
-Kun stdlib + numpy.  Koer:  python calibrate.py [--check] [--snapshot data/raw/YYYY-MM-DD]
+I drift (v5.0.1) er calibrate.py kun trin-1-reproduktionen og et modul for resten af kaeden (read_fred,
+live_kurve, fit ...). Resultatet skrives til calibrate_resultat.json. weights.json roeres kun med
+--overskriv: indeholder den de frosne driftsvaegte (protokol 5.0-final), ville motor.py ellers afvise et
+5.0-trin1-weights.json, og finalize6.py skulle koeres foer motor.py igen virker (kode-review F45).
 """
-import calendar, csv, hashlib, json, sys
+import calendar, csv, hashlib, json, re, sys
 from datetime import datetime, timezone
 from pathlib import Path
 import numpy as np
@@ -59,11 +59,17 @@ KRAEVEDE_FILER = ["manual.json"]
 SPINE_FILER = ("spine.csv", "shiller.csv")     # komposit (v5.0.1) foretraekkes; ren Shiller = legacy
 START_QK = (1947, 2)      # RAADETS_V501 §2: raekkeuniversets start er en protokolkonstant
 
+def ann_sha256(path):
+    """sha256 af nber_announcements.csv med CRLF normaliseret til LF (§3.2b: formatering udloeser ikke en
+    rekalibrering — en Windows-checkout med core.autocrlf maa ikke ligne en ny NBER-datering). LF-hashen er
+    uaendret, saa manifester og weights.json fra foer rettelsen matcher stadig."""
+    return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
 def snapshot_complete(d):
     """Et snapshot taeller kun hvis meta.json findes, ikke er maerket ukomplet (fetch.py saetter
     "complete": false naar en kraevet serie fejlede) OG indeholder alle filer kaeden laeser."""
     m = d / "meta.json"
-    if not m.exists():
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", d.name) or not m.exists():    # '<dato>.ny'/'.ukomplet' er ikke snapshots
         return False
     try:
         if not json.loads(m.read_text(encoding="utf-8")).get("complete", True):
@@ -449,11 +455,22 @@ def main():
                created_utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),
                snapshot=snap.name, snapshot_sha256=meta["snapshot_sha256"],
                acceptance_bestaaet=acc_ok, **res)
-    # F45: de frosne driftsvaegte (weights.json, protocol 5.0-final) roeres ALDRIG herfra
     ud = HERE / "calibrate_resultat.json"
     ud.write_text(json.dumps(out, indent=1), encoding="utf-8")
-    print(f"\n{ud.name} skrevet ({'acceptance BESTAAET' if acc_ok else 'acceptance IKKE bestaaet'}); "
-          "weights.json (frosne driftsvaegte) er uroert.")
+    print(f"{chr(10)}{ud.name} skrevet ({'acceptance BESTAAET' if acc_ok else 'acceptance IKKE bestaaet'}).")
+    wf = HERE / "weights.json"
+    if "--overskriv" in sys.argv:
+        wf.write_text(json.dumps(out, indent=1), encoding="utf-8")
+        print("weights.json OVERSKREVET med trin-1-resultatet (--overskriv): gendan driftsvaegtene med "
+              "'git checkout weights.json' eller koer finalize6.py foer motor.py.")
+    elif wf.exists():
+        try:
+            gl = json.loads(wf.read_text(encoding="utf-8")).get("protocol_version")
+        except ValueError:
+            gl = None
+        if gl == "5.0-final":
+            print("weights.json er de frosne driftsvaegte (protokol 5.0-final) og overskrives IKKE af "
+                  "trin-1-reproduktionen (--overskriv for at overskrive bevidst).")
 
 if __name__ == "__main__":
     main()

@@ -5,8 +5,11 @@ Maanedlig direkte-12m vs kvartalsvis direkte-4q (trin 2-baselinen).
 Label (NBER-onset, mekanisk regel, L=18), features, motor og scoring holdes
 fast — KUN frekvensen aendres (S2).
 
-FORHAANDSREGISTRERET GATE (blueprint Section 2 + Sol/Kimi/Gemma-forbehold,
-fastlagt FOER koersel):
+FORHAANDSREGISTRERET GATE (fastlagt FOER koersel; Sol/Kimi/Gemma-forbehold):
+  ERRATUM 2026-10-15 (kode-review G1.3): gaten nedenfor er IKKE blueprintets §2 ordret. Blueprintet lader den
+  maanedlige model vaere udfordreren paa sine egne praemisser; her er rollerne byttet (maanedlig skal slaa
+  kvartal - 1pp paa KVARTALS-tyndet score). Den bogstavelige laesning ville have gjort den maanedlige model
+  primaer. Afvigelsen er erklaeret i v5/README.md og forelaegges raadet ved september-refit 2027.
   G1  determinisme (SEED=42 for bootstrap; alt andet deterministisk)
   G2  maanedlig promoveres kun hvis dens KVARTALS-TYNDEDE walk-forward
       log-loss-forbedring >= kvartals-baselinens forbedring - 1,0pp.

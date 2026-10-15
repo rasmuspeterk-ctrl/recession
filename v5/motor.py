@@ -3,9 +3,12 @@
 MOTOR v5.0.x — maanedlig aflaesning efter raadets Section 8-spec (trin 6) og RAADETS_V501.
 
 Output: operationel P + estimation-sensitivity-baand + basisrate (ratio kun naar baandet
-udelukker basisraten), z-inputs, benchmark-tabel (intercept, curve-only, realtids-Sahm,
-Chauvet-Piger separat, v4-arv), monitors uden taellinger, market conditions og kontekst,
-skabelon-genereret dom der aldrig overstiger tallene. Sprogregler (Section 6) haandhaeves mekanisk.
+udelukker basisraten), z-inputs, benchmark-tabel (intercept, curve-only, fuldmodel, de afviste
+kandidater med deres panel, v4-arv, realtids-Sahm, Chauvet-Piger separat), monitors uden
+taellinger, market conditions og kontekst, skabelon-genereret dom der aldrig overstiger tallene.
+Sprogregler (Section 6) haandhaeves mekanisk. dashboard.json er en deterministisk funktion af
+snapshot, vaegte, diagnostik og LOG.md (CI genskaber den bit-identisk): ingen dags-dato og ingen
+licensbegraensede lokale filer indgaar i JSON'en.
 
 Firewall (raadets R3, enstemmigt): kun antaendings-klassen (kurve-inversion, Sahm, HY OAS 600bp,
 S&P-drawdown, advance-print) kan staa i hovedbogens antaendings-kolonne. MiroFish-svaermens
@@ -13,13 +16,14 @@ tripwires (CP-spaend, 10Y, realkredit) staar i et separat SCENARIE-APPENDIKS (fr
 kode-review F9/G2.2). Kontekst-linjer ([-]) kan aldrig taendes. En monitor-serie der mangler i
 snapshottet vises som [?] utilgaengelig og vaelter aldrig laesningen (F18).
 
-Hovedbogen (LOG.md + hovedbog.jsonl): --log kun i logvinduet (dag 10-20, BEDOEMMELSESNOEGLE.md),
+Hovedbogen (LOG.md + hovedbog.jsonl): --log kun i logvinduet (foerste hverdag fra den 10. + 3 dage),
 kun naar vaegte, diagnostik og annonceringstabel er i synk; manglende maaneder skrives som
 'ikke logget'-raekker; en laesning inde i en annonceret recession faar dom 'censureret' (F14).
 
 Koer:  python motor.py [--allow-stale] [--log] [--log-uden-for-vindue "<begrundelse>"] [--json [sti]]
+                      [--snapshot data/raw/YYYY-MM-DD]
 """
-import csv, hashlib, json, sys
+import csv, hashlib, json, math, sys
 from datetime import date, timedelta
 from pathlib import Path
 import numpy as np
@@ -30,8 +34,9 @@ import ablation2_nber as A2
 
 HERE = Path(__file__).parent
 STALE_DAYS = 40
-LOGDAG_VINDUE = (10, 20)          # G3.6: hovedbogen logges dag 10-20 i maaneden (BEDOEMMELSESNOEGLE.md)
+LOGDAG_VINDUE = None              # G3.6: None = logvindue() (BEDOEMMELSESNOEGLE.md); (fra_dag, til_dag) overstyrer (tests)
 CAPE_MAX_ALDER = 45               # F30: dage — aeldre live-CAPE -> fuldmodellen 'unavailable — CAPE stale'
+SPX_MAX_ALDER = 7                 # F30: dage — manuel S&P vs 52u-top flages (blokerer ikke)
 MARGIN_LAG = 25                   # F30: FINRA publicerer ca. 25 dage efter maanedens udgang
 NA = float("nan")
 
@@ -39,6 +44,17 @@ NA = float("nan")
 def idag():
     """Dagens dato (patches i tests)."""
     return date.today()
+
+
+def logvindue(d):
+    """G3.6: logdagen er den foerste hverdag fra og med den 10. i maaneden; --log er tilladt fra logdagen og
+    tre kalenderdage frem (saa en blokering — fx en forfalden diagnostik — kan loeses), ellers kun med
+    --log-uden-for-vindue "<begrundelse>". Et smalt, forudbestemt vindue fjerner frihedsgraden i at vaelge
+    logdag efter at have set mellemlaesninger."""
+    start = date(d.year, d.month, 10)
+    while start.weekday() >= 5:
+        start += timedelta(days=1)
+    return start, start + timedelta(days=3)
 
 
 def latest(series, n=1):
@@ -117,6 +133,92 @@ def kal_minus(k, n):
     """(aar, maaned) minus n kalendermaaneder."""
     t = k[0] * 12 + (k[1] - 1) - n
     return (t // 12, t % 12 + 1)
+
+
+def mdr_foer(k, n):
+    """(aar, maaned) n kalendermaaneder foer k."""
+    i = k[0] * 12 + k[1] - 1 - n
+    return (i // 12, i % 12 + 1)
+
+
+def udfyld_huller(series):
+    """Maanedligt prisindeks {(aar, maaned): niveau} -> (kopi, udfyldte maaneder): interne huller
+    udfyldes log-lineaert mellem nabomaanederne. FRED har tomme felter for 2025-10 i CPI (BLS udgav
+    aldrig oktober 2025, shutdown): uden udfyldning fejler y/y-opslag paa (aar-1, maaned) med KeyError,
+    og et positionelt vindue bliver en maaned for langt. Kun til maanedlige niveauserier."""
+    ks = sorted(series)
+    ud, fyldt = dict(series), []
+    for a, b in zip(ks, ks[1:]):
+        n = (b[0] - a[0]) * 12 + b[1] - a[1]
+        for j in range(1, n):
+            k = mdr_foer(b, n - j)
+            ud[k] = series[a] * (series[b] / series[a]) ** (j / n)
+            fyldt.append(k)
+    return ud, fyldt
+
+
+def hul_mrk(fyldt, k0, ns):
+    """' (2025-10 interpoleret)' naar startmaaneden i et af vinduerne k0-n (n i ns) er udfyldt."""
+    brugt = sorted({mdr_foer(k0, n) for n in ns} & set(fyldt))
+    return f" ({', '.join(f'{y}-{m:02d}' for y, m in brugt)} interpoleret)" if brugt else ""
+
+
+def inversionsnote(fkeys, curve_m, live_kurve):
+    """Inversions-konteksten i sti-advarslen, paa maanedstal (GS10 - TB3MS). Er seneste maaned inverteret, er
+    inversionen IGANGVAERENDE (ikke 'sluttede ... (0 mdr siden)'); er kun live-kurven (trailing maaned af daglige
+    data) under 0, siges det foran — ellers stod '[X] Kurven inverteret' ved siden af 'sluttede 2024-11'."""
+    inv = {i for i, v in enumerate(curve_m) if v < 0}
+    if inv:
+        li = max(inv); run0 = li
+        while run0 - 1 in inv:
+            run0 -= 1
+        slut = fkeys[li]
+        if li == len(curve_m) - 1:
+            start = fkeys[run0]
+            note = (f"igangvaerende siden {start[0]}-{start[1]:02d} ({li - run0 + 1} mdr t.o.m. "
+                    f"{slut[0]}-{slut[1]:02d}), dybde hidtil {float(np.min(curve_m[run0:li+1])):+.2f}pp")
+            if live_kurve >= 0:                           # maanedstallet halter: live-kurven er allerede positiv
+                note = f"paa maanedstal {note}; live-kurven er ikke laengere inverteret ({live_kurve:+.2f}pp)"
+        else:
+            note = (f"sluttede {slut[0]}-{slut[1]:02d} ({len(curve_m)-1-li} mdr siden), "
+                    f"dybde {float(np.min(curve_m[run0:li+1])):+.2f}pp")
+    else:
+        note = "ingen inversion i historikken"
+    if live_kurve < 0 and not (inv and max(inv) == len(curve_m) - 1):
+        note = f"live-kurven (trailing maaned) er inverteret ({live_kurve:+.2f}pp); paa maanedstal " + note
+    return note
+
+
+def claims_12m_maaned(icsa_raw):
+    """(sidste KOMPLETTE maaned 'YYYY-MM', 12m %-aendring i maanedsmidlen af ugeobservationerne) — trin 4's
+    praeregistrerede spec (erratum v5.0.1 §5; den oprindelige kode tog maanedens sidste uge). En maaned er
+    komplet foerst naar sidste uges slutdato + 7 dage ligger i naeste maaned: '>= 4 obs' erklaerede
+    5-loerdagsmaaneder komplette en uge for tidligt."""
+    s = date.fromisoformat(icsa_raw[-1][0])
+    y, m = (s.year, s.month) if (s + timedelta(days=7)).month != s.month else mdr_foer((s.year, s.month), 1)
+    def middel(key):
+        vals = [v for d, v in icsa_raw if d[:7] == key]
+        return sum(vals) / len(vals) if vals else None
+    c_now, c_prev = middel(f"{y}-{m:02d}"), middel(f"{y - 1}-{m:02d}")
+    return f"{y}-{m:02d}", ((c_now / c_prev - 1) * 100 if c_now and c_prev else float("nan"))
+
+
+def september_forfald(refit_maaned):
+    """(aar, 9) for den foerste september EFTER refit-maaneden (§3.2a). En udloest refit (§3.2b) nulstiller
+    ikke september-planen: refit 2027-04 -> 2027-09 (ikke 2028-09); 2026-09 -> 2027-09; 2027-10 -> 2028-09."""
+    ry, rm = int(refit_maaned[:4]), int(refit_maaned[5:7])
+    return (ry, 9) if rm < 9 else (ry + 1, 9)
+
+
+def endelig(o):
+    """NaN/inf -> None rekursivt: dashboard.json skal vaere gyldig JSON (JSON.parse afviser en bar NaN)."""
+    if isinstance(o, float) and not math.isfinite(o):
+        return None
+    if isinstance(o, dict):
+        return {k: endelig(v) for k, v in o.items()}
+    if isinstance(o, list):
+        return [endelig(v) for v in o]
+    return o
 
 
 def ann_rate(series, n):
@@ -227,9 +329,30 @@ def september_forfalden(ref, d):
     """§3.2a (F4): er den aarlige september-koersel forfalden pr. dato d, naar seneste koersel var i
     maaned ref ('YYYY-MM')? Forfalden fra den foerste september EFTER ref (en september-koersel paa et
     august-snapshot har ref = august og er derfor stadig forfalden — refit sker paa september-data)."""
-    ry, rm = int(ref[:4]), int(ref[5:7])
-    naeste_sep = (ry, 9) if rm < 9 else (ry + 1, 9)
-    return (d.year, d.month) >= naeste_sep
+    return (d.year, d.month) >= september_forfald(ref)
+
+
+def fuld_maaned(rows, min_n):
+    """Seneste KOMPLETTE kalendermaaned i en daglig/ugentlig serie: den loebende maaned taeller kun med
+    mindst min_n observationer (ellers sammenlignes en delvis maaned med en hel maaned aaret foer)."""
+    n = {}
+    for d, _ in rows:
+        n[d[:7]] = n.get(d[:7], 0) + 1
+    ks = sorted(n)
+    return ks[-1] if n[ks[-1]] >= min_n or len(ks) == 1 else ks[-2]
+
+
+def dd_rygrad(snap):
+    """F33: kalibreringens dd-statistik paa den seneste LUKKEDE maaned i snapshottets rygrad (spine.csv):
+    maanedsmiddel / max af de seneste 12 maanedsmidler - 1 — praecis C.build_monthly's definition, og
+    reproducerbar fra repoet (den licensbegraensede SP500.csv indgaar ikke). None uden rygrad."""
+    rows = C.read_shiller(snap)
+    sp = [(r[0], r[1]) for r in rows if r[1] is not None and np.isfinite(r[1])]
+    if len(sp) < 12:
+        return None
+    sidste12 = [v for _, v in sp[-12:]]
+    k = sp[-1][0]
+    return dict(dd=sp[-1][1] / max(sidste12) - 1, maaned=f"{k[0]}-{k[1]:02d}")
 
 
 def main():
@@ -255,11 +378,17 @@ def main():
         if A2.tabel_aendret(W["announcement_table_sha256"], W.get("announcement_table_kanonisk"), f=ann_f):
             rekal_paakraevet.append("nber_announcements.csv er aendret siden manifest "
                                     f"{W.get('manifest_hash')} (§3.2b: ny top/bund -> refit ved denne koersel)")
-    ref = (W.get("koersel") or {}).get("maaned") or W.get("refit_maaned")
+    ref = max(x_ for x_ in ((W.get("koersel") or {}).get("maaned"), W.get("refit_maaned")) if x_) \
+        if (W.get("koersel") or {}).get("maaned") or W.get("refit_maaned") else None
     if ref and september_forfalden(ref, I):
         rekal_paakraevet.append(f"den aarlige september-rekalibrering er forfalden (seneste koersel {ref}, §3.2a)")
+    D_las = date.fromisoformat(snap.name)                  # laesningens dato: alt i dashboard.json er as-of snapshottet
+    rekal_json = [r for r in rekal_paakraevet if "september" not in r] + (
+        [f"den aarlige september-rekalibrering er forfalden pr. {snap.name} (seneste koersel {ref}, §3.2a)"]
+        if ref and september_forfalden(ref, D_las) else [])
     for r in rekal_paakraevet:
-        print(f"REKALIBRERING PAAKRAEVET: {r} — koer finalize6.py && diagnostik.py foer --log.")
+        print(f"REKALIBRERING PAAKRAEVET: {r} — bump VERSION i finalize6.py (§3.3), koer finalize6.py && diagnostik.py "
+              "foer --log.")
     if W.get("manifest_hash"):
         print(f"vaegte frosne: manifest {W['manifest_hash']} (refit {W.get('refit_maaned', '?')}); "
               f"snapshot {snap.name} er nyere end kalibreringen — det er forventet (§3).")
@@ -277,7 +406,8 @@ def main():
         sys.exit("FEJL: manual.json mangler i snapshottet (spx_vs_hi, cape, margin_yoy). "
                  "Laeg den i manual/ og koer fetch.py igen.")
     man = json.loads(manual_f.read_text(encoding="utf-8"))
-    utilg = []                                              # F18: monitor-serier der mangler i snapshottet
+    utilg = [sid for sid in ("ICSA", "PERMIT", "RIFSPPFAAD90NB", "MORTGAGE30US", "SAHMREALTIME", "RECPROUSM156N")
+             if not (snap / f"{sid}.csv").exists()]           # F18: monitor-serier der mangler i snapshottet
 
     def valgfri(sid):
         s = fred_valgfri(snap, sid)
@@ -286,7 +416,7 @@ def main():
         return s
 
     gs10 = C.read_fred(snap, "GS10"); tb3 = C.read_fred(snap, "TB3MS")
-    cpi = C.read_fred(snap, "CPIAUCNS")
+    cpi, cpi_fyldt = udfyld_huller(C.read_fred(snap, "CPIAUCNS"))
     # Live-input (drift fra 2026-09-28): kurven maales som TRAILING kalendermaaned af de daglige
     # DGS10/DTB3 — samme statistik som GS10/TB3MS, uden op til en maaneds publiceringsforsinkelse
     # (se C.live_kurve). Vaegtene er uaendrede.
@@ -296,11 +426,13 @@ def main():
         y10_dato, y10_niveau = LI["y10_seneste"]
     else:
         (_gy, _gm), y10_niveau = latest(gs10); y10_dato = f"{_gy}-{_gm:02d}, maanedssnit"
-    # F3: CPI y/y paa KALENDERnoegler — BLS udgav aldrig 2025-10, saa okt-2026 y/y er udefineret (ikke 13 mdr)
+    # F3 (PR #1, merget 2026-10-14): BLS udgav aldrig 2025-10; hullet interpoleres log-lineaert og markeres
+    # hoejlydt — y/y er altid 12 KALENDERmaaneder (aldrig et stille 13-mdr-vindue). Roerer kun fuldmodellen.
     k0 = max(cpi)
+    k1, k2 = kal_minus(k0, 12), kal_minus(k0, 24)
     cpi_yoy = yoy(cpi, k0)
-    cpi_yoy_1 = yoy(cpi, kal_minus(k0, 12))
-    cpi_hul = np.isnan(cpi_yoy) or np.isnan(cpi_yoy_1)
+    cpi_yoy_1 = yoy(cpi, k1)
+    cpi_hul = sorted(set(cpi_fyldt) & {k0, k1, k2})
 
     shiller = C.read_shiller(snap)
     cape_hist = np.array([r[4] for r in shiller])
@@ -313,34 +445,37 @@ def main():
     def _alder(felt):
         v = man.get(felt)
         try:
-            return (I - date.fromisoformat(v)).days if v else None
+            return (D_las - date.fromisoformat(v)).days if v else None
         except ValueError:
             return None
-    cape_alder = _alder("cape_dato")
+    cape_alder = _alder("cape_dato")                         # alder as-of snapshottet (reproducerbar)
     friskhed["cape"] = dict(dato=man.get("cape_dato"), alder_dage=cape_alder,
-                            stale=cape_alder is not None and cape_alder > CAPE_MAX_ALDER)
-    friskhed["spx_vs_hi"] = dict(dato=man.get("spx_dato"), alder_dage=_alder("spx_dato"))
+                            stale=cape_alder is None or cape_alder > CAPE_MAX_ALDER)    # ukendt dato = stale (fail-closed)
+    spx_alder = _alder("spx_dato")
+    friskhed["spx_vs_hi"] = dict(dato=man.get("spx_dato"), alder_dage=spx_alder,
+                                 stale=spx_alder is None or spx_alder > SPX_MAX_ALDER)
     mp = man.get("margin_periode")
     forv = None
-    for back in range(0, 4):                                 # nyeste maaned m med m's udgang + lag <= i dag
-        km = kal_minus((I.year, I.month), back + 1)
+    for back in range(0, 4):                                 # nyeste maaned m med m's udgang + lag <= laesningens dato
+        km = kal_minus((D_las.year, D_las.month), back + 1)
         slut = date(km[0] + (km[1] == 12), km[1] % 12 + 1, 1) - timedelta(days=1)
-        if slut + timedelta(days=MARGIN_LAG) <= I:
+        if slut + timedelta(days=MARGIN_LAG) <= D_las:
             forv = f"{km[0]}-{km[1]:02d}"
             break
-    friskhed["margin_yoy"] = dict(periode=mp, forventet_nyeste=forv, foraeldet=bool(mp and forv and mp < forv))
+    friskhed["margin_yoy"] = dict(periode=mp, forventet_nyeste=forv, foraeldet=bool(not mp or (forv and mp < forv)))
     man_noter = []
     if friskhed["cape"]["stale"]:
-        man_noter.append(f"CAPE {cape_alder} dage gammel")
+        man_noter.append(f"CAPE {cape_alder} dage gammel" if cape_alder is not None else "CAPE uden dato")
+    if friskhed["spx_vs_hi"]["stale"]:
+        man_noter.append(f"spx_vs_hi {spx_alder} dage gammel" if spx_alder is not None else "spx_vs_hi uden dato")
     if friskhed["margin_yoy"]["foraeldet"]:
-        man_noter.append(f"margin {mp} (forventet {forv})")
+        man_noter.append(f"margin {mp} (forventet {forv})" if mp else "margin uden datamaaned")
 
     # ---- dd (F33): kalibreringens statistik hvis SP500 findes lokalt, ellers manuel dagsluk ----
-    sp_daily = C.read_fred_daily(snap, "SP500")
-    ddk = dd_kalibrering(sp_daily)
+    ddk = dd_rygrad(snap)
     dd_live = ddk["dd"] if ddk else float(man["spx_vs_hi"])
-    dd_kilde = (f"kalibreringsstatistik (trailing maanedsmiddel fra {ddk['vindue']} mod 12-mdr max af maanedsmidler)"
-                if ddk else "manuel dagsluk vs 52-ugers top (SP500 ikke i dette klon)")
+    dd_kilde = (f"kalibreringsstatistik paa rygradens seneste lukkede maaned {ddk['maaned']} (maanedsmiddel mod 12-mdr max)"
+                if ddk else "manuel dagsluk vs 52-ugers top (ingen rygrad)")
 
     x = dict(curve=y10 - tb3m, realrate=y10 - cpi_yoy, dd=dd_live,
              d_infl=cpi_yoy - cpi_yoy_1, cape_pct=cape_pct)
@@ -370,21 +505,22 @@ def main():
     fm_grund = None                                         # F13/F3/F30: fuldmodellen kan vaere unavailable
     if "w" not in fm:
         fm_grund = fm.get("status", "unavailable")
-    elif cpi_hul:
-        fm_grund = "unavailable — CPI-hul (BLS udgav aldrig 2025-10; y/y udefineret)"
     elif friskhed["cape"]["stale"]:
-        fm_grund = f"unavailable — CAPE stale ({cape_alder} dage)"
+        fm_grund = f"unavailable — CAPE stale ({cape_alder} dage)" if cape_alder is not None else "unavailable — CAPE uden dato"
     fm_ok = fm_grund is None
     p_full = float(p_of(x, fm["features"], fm["mu"], fm["sd"], fm["w"])) if fm_ok else NA
     bm = W["benchmarks"]["curve_only"]
     p_curve = float(p_of(x, ["curve"], {"curve": bm["mu"]}, {"curve": bm["sd"]}, bm["w"]))
 
     # v4-arv (teknisk label), hvis filen findes
-    p_arv = None
+    p_arv, arv_grund = None, None
     arvf = HERE / "weights_trin1_teknisk.json"
-    if arvf.exists() and all(np.isfinite(x[f]) for f in json.loads(arvf.read_text(encoding="utf-8"))["features"]):
+    if arvf.exists():
         A = json.loads(arvf.read_text(encoding="utf-8"))
-        p_arv = float(p_of(x, A["features"], A["mu"], A["sd"], A["w"]))
+        if "cape_pct" in A["features"] and friskhed["cape"]["stale"]:
+            arv_grund = fm_grund or "unavailable — CAPE stale"        # samme CAPE-regel som fuldmodellen
+        elif all(np.isfinite(x[f]) for f in A["features"]):
+            p_arv = float(p_of(x, A["features"], A["mu"], A["sd"], A["w"]))
 
     sahm_s = valgfri("SAHMREALTIME"); sahm = latest(sahm_s) if sahm_s else None
     cp_s = valgfri("RECPROUSM156N"); cp = latest(cp_s) if cp_s else None
@@ -402,20 +538,14 @@ def main():
             (_fy, _fm), ff_v = latest(ffm)
             ff_dato, ff_kilde = f"{_fy}-{_fm:02d}", "FEDFUNDS maanedssnit"
     pce = valgfri("PCEPI")
+    pce_fyldt = []
+    if pce:
+        pce, pce_fyldt = udfyld_huller(pce)
     pce_yoy = yoy(pce) if pce else NA
 
     fkeys = sorted(set(gs10) & set(tb3))
     curve_m = np.array([gs10[k] - tb3[k] for k in fkeys])
-    inv = {i for i, v in enumerate(curve_m) if v < 0}
-    if inv:
-        li = max(inv); run0 = li
-        while run0 - 1 in inv:
-            run0 -= 1
-        slut = fkeys[li]
-        inv_note = (f"sluttede {slut[0]}-{slut[1]:02d} ({len(curve_m)-1-li} mdr siden), "
-                    f"dybde {float(np.min(curve_m[run0:li+1])):+.2f}pp")
-    else:
-        inv_note = "ingen inversion i historikken"
+    inv_note = inversionsnote(fkeys, curve_m, x["curve"])
 
     # F11: P-stien ved FROSNE vaegte paa de seneste 12 publicerede maanedstal + trailing-maaneden
     sti_p = [(f"{k[0]}-{k[1]:02d}", float(p_of({"curve": gs10[k] - tb3[k]}, op["features"], op["mu"], op["sd"], op["w"])))
@@ -471,7 +601,7 @@ def main():
               f"({'enig' if parret['enig_med_baandregel'] else 'UENIG'} med baandreglen). "
               "Diagnostik: aendrer ikke dommen. Coverage not established.")
     if cens:
-        print(f"   CENSURERET: laesningens maaned ligger inde i en annonceret recession (top "
+        print(f"   CENSURERET: laesningens maaned ligger inde i en annonceret recession (USREC-onset "
               f"{cens[0] // 12}-{cens[0] % 12 + 1:02d}, annonceret {cens[1] // 12}-{cens[1] % 12 + 1:02d}) — "
               "onset-sandsynlighed er ikke defineret (Kimi R5); P printes kun til reference.")
 
@@ -490,7 +620,9 @@ def main():
         print(f"   {NAVN[f]:<26}{fmt(x[f], '>8.2f', '       —')}{fmt(z_af(f), '>9.2f', '        —')}{star}")
     print(f"   (dd: {dd_kilde}; manuel dagsluk vs 52u-top {float(man['spx_vs_hi'])*100:+.1f}%)")
     if cpi_hul:
-        print("   (realrate/d_infl: udefineret — CPI-hul; sidste gode vaerdi baeres aldrig frem, V501 §2)")
+        aarsag = "BLS udgav aldrig oktober 2025, shutdown" if (2025, 10) in cpi_hul else "tomt felt i FRED"
+        print(f"   DATAHUL: CPIAUCNS {', '.join(f'{y}-{m:02d}' for y, m in cpi_hul)} mangler ({aarsag}) —{chr(10)}"
+              "   interpoleret log-lineaert mellem nabomaanederne. Roerer kun realrate/d_infl (fuldmodellen), ikke P.")
 
     print("\n3) BENCHMARK-TABEL (printes ogsaa naar den er usmigrende):")
     print(f"   {'model':<34}{'wf-skill':>10}{'live-P':>9}   panel")
@@ -522,17 +654,24 @@ def main():
         print(f"   {'curve+awh (praereg. v5.2-test)':<34}{'+'+format(ca['wf_improvement'],'.1f')+'%':>10}{'':>9}   [{ca['status']}]")
     if p_arv is not None:
         print(f"   {'v4-arv (teknisk label)':<34}{'':>10}{p_arv*100:>8.1f}%   [andet maal — arv]")
+    elif arv_grund:
+        print(f"   {'v4-arv (teknisk label)':<34}{'':>10}{'—':>9}   [{arv_grund}]")
     print(f"   {'realtids-Sahm (trigger 0,50)':<34}{'':>10}{fmt(sahm[1] if sahm else None, '>8.2f', '       ?')}    [naerhorisont-signal]")
     print(f"   {'Chauvet-Piger nowcast':<34}{'':>10}{fmt(cp[1] if cp else None, '>8.1f', '       ?')}%   [coincident, "
           f"{(str(cp[0][0]) + '-' + format(cp[0][1], '02d')) if cp else '?'}, publiceringslag — anden disciplin]")
     print(f"   Note: {fm.get('note', '')}")
+    mg_ = (diag or {}).get("gate_mde")
+    if mg_ and "laant" not in str(fm.get("note", "")):
+        print(f"   (Stoejgulvet {mg_.get('mde_trin3_pp')}pp er trin 3's MDE, laant fra frekvenstesten; gatens EGEN MDE paa "
+              f"kalibreringens panel er {mg_['mde_gate_pp']}pp (diagnostik, F8). Beslutningsreglen aendres kun af raadet.)")
     if fm_ok:
         print(f"   MODEL-DIVERGENS: operationel {p_op*100:.1f}% vs fuldmodel {p_full*100:.1f}% "
               f"(delta {abs(p_op-p_full)*100:.1f}pp).")
         zc_cape = (x['cape_pct'] - fm['mu']['cape_pct']) / fm['sd']['cape_pct']
         zc_dd = (x['dd'] - fm['mu']['dd']) / fm['sd']['dd']
         print(f"   Divergensen drives af fuldmodellens ekstra led (CAPE z={zc_cape:+.2f}, dd z={zc_dd:+.2f});"
-              f"\n   modellerne er statistisk uadskillelige paa skill — den simple vandt paa regel (raadsreview 2026-08).")
+              f"\n   modellerne er statistisk uadskillelige paa skill; curve-only er laast som operationel (V501 §6) — "
+              "et skift kraever en raadsbeslutning.")
     else:
         print(f"   MODEL-DIVERGENS: ikke beregnet — fuldmodellen er {fm_grund}.")
 
@@ -541,26 +680,22 @@ def main():
     claims_txt, claims_12m = "utilgaengelig", NA
     if icsa_raw:
         claims_4w = sum(v for _, v in icsa_raw[-4:]) / 4
-        mm = SP.monthly_mean(icsa_raw)
-        mcount = {}
-        for _d, _ in icsa_raw:
-            mcount[_d[:7]] = mcount.get(_d[:7], 0) + 1
-        _mk = sorted(mcount)
-        full = _mk[-1] if mcount[_mk[-1]] >= 4 else _mk[-2]
-        gl = f"{int(full[:4]) - 1}{full[4:]}"
-        claims_12m = (mm[full] / mm[gl] - 1) * 100 if gl in mm else NA
-        claims_txt = f"4u-snit {claims_4w/1000:.0f}k; maanedssnit 12m {fmt(claims_12m, '+.1f')}% ({full})"
+        full, claims_12m = claims_12m_maaned(icsa_raw)
+        claims_txt = f"4u-snit {claims_4w/1000:.0f}k; 12m {fmt(claims_12m, '+.1f')}% (maanedssnit {full})"
     else:
         utilg.append("ICSA")
+    arb_txt = []                                            # F58: utestede monitorer — egen linje, ikke 'trin 4'
     ccsa_raw = raw_valgfri(snap, "CCSA")
     if ccsa_raw:
         mmc = SP.monthly_mean(ccsa_raw)
-        kc = sorted(mmc)[-1]
+        kc = fuld_maaned(ccsa_raw, 4)
         glc = f"{int(kc[:4]) - 1}{kc[4:]}"
-        claims_txt += f"; fortsatte {ccsa_raw[-1][1]/1e6:.2f}M (12m {fmt((mmc[kc]/mmc[glc]-1)*100 if glc in mmc else NA, '+.1f')}%)"
+        arb_txt.append(f"fortsatte {ccsa_raw[-1][1]/1e6:.2f}M ({ccsa_raw[-1][0]}); maanedssnit {kc} 12m "
+                       f"{fmt((mmc[kc]/mmc[glc]-1)*100 if glc in mmc else NA, '+.1f')}%")
     tmp_s = fred_valgfri(snap, "TEMPHELPS")
     if tmp_s:
-        claims_txt += f"; vikarer 12m {fmt(yoy(tmp_s), '+.1f')}%"
+        kt = max(tmp_s)
+        arb_txt.append(f"vikarer {kt[0]}-{kt[1]:02d} 12m {fmt(yoy(tmp_s), '+.1f')}%")
 
     pmt = valgfri("PERMIT")
     if pmt:
@@ -583,7 +718,7 @@ def main():
     hy_zone = ("  I SVAERM-ZONEN 350-450bp" if oas_bp is not None and 350 <= oas_bp <= 450 else "")
     mon = [
         ("Kurven inverteret", x["curve"] < 0, f"{x['curve']:+.2f}pp", "operationel feature"),
-        ("Sahm > 0,50", (sahm[1] > 0.50) if sahm else "?", f"{sahm[1]:.2f} ({sahm[0][0]}-{sahm[0][1]:02d})" if sahm else "utilgaengelig",
+        ("Sahm >= 0,50", (sahm[1] >= 0.50) if sahm else "?", f"{sahm[1]:.2f} ({sahm[0][0]}-{sahm[0][1]:02d})" if sahm else "utilgaengelig",
          "testet, ikke bestaaet (trin 4)"),
         ("HY OAS > 600bp", (oas_bp > 600) if oas_bp is not None else "?",
          (f"{oas_bp:.0f}bp ({oas[0]}{', ' + oas[2] if oas[2] != 'fil' else ''}){hy_zone}" if oas else "utilgaengelig"),
@@ -598,6 +733,9 @@ def main():
         ("Claims-momentum", None, claims_txt, "testet, ikke bestaaet (trin 4)"),
         ("Permits y/y", None, permits_txt, "testet, ikke bestaaet (trin 4)"),
     ]
+    if arb_txt:
+        kontekst.append(("Fortsatte ansoegninger / vikarer", None, "; ".join(arb_txt),
+                         "utestet monitor (kontekst, F58) — ingen taerskel"))
     awh = fred_valgfri(snap, "AWHMAN")
     if awh:
         kontekst.append(("Arbejdstimer industri (6m ann.)", None,
@@ -618,7 +756,16 @@ def main():
 
     # ---- SCENARIE-APPENDIKS: svaerm-tripwires (R3: uden for modeloutput og antaendings-kolonnen) ----
     rows = laes_hovedbog(HERE.parent / "LOG.md")
-    sidst_logget = next((r["logget"][:10] for r in reversed(rows) if r.get("P") not in (None, "", "ikke logget")), None)
+    forr = next((r for r in reversed(rows) if tal_af(r.get("P"), 0.01) is not None), None)
+    sidst_logget = forr["logget"][:10] if forr else None
+    _pm = {}
+    if forr and (C.RAW / forr.get("snapshot", "") / "meta.json").exists() and forr.get("snapshot"):
+        _pm = json.loads((C.RAW / forr["snapshot"] / "meta.json").read_text(encoding="utf-8")).get("series", {})
+    def fra(*sids):
+        """F28: sidste observation forrige LOGGEDE laesning saa (pr. serie; fallback: logdatoen)."""
+        ds = [(_pm.get(s_) or {}).get("last") for s_ in sids]
+        ds = [d_ for d_ in ds if d_]
+        return min(ds) if ds else sidst_logget
     scen = []
     _cp = dict(C.read_fred_daily(snap, "RIFSPPFAAD90NB") or []); _tbd = C.read_fred_daily(snap, "DTB3") or []
     _tb = dict(_tbd)
@@ -631,15 +778,17 @@ def main():
         n_over = sum(v > 75 for v in sid10)
         cp_stale = (date.fromisoformat(_tbd[-1][0]) - date.fromisoformat(cp_dato)).days > 10     # F47
         cp_spread = [(d, (_cp[d] - _tb[d]) * 100) for d in faelles]
-        ss = siden_sidst(cp_spread, sidst_logget, 75) if sidst_logget else None
+        ss = siden_sidst(cp_spread, fra("RIFSPPFAAD90NB", "DTB3"), 75) if sidst_logget else None
         scen.append(("CP-spaend 3m > 75bp i 2+ uger", "?" if cp_stale else n_over == len(sid10) == 10,
                      f"{cp_spread_bp:.0f}bp ({cp_dato}{', STALE' if cp_stale else ''}); >75bp {n_over}/10 seneste dage"
-                     + (f"; siden {sidst_logget}: max {ss['ekstrem']:.0f}bp ({ss['dato']}), {ss['dage_over']}/{ss['n']} dage over" if ss else ""),
+                     + (f"; efter {fra('RIFSPPFAAD90NB', 'DTB3')}: max {ss['ekstrem']:.0f}bp ({ss['dato']}), {ss['dage_over']}/{ss['n']} dage over" if ss else ""),
                      "svaerm-tripwire, 1-2 kanaler (funding); atlas-def. alle 10 seneste faelles handelsdage"))
         if cp_stale:
             utilg.append(f"CP-spaend stale siden {cp_dato}")
     else:
         utilg.append("RIFSPPFAAD90NB")
+        scen.append(("CP-spaend 3m > 75bp i 2+ uger", "?", "utilgaengelig (RIFSPPFAAD90NB/DTB3 mangler i snapshottet)",
+                     "svaerm-tripwire, 1-2 kanaler (funding)"))
     _tpd = C.read_fred_daily(snap, "THREEFYTP10")
     tp_dato, tp10, tp_txt = None, None, ""
     if _tpd:
@@ -650,22 +799,25 @@ def main():
             _rows = list(csv.DictReader(fh))
         tp_txt = f" / ACM TP {float(_rows[-1]['ACMTP10']):+.2f}pp (NY Fed, maanedlig {_rows[-1]['Date']})"
     d10 = C.read_fred_daily(snap, "DGS10")
-    ss10 = siden_sidst(d10, sidst_logget, 5.25) if sidst_logget and d10 else None
+    ss10 = siden_sidst(d10, fra("DGS10"), 5.25) if sidst_logget and d10 else None
     scen.append(("10Y > 5,25%", y10_niveau > 5.25,
                  f"{y10_niveau:.2f}% ({y10_dato}){tp_txt}"
-                 + (f"; siden {sidst_logget}: max {ss10['ekstrem']:.2f}% ({ss10['dato']}), {ss10['dage_over']}/{ss10['n']} dage over" if ss10 else ""),
+                 + (f"; efter {fra('DGS10')}: max {ss10['ekstrem']:.2f}% ({ss10['dato']}), {ss10['dage_over']}/{ss10['n']} dage over" if ss10 else ""),
                  "1 kanal (fiskal); kanalens ANTAGNE trigger, ikke Q2-varsel; maaleregel: seneste daglige niveau"))
     mg = C.read_fred_daily(snap, "MORTGAGE30US")
     if mg:
-        ssm = siden_sidst(mg, sidst_logget, 7.8) if sidst_logget else None
+        ssm = siden_sidst(mg, fra("MORTGAGE30US"), 7.8) if sidst_logget else None
         scen.append(("Realkredit 30Y > 7,8%", mg[-1][1] > 7.8, f"{mg[-1][1]:.2f}% ({mg[-1][0]})"
-                     + (f"; siden {sidst_logget}: max {ssm['ekstrem']:.2f}% ({ssm['dato']})" if ssm else ""),
+                     + (f"; efter {fra('MORTGAGE30US')}: max {ssm['ekstrem']:.2f}% ({ssm['dato']}), {ssm['dage_over']}/{ssm['n']} uger over" if ssm else ""),
                      "1 kanal (fiskal); kanalens antagne transmission, ikke Q2-varsel"))
     else:
         utilg.append("MORTGAGE30US")
+        scen.append(("Realkredit 30Y > 7,8%", "?", "utilgaengelig (MORTGAGE30US mangler i snapshottet)", "1 kanal (fiskal)"))
     print("\n   SCENARIE-APPENDIKS — MiroFish-svaermens tripwires (TRIGGER-ATLAS; uvalideret; raadets R3: uden for")
     print("   modeloutputtet og hovedbogens antaendings-kolonne fra 2026-10-15; proveniens i G2-erratumet):")
     scen = [(n, _nb(a), v, st) for n, a, v, st in scen]
+    if [u for u in utilg if u.startswith("CP-spaend stale")]:
+        print("   (CP-spaendet er STALE: se (?)-linjen)")
     for navn, aktiv, vaerdi, status in scen:
         boks = "(X)" if aktiv is True else ("(?)" if aktiv == "?" else "( )")
         print(f"   {boks} {navn:<36}{vaerdi:<52}  {status}")
@@ -703,16 +855,24 @@ def main():
         pol.append(("Fed funds (effektiv)", f"{ff_v:.2f}% ({ff_dato}, {ff_kilde})"))
         if pce:
             pk = max(pce)
-            pol.append(("Realt kontantafkast FF - PCE", f"{fmt(rk, '+.2f')}pp (PCE y/y {pk[0]}-{pk[1]:02d})"))
+            pol.append(("Realt kontantafkast FF - PCE", f"{fmt(rk, '+.2f')}pp (PCE y/y {pk[0]}-{pk[1]:02d})"
+                        + hul_mrk(pce_fyldt, pk, (12,))))
         if _tbd:
-            pol.append(("3m-bill minus Fed funds", f"{(_tbd[-1][1] - ff_v) * 100:+.0f}bp ({_tbd[-1][0]}, diskonto)"))
+            if _dff:                                            # PR #1: begge ben paa samme dag, som CP-spaendet
+                _ffd = dict(_dff); bf_dato = max(set(_ffd) & set(_tb))
+                bf_bp = (_tb[bf_dato] - _ffd[bf_dato]) * 100
+            else:
+                bf_dato, bf_bp = _tbd[-1][0], (_tbd[-1][1] - ff_v) * 100
+            pol.append(("3m-bill minus Fed funds", f"{bf_bp:+.0f}bp ({bf_dato}, diskonto)"))
     if pce:
-        pol.append(("PCE-infl. 3m/6m/12m ann.", f"{fmt(ann_rate(pce, 3), '.1f')} / {fmt(ann_rate(pce, 6), '.1f')} / {fmt(pce_yoy, '.1f')}%"))
+        pol.append(("PCE-infl. 3m/6m/12m ann.", f"{fmt(ann_rate(pce, 3), '.1f')} / {fmt(ann_rate(pce, 6), '.1f')} / {fmt(pce_yoy, '.1f')}%"
+                    + hul_mrk(pce_fyldt, max(pce), (3, 6, 12))))
     cpi_sa = fred_valgfri(snap, "CPIAUCSL")
     if cpi_sa:
+        cpi_sa, sa_fyldt = udfyld_huller(cpi_sa)
         pol.append(("CPI (SA) 3m/6m/12m ann.",
                     f"{fmt(ann_rate(cpi_sa, 3), '.1f')} / {fmt(ann_rate(cpi_sa, 6), '.1f')} / {fmt(ann_rate(cpi_sa, 12), '.1f')}%"
-                    + (" (12m udefineret: CPI-hul)" if np.isnan(ann_rate(cpi_sa, 12)) else "")))
+                    + hul_mrk(sa_fyldt, max(cpi_sa), (3, 6, 12))))
     if tp10 is not None:                                     # 10Y paa TP-datoen (eller naermeste tidligere)
         _d10 = dict(d10 or [])
         _prior = [d for d in _d10 if d <= tp_dato]
@@ -738,7 +898,7 @@ def main():
     wti = C.read_fred_daily(snap, "DCOILWTICO")
     if wti:
         wm = SP.monthly_mean(wti)
-        kw = sorted(wm)[-1]; kwg = f"{int(kw[:4]) - 1}{kw[4:]}"
+        kw = fuld_maaned(wti, 15); kwg = f"{int(kw[:4]) - 1}{kw[4:]}"
         pol.append(("WTI y/y (regimekontekst, R2)", f"${wti[-1][1]:.2f} ({wti[-1][0]}); maanedssnit {kw} y/y "
                     f"{fmt((wm[kw]/wm[kwg]-1)*100 if kwg in wm else NA, '+.0f')}% — nettoproducent; ikke feature, ikke tripwire"))
     print()
@@ -809,7 +969,8 @@ def main():
     dsti = (diag or {}).get("sti") or {}
     hist_sti = (f"Historisk (diagnostik): P var under sin top ved sidste origin foer onset i {dsti['n_under_top']}/{dsti['n_onsets']} "
                 f"onsets — median {dsti['median_fald_pp']:.0f}pp fald, median {dsti['median_mdr_top_til_onset']} mdr fra top til onset."
-                if dsti.get("n_onsets") else "Historiske onsets er ofte sket i re-steepening-fasen.")
+                if dsti.get("n_onsets") and dsti.get("median_fald_pp") is not None
+                else "Historiske onsets er ofte sket i re-steepening-fasen.")
     a07 = next((a for a in (diag or {}).get("pre_onset_analoger", []) if a["origin"] == "2007Q4"), None)
     if a07:
         hist_sti += (f" 2007Q4: P {a07['p']*100:.1f}% [{a07['baand'][0]*100:.1f}-{a07['baand'][1]*100:.1f}%], "
@@ -850,17 +1011,30 @@ def main():
                 maerke = "kort-ende-drevet (" + ("bull steepening" if d3_ < 0 and dK > 0 else "bear flattening" if d3_ > 0 and dK < 0 else "blandet") + ")"
             aendring.update(d10Y_pp=round(d10_, 4), d3m_pp=round(d3_, 4), bidrag_10Y_pp=round(bidrag_10 * 100, 2),
                             bidrag_3m_pp=round(bidrag_3 * 100, 2), maerke=maerke, input_foer=gl["kilde"])
-            print(f"   DEKOMPOSITION (frosne vaegte): kurve {dK:+.2f} = d10Y {d10_:+.2f} - d3m {d3_:+.2f}pp -> "
+            tp_gl, tp_ny = C.read_fred_daily(gl_snap, "THREEFYTP10"), _tpd
+            dtp_txt = ""
+            if tp_gl and tp_ny:
+                aendring["dTP_pp"] = round(tp_ny[-1][1] - tp_gl[-1][1], 4)
+                aendring["dTP_datoer"] = [tp_gl[-1][0], tp_ny[-1][0]]
+                dtp_txt = f" (heraf Kim-Wright-termpraemie {aendring['dTP_pp']:+.2f}pp, {tp_gl[-1][0]}..{tp_ny[-1][0]})"
+            print(f"   DEKOMPOSITION (frosne vaegte): kurve {dK:+.2f} = d10Y {d10_:+.2f}{dtp_txt} - d3m {d3_:+.2f}pp -> "
                   f"P-bidrag 10Y {bidrag_10*100:+.1f}pp, 3m {bidrag_3*100:+.1f}pp — {maerke}"
                   + ("" if gl["kilde"] == LI["kilde"] else f" [forrige raekke: {gl['kilde']} input]"))
     else:
         print("   Foerste laesning — ingen historik endnu.")
+    ref_tal = (((diag or {}).get("oracle_fri") or {}).get("alle_live_publicerbare") or {}).get("improvement")
+    if ref_tal is not None:
+        print(f"   Hovedbogens referencetal (BEDOEMMELSESNOEGLE.md §3): +{ref_tal}% (diagnostik 4.5, realtidscensurering) — "
+              f"ikke +{op['wf_improvement']:.1f}%. Ingen samlet score foer mindst 3 komplette cyklusblokke.")
 
     # --log-blokeringer (samlet, saa de staar i JSON'en ogsaa)
     blok = []
     if rekal_paakraevet:
         blok.append("rekalibrering paakraevet (§3.2) — koer finalize6.py && diagnostik.py, derefter motor.py --log")
     nyeste = sorted(d for d in C.RAW.iterdir() if d.is_dir())[-1]
+    if age > STALE_DAYS:                                    # PR #1: --allow-stale gaelder kun aflaesningen
+        blok.append(f"snapshottet er {age} dage gammelt (>{STALE_DAYS}) — --allow-stale gaelder kun aflaesningen; "
+                    "hovedbogen faar kun friske data, koer fetch.py")
     if nyeste != snap:
         blok.append(f"laesningen bygger paa {snap.name}, men nyeste snapshot-mappe er {nyeste.name} "
                     "(ukomplet/ubrugelig) — hovedbogen faar kun friske data; koer fetch.py igen")
@@ -872,14 +1046,19 @@ def main():
     if rows and rows[-1]["logget"][:7] == idag_s[:7]:
         blok.append(f"{idag_s[:7]} er allerede logget ({rows[-1]['logget']}) — historiske raekker roeres ikke")
     uden_for = None
-    if not (LOGDAG_VINDUE[0] <= I.day <= LOGDAG_VINDUE[1]):
+    lv_fra, lv_til = ((date(I.year, I.month, 1) + timedelta(days=LOGDAG_VINDUE[0] - 1), None) if LOGDAG_VINDUE
+                      else logvindue(I))
+    i_vindue = (LOGDAG_VINDUE[0] <= I.day <= LOGDAG_VINDUE[1]) if LOGDAG_VINDUE else (lv_fra <= I <= lv_til)
+    if not i_vindue:
         if "--log-uden-for-vindue" in sys.argv:
             k = sys.argv.index("--log-uden-for-vindue")
             uden_for = sys.argv[k + 1] if len(sys.argv) > k + 1 and not sys.argv[k + 1].startswith("-") else ""
             if not uden_for.strip():
                 blok.append('--log-uden-for-vindue kraever en begrundelse: --log-uden-for-vindue "<hvorfor>"')
         else:
-            blok.append(f"dag {I.day} er uden for logvinduet dag {LOGDAG_VINDUE[0]}-{LOGDAG_VINDUE[1]} (G3.6, BEDOEMMELSESNOEGLE.md) — "
+            blok.append(f"{I} er uden for logvinduet "
+                        + (f"dag {LOGDAG_VINDUE[0]}-{LOGDAG_VINDUE[1]}" if LOGDAG_VINDUE else f"{lv_fra}..{lv_til}")
+                        + " (G3.6, BEDOEMMELSESNOEGLE.md) — "
                         "mellemlaesninger logges aldrig; undtagelse kun med --log-uden-for-vindue \"<begrundelse>\"")
 
     if "--log" in sys.argv:
@@ -912,14 +1091,21 @@ def main():
                     noter.append(f"bro: P(v{gl_m.get('version', '?')} {gl_h})={p_gl*100:.1f}% / "
                                  f"P(v{W.get('version', '?')} {kh})={p_op*100:.1f}% ved identiske inputs"
                                  + (f"; trigger: {W['trigger']}" if W.get("trigger") else ""))
-            elif kh and sidste_kal == kh and W.get("koersel", {}).get("manifest_genbrugt"):
-                # G4.2: en trigger-koersel der genbrugte manifestet skal stadig efterlade et spor i hovedbogen
+            elif kh and sidste_kal == kh and (W.get("koersel") or {}).get("manifest_genbrugt"):
+                # G4.2: en trigger-koersel der genbrugte manifestet skal stadig efterlade et spor i hovedbogen — een gang
                 ko = W["koersel"]
-                if sidst_logget and ko.get("utc", "")[:10] > sidst_logget:
-                    noter.append(f"koersel {ko['utc'][:10]}: {ko.get('trigger', '')}")
+                tag = f"koersel {ko.get('utc', '')}"
+                if ko.get("utc") and not any(tag in r.get("note", "") for r in rows):
+                    noter.append(f"{tag}: {ko.get('trigger', '')}")
             ov = meta.get("spine", {}).get("outlier_override")
             if ov:
                 noter.append(f"--accept-outlier: {ov.get('begrundelse', '')} ({'; '.join(ov.get('observationer', []))})")
+            else:                                           # F31: accept i et tidligere snapshot, endnu ikke logget
+                nye_acc = {k_: v_ for k_, v_ in meta.get("spine", {}).get("outliers_accepteret", {}).items()
+                           if not sidst_logget or v_.get("accepteret", "") > sidst_logget}
+                if nye_acc:
+                    noter.append("--accept-outlier: " + "; ".join(f"{k_}: {v_.get('observation', '')} ({v_.get('begrundelse', '')})"
+                                                              for k_, v_ in sorted(nye_acc.items())))
             nh = noegle_hash(logf)
             if nh and not any(f"noegle {nh}" in r.get("note", "") for r in rows):
                 noter.append(f"noegle {nh} (BEDOEMMELSESNOEGLE.md)")
@@ -932,7 +1118,8 @@ def main():
             vindue = maanedsvindue(I)
             inp = (f"daglig {LI['vindue'][0]}..{LI['vindue'][1]} ({LI['n_dage']}d)" if LI["kilde"] == "daglig"
                    else f"maanedlig {LI['maanedlig']['maaned']}")
-            linjer = [f"| {m} (ikke logget) | – | ikke logget | | | | | | ingen raekke i logvinduet | {kh} | | | |" for m in mangler]
+            # 'ikke logget'-raekker har ingen P og derfor ingen kalibrering (noeglens pkt. 1e: kolonnen er tom)
+            linjer = [f"| {m} (ikke logget) | – | ikke logget | | | | | | ingen raekke i logvinduet | | | | |" for m in mangler]
             linjer.append(f"| {idag_s} | {snap.name} | {p_op*100:.1f}% | {lo*100:.1f}-{hi*100:.1f}% | "
                           f"{base*100:.1f}% | {dom_ord} | {x['curve']:+.2f} | "
                           f"{ren_note(', '.join(aktive)) if aktive else 'ingen'} | {ren_note('; '.join(noter))} | {kh} | "
@@ -994,8 +1181,10 @@ def main():
         print(f"   §3.6 Baseline: publiceret = poolet basisrate (+{pr['improvement']}%); expanding-intercept-udgave +{pr['improvement_expanding']}% (ekstra kolonne, aendrer ikke gaten)")
         if diag.get("start_sensitivitet"):
             ss_ = diag["start_sensitivitet"]
-            print("   F34 Universstart: " + "; ".join(f"{k} P {v['P']*100:.1f}% / basis {v['basisrate']*100:.1f}%"
-                                                   for k, v in ss_.items() if k != "input") + " (protokol: 1947Q2 — til raadet foer sept. 2027)")
+            print("   F34 Universstart (ved kalibreringens bro-input kurve "
+                  + f"{ss_.get('input', {}).get('curve', '?')}pp, ikke dagens): "
+                  + "; ".join(f"{k} P {v['P']*100:.1f}% / basis {v['basisrate']*100:.1f}%"
+                              for k, v in ss_.items() if k != "input") + " (protokol: 1947Q2 — til raadet foer sept. 2027)")
         if diag.get("styrke"):
             st = diag["styrke"]
             print(f"   G3.2 Hovedbogens styrke: 80 % styrke kraever ca. {st['blokke_80pct']} cyklusblokke (ca. {st['aar_80pct']} aar). "
@@ -1021,9 +1210,9 @@ def main():
         for navn, blk in (("curve+cape (praereg. v5.1-test)", cc), ("curve+awh (praereg. v5.2-test)", ca)):
             if blk:
                 bmj.append(dict(navn=navn, wf=blk["wf_improvement"], live_p=None, status=blk["status"], panel="t.o.m. 2023Q2"))
-        if p_arv is not None:
-            bmj.append(dict(navn="v4-arv (teknisk label)", wf=None, live_p=round(p_arv, 6),
-                            status="andet maal - arv", panel=None))
+        if p_arv is not None or arv_grund:
+            bmj.append(dict(navn="v4-arv (teknisk label)", wf=None, live_p=round(p_arv, 6) if p_arv is not None else None,
+                            status="andet maal - arv" if p_arv is not None else arv_grund, panel=None))
         bmj.append(dict(navn="realtids-Sahm (trigger 0,50)", wf=None, live_p=None,
                         vaerdi=sahm[1] if sahm else None, status="naerhorisont-signal", panel=None))
         bmj.append(dict(navn="Chauvet-Piger nowcast", wf=None, live_p=round(cp[1] / 100, 6) if cp else None,
@@ -1052,7 +1241,7 @@ def main():
                             fed_funds=dict(vaerdi=ff_v, dato=ff_dato, kilde=ff_kilde),
                             sammensaetning=sammensaetning),
             trigger=W.get("trigger"), delta_vs_forrige=W.get("delta_vs_forrige"), koersel=W.get("koersel"),
-            rekalibrering_paakraevet=rekal_paakraevet, log_blokeringer=blok,
+            rekalibrering_paakraevet=rekal_json,
             snapshot=snap.name, snapshot_hash=meta["snapshot_sha256"][:10],
             model="curve-only-logit" if W["operationel"] == "curve_only" else "fuldmodel",
             label=W["label_tekst"], kalibreret=W["created_utc"][:10],
@@ -1082,12 +1271,14 @@ def main():
             advarsler=dict(vaerste_fejlalarm=fa, sti_advarsel=sti_txt, lang_ende=lang_ende,
                            eksogen="Eksogene chok kan ikke forudsiges."),
             hovedbog=hb,
+            hovedbog_reference=dict(improvement=ref_tal, kilde="diagnostik 4.5 alle live-publicerbare (realtidscensurering)",
+                                    note="ikke wf_log_loss — se BEDOEMMELSESNOEGLE.md §3"),
             hovedbog_note="Den eneste fuldt prospektive test — beskytter mod look-ahead, men statistisk svag: der kraeves "
                           "mange komplette konjunkturcykler foer den kan skelne modellen fra basisraten (BEDOEMMELSESNOEGLE.md). "
                           "Vises uden samlet score eller dom.",
             noegle=noegle_hash(logf),
         )
-        ud.write_text(json.dumps(data, indent=2, ensure_ascii=False) + chr(10), encoding="utf-8")
+        ud.write_text(json.dumps(endelig(data), indent=2, ensure_ascii=False, allow_nan=False) + chr(10), encoding="utf-8")
         print(f"{chr(10)}   JSON skrevet: {ud}  ({len(hb)} hovedbogsraekker)")
 
 

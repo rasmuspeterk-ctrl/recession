@@ -189,14 +189,6 @@ def ann_fil():
     return f if f.exists() else A2.HERE / "nber_announcements.csv"
 
 
-def naeste_version():
-    """G4.4 (§3.3): versionen bumpes ved hver NY kalibrering: 5.0.(1 + antal distinkte manifester efter v5.0)."""
-    idx = kal() / "index.json"
-    entries = json.loads(idx.read_text(encoding="utf-8")) if idx.exists() else []
-    n = len({e["hash"] for e in entries if e.get("version") not in (None, LEGACY_VERSION)})
-    return f"5.0.{n + 1}"
-
-
 def miljoe():
     """F54: miljoeet der kalibrerede (proveniens, uden for hashen)."""
     return dict(python=platform.python_version(), numpy=np.__version__, platform=platform.platform(terse=True))
@@ -315,8 +307,7 @@ def rekalibrer(snap, spine_file=None, R=None, version=VERSION, kaldt_som="rekali
         created_utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         code_commit=git_commit(), kaldt_som=kaldt_som,
         snapshot=snap.name, snapshot_sha256=meta["snapshot_sha256"],
-        announcement_table_sha256=sha256_file(ann) if ann.exists() else None,
-        announcement_table_kanonisk=A2.tabel_hash(ann) if ann.exists() else None,
+        announcement_table_sha256=C.ann_sha256(ann) if ann.exists() else None,
         refit_maaned=f"{R // 12}-{R % 12 + 1:02d}",
         spine=dict(fil=spine_navn, sha256=sha256_file(snap / spine_navn) if (snap / spine_navn).exists() else None,
                    sidste=meta.get("spine", {}).get("sidste") if not spine_file else None),
@@ -377,15 +368,27 @@ def delta_vs_forrige(Dc, ny, gl):
                 d_alpha=round(ny["raa"]["alpha"] - gl["raa"]["alpha"], 4) if ny.get("raa") and gl.get("raa") else None)
 
 
+def kraev_ny_version(forrige):
+    """§3.3: hver ny kalibrering er en ny v5.0.x. Stopper FOER noget skrives: et manifest med samme version
+    som kalibreringen i drift ville ellers blive genbrugt uaendret ved naeste koersel (indholdet er det samme),
+    saa fejlen ikke kunne rettes ved blot at bumpe VERSION bagefter. Fanger ogsaa en finalize6-koersel uden
+    for en rekalibrering, som ellers ville loesne de frosne vaegte."""
+    if forrige and forrige.get("version") == VERSION:
+        sys.exit(f"FEJL (§3.3): dataene giver en ny kalibrering, men VERSION er stadig v{VERSION} som kalibreringen i "
+                 f"drift ({forrige.get('hash')}). Er det en rekalibrering (§3.2): bump VERSION i finalize6.py og koer "
+                 "igen. Ellers: stop — vaegtene er frosne mellem rekalibreringer; driftsvaegtene gendannes med "
+                 f"'git checkout weights.json' eller 'python finalize6.py --snapshot data/raw/{forrige.get('snapshot')}'. "
+                 "Intet er skrevet.")
+
+
 def bestem_trigger(m_ny, m_gl):
     """Hvorfor koerte rekalibreringen (§3.2)? Bestemmes af det NYE manifest mod det forrige DISTINKTE
     manifest: NBER-datering (annonceringstabel aendret), september (aarlig), ellers manuel/reparation.
     Foerste manifest efter legacy (v5.0) er per definition reparationen."""
     if m_gl is None or m_gl.get("version") in (None, LEGACY_VERSION):
         return "manuel/reparation (foerste kalibrering efter v5.0)"
-    if (m_gl.get("announcement_table_kanonisk") != m_ny.get("announcement_table_kanonisk")
-            if m_gl.get("announcement_table_kanonisk") and m_ny.get("announcement_table_kanonisk")
-            else m_gl.get("announcement_table_sha256") != m_ny["announcement_table_sha256"]):
+    k_gl, k_ny = A2.kanonisk_af(m_gl), A2.kanonisk_af(m_ny) or A2.tabel_hash(ann_fil())
+    if (k_gl != k_ny) if k_gl else (m_gl.get("announcement_table_sha256") != m_ny["announcement_table_sha256"]):
         return "nber-datering (annonceringstabellen aendret)"
     if int(m_ny["refit_maaned"][5:7]) == 9:
         return "september (aarlig)"
@@ -472,8 +475,11 @@ def main():
     meta = json.loads((snap / "meta.json").read_text(encoding="utf-8"))
     klar, grunde = rygrad_klar(snap, meta)
     if not klar:
-        sys.exit(f"FEJL: snapshot {snap.name} er ikke egnet til rekalibrering (F5): {'; '.join(grunde)}. "
-                 "Koer fetch.py igen (den maanedlige laesning paavirkes ikke).")
+        # F5 + PR #1: curve-only er uafhaengig af rygraden (A2.build_dataset forlaenger maanedsindekset), saa en
+        # trunkeret rygrad ruller ikke reparationen tilbage; den koster kun fuldmodellens gate ("comparison
+        # unavailable", V501 §2). En vagt der STOPPEDE her, ville blokere hovedbogen i hver refit-maaned.
+        print(f"ADVARSEL (F5): rygraden i {snap.name} er ikke komplet ({'; '.join(grunde)}) — curve-only kalibreres "
+              "uafhaengigt af den; fuldmodellens gate kan blive 'comparison unavailable'. Koer helst fetch.py igen.")
     forrige = forrige_manifest()
     reparation = None
     if "--reparation" in sys.argv:
@@ -483,7 +489,14 @@ def main():
             sys.exit('FEJL: --reparation kraever en begrundelse: --reparation "<hvad og hvorfor>"')
     if forrige and forrige.get("version") not in (None, LEGACY_VERSION):
         sep = int(snap.name[5:7]) == 9
-        ny_tabel = A2.tabel_aendret(forrige.get("announcement_table_sha256"), forrige.get("announcement_table_kanonisk"), f=ann_fil())
+        W_ = {}
+        if (HERE / "weights.json").exists():
+            try:
+                W_ = json.loads((HERE / "weights.json").read_text(encoding="utf-8"))
+            except ValueError:
+                W_ = {}
+        ref = W_ if W_.get("manifest_hash") == forrige.get("hash") and W_.get("announcement_table_sha256") else forrige
+        ny_tabel = A2.tabel_aendret(ref.get("announcement_table_sha256"), A2.kanonisk_af(ref), f=ann_fil())
         if not sep and not ny_tabel and reparation is None:
             sys.exit(f"FEJL (§3.2, F4): ingen deterministisk trigger — snapshot {snap.name} er ikke et september-snapshot, "
                      "og annonceringstabellen er uaendret siden manifest "
@@ -492,7 +505,7 @@ def main():
     lr = L_R_audit()
     print(f"L_R-audit (blueprint §1): stoerste top-annonceringslag {lr['stoerste_top_lag']} mdr ({lr['fra']}) -> "
           f"L_R = {lr['L_R']} {'= gulvet 18 (OK)' if lr['ok'] else '> 18: EMBARGOGULV OG PROTOKOLVERSION SKAL OP (raadet)'}")
-    m, ekstra = rekalibrer(snap, version=naeste_version())
+    m, ekstra = rekalibrer(snap)
     m["L_R_audit"] = lr
     if reparation is not None:
         m["reparation"] = reparation
@@ -537,7 +550,8 @@ def main():
     if not audit["forklaret_ok"]:
         sys.exit("FEJL: origin-audit — uforklaret aendring i det berettigede origin-saet (§3.5, F6).")
     if forrige and not audit["tilfoejede"] and not audit["fjernede"] and not audit["omlabelede"]:
-        print("ADVARSEL: ingen aendring i origin-saettet — rekalibreringen aendrer ingen vaegte (ventet mellem events).")
+        print("Bemaerk: ingen aendring i origin-saettet — kalibreringen er uaendret (en top-annoncering modner/censurerer "
+              "foerst origins ved en senere refit under 18-mdr-gulvet; G4.1).")
 
     mc = ekstra["mc"]
     x = live_x(snap)
@@ -551,11 +565,14 @@ def main():
     # dataaendring (fx den aarlige september-koersel i et roligt aar) skaber ikke stoej.
     _indhold = kalibrerings_indhold
     m["trigger"] = bestem_trigger(m, forrige)
-    if reparation is not None and not m["trigger"].startswith("manuel/reparation (foerste"):
-        m["trigger"] = f"manuel/reparation: {reparation}"
+    if reparation is not None:
+        m["trigger"] = (f"manuel/reparation: {reparation}" if m["trigger"].startswith("manuel/reparation")
+                        and not m["trigger"].startswith("manuel/reparation (foerste")
+                        else f"{m['trigger']} (+ reparation: {reparation})")
     delta = None
     genbrugt = False
     koersel_trigger = m["trigger"]
+    koersel_utc = m["created_utc"]
     if forrige and _indhold(forrige["modeller"]["curve_only"], forrige["origins"]) == _indhold(m["modeller"]["curve_only"], m["origins"]):
         genbrugt = True
         h = forrige["hash"]
@@ -581,6 +598,7 @@ def main():
         m["trigger"] = forrige.get("trigger", m["trigger"])          # denne koersel skabte ingen ny kalibrering
         koersel_trigger = f"{koersel_trigger} (kalibrering uaendret, manifest {h} genbrugt)"
     else:
+        kraev_ny_version(forrige)
         if forrige:
             delta = delta_vs_forrige(ekstra["Dc"], m["modeller"]["curve_only"], forrige["modeller"]["curve_only"])
         m["delta_vs_forrige"] = delta
@@ -591,6 +609,21 @@ def main():
               f"{delta['origin_max']} ({delta['dP_der']*100:+.1f}pp), middel|dP| {delta['mean_abs_dP']*100:.1f}pp, "
               f"andel >5pp {delta['andel_over_5pp']*100:.0f} %, max|dw| {delta['max_abs_dw']}, d_beta {delta['d_beta_pr_pp']}")
 
+    # ---- F54: et genbrugt manifest maa ikke faa et andet baand (numpy-/platformsdrift i bootstrap-stroemmen) ----
+    if genbrugt:
+        bh = hashlib.sha256(json.dumps([ekstra["W"], ekstra["B"]]).encode("utf-8")).hexdigest()[:16]
+        ref_bh = (forrige.get("bootstrap") or {}).get("band_sha256")
+        if ref_bh is None and (HERE / "weights.json").exists():
+            try:
+                Wd = json.loads((HERE / "weights.json").read_text(encoding="utf-8"))
+                if Wd.get("manifest_hash") == h and Wd.get("band"):
+                    ref_bh = hashlib.sha256(json.dumps([Wd["band"]["W"], Wd["band"].get("base")]).encode("utf-8")).hexdigest()[:16]
+            except ValueError:
+                pass
+        if ref_bh is not None and ref_bh != bh:
+            sys.exit(f"FEJL (F54): manifest {h} genbruges, men bootstrap-baandet afviger fra det i drift ({bh} != {ref_bh}) — "
+                     f"numpy/platform har aendret stroemmen (miljoe nu: {miljoe()}). Intet er skrevet; laas numpy-versionen.")
+
     # ---- weights.json (samme skema som foer + version/manifest/bro/raa) ----
     fm = m["modeller"].get("fuldmodel")
     band = dict(metode="episode-blok-bootstrap af vaegte, fast standardisering; resamplets basisrate pr. traek",
@@ -599,13 +632,17 @@ def main():
                 seed=SEED, n_draws=len(ekstra["W"]), W=ekstra["W"], base=ekstra["B"])
     out = dict(protocol_version=PROTOCOL, version=m["version"], manifest_hash=h,
                forrige_manifest=audit["forrige_hash"],
-               refit_maaned=m["refit_maaned"], announcement_table_sha256=sha256_file(ann_fil()),
+               refit_maaned=m["refit_maaned"], announcement_table_sha256=C.ann_sha256(ann_fil()),
                announcement_table_kanonisk=A2.tabel_hash(ann_fil()),          # F15: formatering/CRLF udloeser ikke en trigger
                trigger=m["trigger"], delta_vs_forrige=delta,
-               koersel=dict(maaned=f"{ekstra['R'] // 12}-{ekstra['R'] % 12 + 1:02d}",
-                            utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                            trigger=koersel_trigger, manifest_genbrugt=genbrugt),   # G4.2
-               created_utc=m["created_utc"], snapshot=snap.name, snapshot_sha256=m["snapshot_sha256"],
+               # G4.2: en koersel der genbrugte manifestet registreres separat (refit-maaned og created_utc forbliver
+               # kalibreringens). En ren reproduktion paa kalibreringens EGET snapshot er ingen koersel (koersel=None).
+               koersel=(None if genbrugt and snap.name == forrige.get("snapshot")
+                        and not A2.tabel_aendret(forrige.get("announcement_table_sha256"), A2.kanonisk_af(forrige), f=ann_fil()) else
+                        dict(maaned=f"{ekstra['R'] // 12}-{ekstra['R'] % 12 + 1:02d}", utc=koersel_utc,
+                             trigger=koersel_trigger, manifest_genbrugt=genbrugt)),
+               created_utc=forrige["created_utc"] if genbrugt else m["created_utc"],
+               snapshot=snap.name, snapshot_sha256=m["snapshot_sha256"],
                label="nber-onset", label_tekst="NBER-onset inden 4 kvartaler", frekvens="kvartal",
                n_obs=mc["n_obs"], n_episoder=len(ekstra["onsets_i_fit"]),     # G4.1: onsets med berettiget positivt origin
                base_rate=mc["base_rate"], operationel="curve_only",
@@ -630,7 +667,7 @@ def main():
                              "v5.0.1 (§6): gaten kan ikke flytte den operationelle model.")
     out["benchmarks"].update(permanente_linjer())
     (HERE / "weights.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
-    print(f"weights.json (v{VERSION}, manifest {h}) skrevet.")
+    print(f"weights.json (v{m['version']}, manifest {h}) skrevet.")
 
 
 if __name__ == "__main__":

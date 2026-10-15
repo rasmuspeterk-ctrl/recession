@@ -3,7 +3,7 @@
  "manifest_hash": "72c3371d",
  "snapshot": "2026-09-19",
  "refit_maaned": "2026-09",
- "created_utc": "2026-10-15T12:46:23+00:00",
+ "created_utc": "2026-10-15T13:37:24+00:00",
  "primaer": {
   "n": 198,
   "n_pos": 32,
@@ -167,7 +167,7 @@
     "origins": "2020Q2..2024Q1"
    }
   ],
-  "blokdefinition": "blok k = origins fra forrige onset frem til onset k (finalize6.boot_weights); blok 12 = efter sidste onset"
+  "blokdefinition": "blok k = origins fra forrige onset frem til onset k (finalize6.boot_weights); k indekserer HELE USREC-episodelisten (1854-), saa sidste blok = efter sidste onset"
  },
  "loeo": {
   "blokke": [
@@ -470,6 +470,12 @@
   ],
   "note": "faelles origins har identiske traeningssaet i begge paneler; forskellen er per konstruktion de tilfoejede origins"
  },
+ "gate_mde": {
+  "mde_gate_pp": 21.06,
+  "forskel_pp": -3.89,
+  "mde_trin3_pp": 4.42,
+  "note": "1,96 x episode-blok-bootstrap-SD af den parrede skill-forskel F5 - curve-only (F8). Beslutningsreglen bruger fortsat trin 3's MDE; et skift kraever raadet."
+ },
  "sti": {
   "raekker": [
    {
@@ -677,8 +683,9 @@
   }
  },
  "kimi_r6": {
-  "median_episoder_i_traening": 32,
-  "min_episoder_i_traening": 27,
+  "median_episoder_i_traening": 9,
+  "min_episoder_i_traening": 4,
+  "max_episoder_i_traening": 12,
   "skill_uden_nyeste_episode": {
    "n": 156,
    "n_pos": 28,
@@ -687,7 +694,8 @@
    "improvement": 20.52,
    "brier": 17.25
   },
-  "nyeste_blok": 34
+  "nyeste_blok": 34,
+  "note": "episoder = onsets efter raekkeuniversets start (1947Q2) der er annonceret og modne (onset + L <= origin); skill_uden_nyeste_episode udelader de SCOREDE origins i den nyeste blok med en onset (scoring, ikke traening)"
  },
  "styrke": {
   "middel_d": 0.1197,
