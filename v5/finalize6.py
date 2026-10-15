@@ -12,24 +12,30 @@ det en raadsbeslutning om en v5.1-protokol, aldrig et automatisk skift.
 §2  Hver model estimeres paa sit eget raekkeunivers (fast start 1947Q2, egne features);
     gaten printes kun naar origin-identiteterne matcher — ellers "comparison unavailable".
 §3  Vaegte, standardisering og basisrate fryses mellem rekalibreringer. Hver rekalibrering
-    skriver et manifest (kalibreringer/manifest_<hash>.json) og en fortegnsbevidst origin-
-    audit mod forrige manifest: n_ny = n_gl + tilfoejede - fjernede, ellers FEJL.
+    skriver et manifest (kalibreringer/manifest_<hash>.json) og en origin-audit mod forrige
+    manifest med FORKLAREDE aendringer (modnet / censureret / omlabelet ved ny annoncering i
+    (R_gl, R]); en uforklaret aendring er FEJL (kode-review 2026-10-15, F6).
+§3.2 Koerslen kraever en deterministisk trigger: september-snapshot eller aendret annonceringstabel.
+    Uden trigger kraeves `--reparation "<begrundelse>"`, som skrives i manifestet (F4). Rygraden
+    skal vaere refit-klar (meta.spine.refit_klar, F5); annonceringstabellen skal vaere i synk med
+    USREC (F7).
 §3.5 Kun modne origins (vinduets slut + 18 mdr <= refit-maaned) fittes OG scores.
 §7  Bro ved fast inputvektor: (i) legacy-rygrad, (ii) korrigerede kilder paa samme origins,
     (iii) udvidet panel. Raa koefficienter (beta = w1/s, alpha = w0 - w1*mu/s) ved siden af.
 
-Koer:  python finalize6.py [--snapshot ...]          (rekalibrering paa spine.csv)
+Koer:  python finalize6.py [--snapshot ...] [--reparation "<begrundelse>"]   (rekalibrering paa spine.csv)
        python finalize6.py --legacy                  (v5.0-manifest fra shiller_yale_2023-09.csv;
                                                       roerer ikke weights.json; legacy-replay §1.5a)
 Kun stdlib + numpy.
 """
-import csv, hashlib, json, subprocess, sys
+import csv, hashlib, json, platform, subprocess, sys
 from datetime import datetime, timezone
 from pathlib import Path
 import numpy as np
 
 import calibrate as C
 import ablation2_nber as A2
+import ablation3_frekvens as A3
 
 HERE = Path(__file__).parent
 def kal():
@@ -142,7 +148,8 @@ def live_x(snap):
 
 
 HASH_UDELUKKET = ("created_utc", "code_commit", "kaldt_som", "hash",
-                  "delta_vs_forrige", "trigger")   # proveniens om aendringen, ikke kalibreringsindhold
+                  "delta_vs_forrige", "trigger", "miljoe", "reparation", "nber_effekt",
+                  "L_R_audit")   # proveniens om aendringen/koerslen, ikke kalibreringsindhold
 
 def manifest_hash(m):
     """Hash af kalibreringens INDHOLD (snapshot, rygrad, annonceringstabel, R, origins, vaegte, gate, audit):
@@ -169,7 +176,63 @@ def forrige_manifest():
     if h is None:
         return None
     f = kal() / f"manifest_{h}.json"
-    return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
+    if not f.exists():
+        # F6: weights.json peger paa et manifest der ikke findes -> auditten ville stille blive tom
+        sys.exit(f"FEJL: weights.json har manifest_hash {h}, men kalibreringer/manifest_{h}.json mangler — "
+                 "gendan filen (git checkout) foer rekalibrering.")
+    return json.loads(f.read_text(encoding="utf-8"))
+
+
+def ann_fil():
+    """Annonceringstabellen ved siden af koden (HERE; tests patcher HERE — falder da tilbage til A2's)."""
+    f = HERE / "nber_announcements.csv"
+    return f if f.exists() else A2.HERE / "nber_announcements.csv"
+
+
+def naeste_version():
+    """G4.4 (§3.3): versionen bumpes ved hver NY kalibrering: 5.0.(1 + antal distinkte manifester efter v5.0)."""
+    idx = kal() / "index.json"
+    entries = json.loads(idx.read_text(encoding="utf-8")) if idx.exists() else []
+    n = len({e["hash"] for e in entries if e.get("version") not in (None, LEGACY_VERSION)})
+    return f"5.0.{n + 1}"
+
+
+def miljoe():
+    """F54: miljoeet der kalibrerede (proveniens, uden for hashen)."""
+    return dict(python=platform.python_version(), numpy=np.__version__, platform=platform.platform(terse=True))
+
+
+def L_R_audit():
+    """F51 (blueprint §1): L_R = max(18, stoerste observerede top-annonceringslag). Stiger den over 18,
+    skal embargogulvet og protokolversionen op — det printes hoejlydt, aendres ikke automatisk."""
+    lags = []
+    for r in A2.laes_annonceringer(ann_fil()):
+        if r["event"].startswith("peak"):
+            cy, cm = map(int, r["cycle_month"].split("-"))
+            ay, am = int(r["announcement_date"][:4]), int(r["announcement_date"][5:7])
+            lags.append((A2.midx(ay, am) - A2.midx(cy, cm), r["event"]))
+    mx = max(lags) if lags else (0, "-")
+    L_R = max(A2.L_EMBARGO, mx[0])
+    return dict(L_embargo=A2.L_EMBARGO, stoerste_top_lag=mx[0], fra=mx[1], L_R=L_R, ok=L_R == A2.L_EMBARGO)
+
+
+def rygrad_klar(snap, meta):
+    """F5: et snapshot hvis rygrad er skaaret af (multpl/SP500-udfald) eller stale maa aldrig
+    rekalibreres — det ville stille rulle v5.0.1-reparationen tilbage. Aeldre snapshots uden
+    meta.spine.refit_klar vurderes efter de samme regler."""
+    sp = meta.get("spine", {})
+    if "refit_klar" in sp:
+        return sp["refit_klar"], sp.get("refit_blokeret", [])
+    grunde = []
+    if "fejl" in sp.get("multpl", {"fejl": "multpl-blok mangler"}):
+        grunde.append("multpl fejlede/mangler")
+    if "SP500" in meta.get("reserve_fejlede", []):
+        grunde.append("SP500 fejlede")
+    if "spine" in meta.get("stale", {}):
+        grunde.append("rygraden er stale")
+    if not (snap / "spine.csv").exists():
+        grunde.append("spine.csv mangler")
+    return not grunde, grunde
 
 
 def skriv_manifest(m):
@@ -197,7 +260,7 @@ def rekalibrer(snap, spine_file=None, R=None, version=VERSION, kaldt_som="rekali
     meta = json.loads((snap / "meta.json").read_text(encoding="utf-8"))
     usrec = A2.load_usrec(snap)
     eps = A2.episodes_from_usrec(usrec)
-    avail = A2.load_announcements(eps)
+    avail = A2.load_announcements(eps, f=ann_fil(), usrec=usrec)      # F7: haard fejl hvis tabellen er ude af synk med USREC
     R = R if R is not None else A2.midx(int(snap.name[:4]), int(snap.name[5:7]))
     Dc = A2.build_dataset(snap, ["curve"], spine_file=spine_file)
     D5 = A2.build_dataset(snap, C.F5, spine_file=spine_file)
@@ -215,11 +278,19 @@ def rekalibrer(snap, spine_file=None, R=None, version=VERSION, kaldt_som="rekali
         f3 = HERE / "ablation3_resultat.json"
         mde = json.loads(f3.read_text(encoding="utf-8")).get("mde_pp") if f3.exists() else None
         gap = imp5 - impc
+        # F8: gatens EGEN MDE (1,96 x episode-blok-bootstrap-SD af den parrede skill-forskel F5 - curve-only).
+        # Beslutningsreglen bruger fortsat den ratificerede trin 3-MDE (en taerskel aendres ikke efter at
+        # resultatet er set); den gate-specifikke printes ved siden af, til raadet foer sept. 2027.
+        paired = [(y, q, p5, pc, yy) for (y, q, p5, yy), (_, _, pc, _) in zip(res5, resc)]
+        _md, sd_g, _lo, _hi = A3.mde_bootstrap(paired, eps)
+        mde_gate = round(1.96 * sd_g, 2) if sd_g is not None else None
         gate.update(fuldmodel_wf=round(imp5, 2), fuldmodel_brier=round(br5, 2), forskel_pp=round(gap, 2), mde_pp=mde,
+                    mde_gate_pp=mde_gate,
                     fuldmodel_slaar=bool(imp5 > impc),
                     raadsbeslutning_paakraevet=bool(mde is not None and gap > mde),
                     note=(f"LL-forskel {abs(gap):.1f}pp {'<' if mde is not None and abs(gap) < mde else '>='} "
-                          f"stoejgulv {mde if mde is not None else '?'}pp (trin 3-MDE). Gaten er mekanisk og kan ikke "
+                          f"stoejgulv {mde if mde is not None else '?'}pp (trin 3-MDE, laant fra frekvenstesten; "
+                          f"gatens egen MDE {mde_gate}pp). Gaten er mekanisk og kan ikke "
                           "flytte den operationelle model (RAADETS_V501 §6)."))
     else:
         res5, imp5, br5, fa5 = [], None, None, None
@@ -231,13 +302,21 @@ def rekalibrer(snap, spine_file=None, R=None, version=VERSION, kaldt_som="rekali
     W, B, ngrp, grp = boot_weights(mc["_Z"], mc["_y"], Dc["qend"][mc["_elig"]], eps, NDRAW)
 
     spine_navn = spine_file or next((n for n in C.SPINE_FILER if (snap / n).exists()), "?")
-    ann = HERE / "nber_announcements.csv"
+    ann = ann_fil()
+    # G4.1: dateringens faktiske effekt — n_episoder taeller kun onsets med mindst eet BERETTIGET positivt origin
+    _yf, win_on, _ = A2.nber_labels(Dc, eps, usrec)
+    onsets_i_fit = set()
+    for k, j in enumerate(np.where(mc["_elig"])[0]):
+        if mc["_y"][k] == 1:
+            onsets_i_fit |= {o for o in win_on[j] if avail.get(o, 10 ** 9) <= R}
+    onsets_i_fit = sorted(onsets_i_fit)
     manifest = dict(
         version=version, protocol_version=PROTOCOL,
         created_utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         code_commit=git_commit(), kaldt_som=kaldt_som,
         snapshot=snap.name, snapshot_sha256=meta["snapshot_sha256"],
         announcement_table_sha256=sha256_file(ann) if ann.exists() else None,
+        announcement_table_kanonisk=A2.tabel_hash(ann) if ann.exists() else None,
         refit_maaned=f"{R // 12}-{R % 12 + 1:02d}",
         spine=dict(fil=spine_navn, sha256=sha256_file(snap / spine_navn) if (snap / spine_navn).exists() else None,
                    sidste=meta.get("spine", {}).get("sidste") if not spine_file else None),
@@ -246,13 +325,18 @@ def rekalibrer(snap, spine_file=None, R=None, version=VERSION, kaldt_som="rekali
                   | dict(wf_improvement=round(impc, 2), wf_brier=round(brc, 2), vaerste_fejlalarm=fac)},
         gate=gate,
         origins=mc["_origins"],
-        bootstrap=dict(seed=SEED, n_draws=len(W), n_blokke=ngrp),
+        bootstrap=dict(seed=SEED, n_draws=len(W), n_blokke=ngrp,
+                       band_sha256=hashlib.sha256(json.dumps([W, B]).encode("utf-8")).hexdigest()[:16]),
+        miljoe=miljoe(),
+        nber_effekt=dict(onsets_med_berettiget_positivt_origin=[f"{o // 12}-{o % 12 + 1:02d}" for o in onsets_i_fit],
+                         n_pos=mc["n_pos"]),
     )
     if m5 is not None:
         manifest["modeller"]["fuldmodel"] = ({k: v for k, v in m5.items() if not k.startswith("_")}
                                             | dict(wf_improvement=round(imp5, 2), wf_brier=round(br5, 2),
                                                    vaerste_fejlalarm=fa5))
-    ekstra = dict(W=W, B=B, grp=grp, resc=resc, res5=res5, mc=mc, m5=m5, Dc=Dc, D5=D5, eps=eps, avail=avail, usrec=usrec)
+    ekstra = dict(W=W, B=B, grp=grp, resc=resc, res5=res5, mc=mc, m5=m5, Dc=Dc, D5=D5, eps=eps, avail=avail, usrec=usrec,
+                  R=R, onsets_i_fit=onsets_i_fit)
     return manifest, ekstra
 
 
@@ -299,7 +383,9 @@ def bestem_trigger(m_ny, m_gl):
     Foerste manifest efter legacy (v5.0) er per definition reparationen."""
     if m_gl is None or m_gl.get("version") in (None, LEGACY_VERSION):
         return "manuel/reparation (foerste kalibrering efter v5.0)"
-    if m_gl.get("announcement_table_sha256") != m_ny["announcement_table_sha256"]:
+    if (m_gl.get("announcement_table_kanonisk") != m_ny.get("announcement_table_kanonisk")
+            if m_gl.get("announcement_table_kanonisk") and m_ny.get("announcement_table_kanonisk")
+            else m_gl.get("announcement_table_sha256") != m_ny["announcement_table_sha256"]):
         return "nber-datering (annonceringstabellen aendret)"
     if int(m_ny["refit_maaned"][5:7]) == 9:
         return "september (aarlig)"
@@ -327,6 +413,15 @@ def legacy_manifest():
                   if e.get("version") == LEGACY_VERSION), None)
     f = kal() / f"manifest_{h}.json" if h else None
     return json.loads(f.read_text(encoding="utf-8")) if f and f.exists() else None
+
+
+def fuldmodel_status(g):
+    """G1.7 (V501 §6): statusteksten foelger gatens beslutning, ikke en vilkaarlig lille foering."""
+    if g.get("raadsbeslutning_paakraevet"):
+        return "slaar curve-only med mere end MDE — RAADSBESLUTNING PAAKRAEVET (v5.1), ikke operationel (§6)"
+    if g.get("fuldmodel_slaar"):
+        return "slaar curve-only under MDE — ingen raadsbeslutning (§6)"
+    return "testet, ikke bestaaet mod benchmark (trin 6; genkoert v5.0.1)"
 
 
 def raadsbeslutning():
@@ -374,7 +469,33 @@ def main():
               " + legacy_mapping.json (weights.json og index-raekkefoelgen uroert)")
         return
 
-    m, ekstra = rekalibrer(snap)
+    meta = json.loads((snap / "meta.json").read_text(encoding="utf-8"))
+    klar, grunde = rygrad_klar(snap, meta)
+    if not klar:
+        sys.exit(f"FEJL: snapshot {snap.name} er ikke egnet til rekalibrering (F5): {'; '.join(grunde)}. "
+                 "Koer fetch.py igen (den maanedlige laesning paavirkes ikke).")
+    forrige = forrige_manifest()
+    reparation = None
+    if "--reparation" in sys.argv:
+        k = sys.argv.index("--reparation")
+        reparation = sys.argv[k + 1] if len(sys.argv) > k + 1 and not sys.argv[k + 1].startswith("-") else ""
+        if not reparation.strip():
+            sys.exit('FEJL: --reparation kraever en begrundelse: --reparation "<hvad og hvorfor>"')
+    if forrige and forrige.get("version") not in (None, LEGACY_VERSION):
+        sep = int(snap.name[5:7]) == 9
+        ny_tabel = A2.tabel_aendret(forrige.get("announcement_table_sha256"), forrige.get("announcement_table_kanonisk"), f=ann_fil())
+        if not sep and not ny_tabel and reparation is None:
+            sys.exit(f"FEJL (§3.2, F4): ingen deterministisk trigger — snapshot {snap.name} er ikke et september-snapshot, "
+                     "og annonceringstabellen er uaendret siden manifest "
+                     f"{forrige.get('hash')}. Vaegtene er frosne. En reparation kraever "
+                     '--reparation "<begrundelse>" (skrives i manifestet).')
+    lr = L_R_audit()
+    print(f"L_R-audit (blueprint §1): stoerste top-annonceringslag {lr['stoerste_top_lag']} mdr ({lr['fra']}) -> "
+          f"L_R = {lr['L_R']} {'= gulvet 18 (OK)' if lr['ok'] else '> 18: EMBARGOGULV OG PROTOKOLVERSION SKAL OP (raadet)'}")
+    m, ekstra = rekalibrer(snap, version=naeste_version())
+    m["L_R_audit"] = lr
+    if reparation is not None:
+        m["reparation"] = reparation
     g = m["gate"]
     print(f"curve-only: +{g['curve_only_wf']:.1f}%/+{g['curve_only_brier']:.1f}%  "
           + (f"fuldmodel: +{g['fuldmodel_wf']:.1f}%/+{g['fuldmodel_brier']:.1f}%  (identiske origins)" if g["identiske_origins"]
@@ -399,16 +520,22 @@ def main():
         sys.exit("FEJL: en anden operationel model end curve_only kraever sin egen rekalibreringskode (v5.1).")
     m["raadsbeslutning"] = beslutning
 
-    # ---- origin-audit mod forrige manifest (§3.5) ----
-    forrige = forrige_manifest()
-    audit = A2.origin_audit(forrige["origins"] if forrige else None, m["origins"])
+    # ---- origin-audit mod forrige manifest (§3.5): kun FORKLAREDE aendringer (F6) ----
+    R_gl = None
+    if forrige and forrige.get("refit_maaned"):
+        R_gl = A2.midx(int(forrige["refit_maaned"][:4]), int(forrige["refit_maaned"][5:7]))
+    audit = A2.origin_audit(forrige["origins"] if forrige else None, m["origins"], R_gl=R_gl, R=ekstra["R"],
+                            eps=ekstra["eps"], avail=ekstra["avail"])
     audit["forrige_hash"] = forrige["hash"] if forrige else None
     audit["forrige_version"] = forrige["version"] if forrige else None
     m["audit"] = audit
     print(f"origin-audit: n {audit['n_forrige']} -> {audit['n_ny']} | tilfoejede {audit['tilfoejede']} | "
-          f"fjernede {audit['fjernede']} | omlabelede {audit['omlabelede']} | identitet {'OK' if audit['identitet_ok'] else 'FEJL'}")
-    if not audit["identitet_ok"]:
-        sys.exit("FEJL: origin-audit — uforklaret aendring i det berettigede origin-saet (§3.5).")
+          f"fjernede {audit['fjernede']} | omlabelede {audit['omlabelede']} | "
+          f"{'FORKLARET' if audit['forklaret_ok'] and not audit['kun_listet'] else 'kun listet (legacy)' if audit['kun_listet'] else 'UFORKLARET'}")
+    for u in audit["uforklarede"]:
+        print(f"   uforklaret: {u}")
+    if not audit["forklaret_ok"]:
+        sys.exit("FEJL: origin-audit — uforklaret aendring i det berettigede origin-saet (§3.5, F6).")
     if forrige and not audit["tilfoejede"] and not audit["fjernede"] and not audit["omlabelede"]:
         print("ADVARSEL: ingen aendring i origin-saettet — rekalibreringen aendrer ingen vaegte (ventet mellem events).")
 
@@ -424,11 +551,18 @@ def main():
     # dataaendring (fx den aarlige september-koersel i et roligt aar) skaber ikke stoej.
     _indhold = kalibrerings_indhold
     m["trigger"] = bestem_trigger(m, forrige)
+    if reparation is not None and not m["trigger"].startswith("manuel/reparation (foerste"):
+        m["trigger"] = f"manuel/reparation: {reparation}"
     delta = None
+    genbrugt = False
+    koersel_trigger = m["trigger"]
     if forrige and _indhold(forrige["modeller"]["curve_only"], forrige["origins"]) == _indhold(m["modeller"]["curve_only"], m["origins"]):
+        genbrugt = True
         h = forrige["hash"]
-        audit["forrige_hash"] = forrige["audit"].get("forrige_hash")
-        audit["forrige_version"] = forrige["audit"].get("forrige_version")
+        audit = dict(forrige["audit"])                      # F49: manifestets audit, ikke en blanding
+        m["audit"] = audit
+        m["refit_maaned"] = forrige["refit_maaned"]         # G4.2: manifestets refit-maaned, ikke denne koersels
+        m["version"] = forrige["version"]
         delta = forrige.get("delta_vs_forrige")
         print(f"kalibrering UAENDRET (samme origins, labels og vaegte): manifest {h} genbruges, intet nyt skrives.")
         # hash-udelukkede proveniensfelter skrives igennem hvis de mangler i det eksisterende manifest
@@ -445,12 +579,13 @@ def main():
             mf.write_text(json.dumps(forrige, indent=1, ensure_ascii=False), encoding="utf-8")
             print(f"manifest {h}: proveniensfelter (delta_vs_forrige, trigger) skrevet igennem — hashen er uaendret.")
         m["trigger"] = forrige.get("trigger", m["trigger"])          # denne koersel skabte ingen ny kalibrering
+        koersel_trigger = f"{koersel_trigger} (kalibrering uaendret, manifest {h} genbrugt)"
     else:
         if forrige:
             delta = delta_vs_forrige(ekstra["Dc"], m["modeller"]["curve_only"], forrige["modeller"]["curve_only"])
         m["delta_vs_forrige"] = delta
         h, _ = skriv_manifest(m)
-        print(f"manifest: kalibreringer/manifest_{h}.json (v{VERSION}, refit {m['refit_maaned']}, n_obs {mc['n_obs']}, trigger: {m['trigger']})")
+        print(f"manifest: kalibreringer/manifest_{h}.json (v{m['version']}, refit {m['refit_maaned']}, n_obs {mc['n_obs']}, trigger: {m['trigger']})")
     if delta:
         print(f"delta vs forrige kalibrering over {delta['n_origins']} origins: max|dP| {delta['max_abs_dP']*100:.1f}pp ved "
               f"{delta['origin_max']} ({delta['dP_der']*100:+.1f}pp), middel|dP| {delta['mean_abs_dP']*100:.1f}pp, "
@@ -462,13 +597,17 @@ def main():
                 fodnote="Not a predictive interval; reflects weight sensitivity to episode composition",
                 daekning="central 80% bootstrap estimation-sensitivity band; coverage not established",
                 seed=SEED, n_draws=len(ekstra["W"]), W=ekstra["W"], base=ekstra["B"])
-    out = dict(protocol_version=PROTOCOL, version=VERSION, manifest_hash=h,
+    out = dict(protocol_version=PROTOCOL, version=m["version"], manifest_hash=h,
                forrige_manifest=audit["forrige_hash"],
-               refit_maaned=m["refit_maaned"], announcement_table_sha256=m["announcement_table_sha256"],
+               refit_maaned=m["refit_maaned"], announcement_table_sha256=sha256_file(ann_fil()),
+               announcement_table_kanonisk=A2.tabel_hash(ann_fil()),          # F15: formatering/CRLF udloeser ikke en trigger
                trigger=m["trigger"], delta_vs_forrige=delta,
+               koersel=dict(maaned=f"{ekstra['R'] // 12}-{ekstra['R'] % 12 + 1:02d}",
+                            utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                            trigger=koersel_trigger, manifest_genbrugt=genbrugt),   # G4.2
                created_utc=m["created_utc"], snapshot=snap.name, snapshot_sha256=m["snapshot_sha256"],
                label="nber-onset", label_tekst="NBER-onset inden 4 kvartaler", frekvens="kvartal",
-               n_obs=mc["n_obs"], n_episoder=len({o for wo in A2.nber_labels(ekstra["Dc"], ekstra["eps"], ekstra["usrec"])[1] for o in wo}),
+               n_obs=mc["n_obs"], n_episoder=len(ekstra["onsets_i_fit"]),     # G4.1: onsets med berettiget positivt origin
                base_rate=mc["base_rate"], operationel="curve_only",
                op=dict(features=["curve"], mu=mc["mu"], sd=mc["sd"], w=mc["w"], raa=mc["raa"],
                        wf_improvement=g["curve_only_wf"], wf_brier=g["curve_only_brier"],
@@ -478,8 +617,7 @@ def main():
                fuldmodel=(dict(features=C.F5, mu=fm["mu"], sd=fm["sd"], w=fm["w"],
                                wf_improvement=fm["wf_improvement"], wf_brier=fm["wf_brier"],
                                vaerste_fejlalarm=fm["vaerste_fejlalarm"],
-                               status="testet, ikke bestaaet mod benchmark (trin 6; genkoert v5.0.1)" if not g["fuldmodel_slaar"]
-                               else "slaar curve-only i wf — RAADSBESLUTNING PAAKRAEVET (v5.1), ikke operationel (§6)",
+                               status=fuldmodel_status(g),
                                note=g["note"]) if fm else
                           dict(features=C.F5, status="unavailable — CAPE stale", note=g["note"])),
                benchmarks=dict(intercept=dict(wf_improvement=0.0),

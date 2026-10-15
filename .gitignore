@@ -8,3 +8,21 @@ MiroFish/
 # python-stoej
 __pycache__/
 *.pyc
+
+# Licensbegraensede kilder (kode-review 2026-10-15, F1/F12; spine.LOKALE): hentes og hashes lokalt,
+# videregives aldrig. meta.json beholder sha256/first/last/last_value, saa hashen kan efterproeves.
+#   ICE BofA HY OAS og S&P 500: FRED "Copyrighted: Pre-Approval Required"; Moody's Baa: "may not be reproduced"
+v5/data/raw/*/BAMLH0A0HYM2.csv
+v5/data/raw/*/SP500.csv
+v5/data/raw/*/BAA10Y.csv
+#   multpl.com-siden ordret (CAPE-tabellen); spine.csv's afledte maanedstal beholdes (kalibreringen)
+v5/data/raw/*/multpl_cape.html
+v5/data/raw/*/cape_multpl.csv
+
+# fetch's arbejds- og fejlforsoeg (F24) og historiske/lokale outputs
+v5/data/raw/*.ny/
+v5/data/raw/*.ukomplet/
+v5/calibrate_resultat.json
+
+# lokal Claude-konfiguration (F56)
+.claude/

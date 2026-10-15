@@ -11,12 +11,19 @@ og er BEVIDST ikke med her.
 Acceptancetest (indbygget): reproducerede MU/SD/W og walk-forward-metrikker
 sammenlignes med v4's publicerede konstanter; afvigelser printes.
 
+HISTORISK (trin 1): i drift er vaegtene frosne i weights.json (finalize6, v5.0.1). Denne fil
+skriver derfor sit resultat til calibrate_resultat.json og naegter at roere en v5.0-final
+weights.json (kode-review 2026-10-15, F45). Hjaelpefunktionerne (read_fred, live_kurve, fit,
+walk_forward ...) bruges af hele kaeden.
+
 Kun stdlib + numpy.  Koer:  python calibrate.py [--check] [--snapshot data/raw/YYYY-MM-DD]
 """
 import calendar, csv, hashlib, json, sys
 from datetime import datetime, timezone
 from pathlib import Path
 import numpy as np
+
+import spine as SP
 
 HERE = Path(__file__).parent
 RAW = HERE / "data" / "raw"
@@ -43,10 +50,11 @@ SETS = {
 }
 
 # ---------------------------------------------------------------- indlaesning
-# Alt ritualkaeden (calibrate/ablation2/finalize6/motor) laeser fra et snapshot. Aeldre snapshots
-# uden de senere tilfoejede serier var "komplette" for deres tid, men er ubrugelige for motor.
-KRAEVEDE = ["DGS10", "GS10", "TB3MS", "CPIAUCNS", "USREC", "A191RL1Q225SBEA", "SAHMREALTIME", "BAMLH0A0HYM2",
-            "FEDFUNDS", "PCEPI", "RECPROUSM156N", "RIFSPPFAAD90NB", "DTB3", "MORTGAGE30US"]
+# Alt ritualkaeden (calibrate/ablation2/finalize6/motor) laeser fra et snapshot. Et snapshot er
+# brugbart naar P- og refit-serierne findes (spine.VETO — EEN rolletabel, F18). Monitor- og
+# kontekstserier er IKKE krav: motor viser dem som utilgaengelige, og licensbegraensede filer
+# (spine.LOKALE) findes kun lokalt (F1). Aeldre snapshots uden DGS10/DTB3 er ubrugelige for motor.
+KRAEVEDE = list(SP.VETO)
 KRAEVEDE_FILER = ["manual.json"]
 SPINE_FILER = ("spine.csv", "shiller.csv")     # komposit (v5.0.1) foretraekkes; ren Shiller = legacy
 START_QK = (1947, 2)      # RAADETS_V501 §2: raekkeuniversets start er en protokolkonstant
@@ -441,8 +449,11 @@ def main():
                created_utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),
                snapshot=snap.name, snapshot_sha256=meta["snapshot_sha256"],
                acceptance_bestaaet=acc_ok, **res)
-    (HERE / "weights.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
-    print(f"\nweights.json skrevet ({'acceptance BESTAAET' if acc_ok else 'acceptance IKKE bestaaet'}).")
+    # F45: de frosne driftsvaegte (weights.json, protocol 5.0-final) roeres ALDRIG herfra
+    ud = HERE / "calibrate_resultat.json"
+    ud.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    print(f"\n{ud.name} skrevet ({'acceptance BESTAAET' if acc_ok else 'acceptance IKKE bestaaet'}); "
+          "weights.json (frosne driftsvaegte) er uroert.")
 
 if __name__ == "__main__":
     main()

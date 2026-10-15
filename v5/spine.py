@@ -47,6 +47,68 @@ FRISKHED_DAGE = {
 KRITISKE = ("GS10", "TB3MS", "USREC", "DGS10", "DTB3")   # stale her -> snapshot ukomplet
 # (GS10/TB3MS: kalibrering; DGS10/DTB3: live-input til kurven; USREC: label)
 
+# ---- seriernes roller (kode-review 2026-10-15, F18/F1/F19): EEN tabel, alt andet afledes heraf ----
+# rolle   "P"        kraeves for selve laesningen af P (live-kurve + publiceret maanedssammenligning)
+#         "refit"    kraeves af kalibreringen (label, raekkeunivers, rygradens CPI)
+#         "rygrad"   bygger rygradens komposit i fetch; fejl nedlaegger ikke laesningen, men goer
+#                    snapshottet uegnet til rekalibrering (meta.spine.refit_klar = false, F5)
+#         "kontekst" monitor/kontekst/ablation: fejl eller manglende fil nedlaegger ALDRIG veto
+# licens  "pd"       FRED: Public Domain: Citation Requested
+#         "citation" FRED: Copyrighted: Citation Required — maa videregives med kildeangivelse
+#         "lokal"    ophavsretligt begraenset (Pre-Approval Required / 'may not be reproduced'):
+#                    hentes og hashes lokalt, committes ALDRIG (.gitignore); meta.json beholder
+#                    sha256/first/last/last_value, saa hashen kan efterproeves af alle der henter
+#                    samme bytes. Licensmaerker hentet fra FRED's seriesider 2026-10-15.
+SERIER = {
+    # sid:              (rolle,      licens,     kilde,                                   formaal)
+    "GS10":            ("P",        "pd",       "Board of Governors (H.15)",             "10-aarig statsrente, maanedssnit (kalibreringens kurve; publiceret sammenligning)"),
+    "TB3MS":           ("P",        "pd",       "Board of Governors (H.15)",             "3-mdr T-bill, maanedssnit (kalibreringens kurve; publiceret sammenligning)"),
+    "DGS10":           ("P",        "pd",       "Board of Governors (H.15)",             "10-aarig statsrente, daglig (live-input: trailing maaned; 10Y-linjen)"),
+    "DTB3":            ("P",        "pd",       "Board of Governors (H.15)",             "3-mdr T-bill, daglig (live-input: trailing maaned; CP-spaend)"),
+    "USREC":           ("refit",    "citation", "NBER via Federal Reserve Bank of St. Louis", "NBER-recessionsmaaneder (label; USREC-krydstjek af annonceringstabellen)"),
+    "A191RL1Q225SBEA": ("refit",    "pd",       "U.S. Bureau of Economic Analysis",      "real BNP %-aendring ann. (raekkeunivers via teknisk label; BNP-linjen)"),
+    "CPIAUCNS":        ("refit",    "pd",       "U.S. Bureau of Labor Statistics",       "CPI NSA (rygradens CPI; realrate/d_infl i fuldmodellen)"),
+    "SP500":           ("rygrad",   "lokal",    "S&P Dow Jones Indices LLC",             "S&P 500 dagligt luk, rullende ~10 aar (rygradens SP500 efter 2023-07 som maanedsmiddel; dd)"),
+    "CPIAUCSL":        ("kontekst", "pd",       "U.S. Bureau of Labor Statistics",       "CPI SA (inflationsmomentum, kontekst)"),
+    "UNRATE":          ("kontekst", "pd",       "U.S. Bureau of Labor Statistics",       "ledighed (Sahm-transform, trin 4 — afvist)"),
+    "SAHMREALTIME":    ("kontekst", "pd",       "Claudia Sahm via FRED",                 "Sahm-reglen realtid (monitor + benchmark)"),
+    "ICSA":            ("kontekst", "pd",       "U.S. Employment and Training Administration", "initial claims, ugentlig (monitor; trin 4 — afvist)"),
+    "CCSA":            ("kontekst", "pd",       "U.S. Employment and Training Administration", "fortsatte ansoegninger, ugentlig (claims-linjen, F58)"),
+    "PERMIT":          ("kontekst", "pd",       "U.S. Census Bureau",                    "byggetilladelser (monitor; trin 4 — afvist)"),
+    "BAMLH0A0HYM2":    ("kontekst", "lokal",    "ICE Data Indices, LLC",                 "HY OAS, daglig, rullende 3 aar (monitor — ineligible som feature)"),
+    "BAA10Y":          ("kontekst", "lokal",    "Moody's via FRED",                      "Baa minus 10Y, daglig 1986- (kreditkontekst, F36)"),
+    "GDPC1":           ("kontekst", "pd",       "U.S. Bureau of Economic Analysis",      "real BNP niveau (reserve)"),
+    "FEDFUNDS":        ("kontekst", "pd",       "Board of Governors (H.15)",             "effektiv fed funds, maanedssnit (fallback for DFF)"),
+    "DFF":             ("kontekst", "pd",       "Board of Governors (H.15)",             "effektiv fed funds, daglig (pengepolitik-blok)"),
+    "PCEPI":           ("kontekst", "pd",       "U.S. Bureau of Economic Analysis",      "PCE-prisindeks (realt kontantafkast, inflationsmomentum)"),
+    "THREEFYTP10":     ("kontekst", "pd",       "Board of Governors (Kim-Wright)",       "Kim-Wright 10-aars term-praemie, Fed Board (kontekst; ACM-testen trin 4 brugte manual/acm.csv)"),
+    "RECPROUSM156N":   ("kontekst", "pd",       "Marcelle Chauvet og Jeremy Piger via FRED", "Chauvet-Piger glattet recessionssandsynlighed (benchmark, coincident nowcast)"),
+    "AWHMAN":          ("kontekst", "pd",       "U.S. Bureau of Labor Statistics",       "ugentlige arbejdstimer, industri (v5.2-testen — afvist; vist som kontekst)"),
+    "RIFSPPFAAD90NB":  ("kontekst", "pd",       "Board of Governors (CP)",               "90-dages AA finansiel commercial paper-rente (scenarie-appendiks: CP-spaend)"),
+    "MORTGAGE30US":    ("kontekst", "citation", "Freddie Mac",                           "30-aars realkreditrente, ugentlig (scenarie-appendiks)"),
+    "DGS1":            ("kontekst", "pd",       "Board of Governors (H.15)",             "1-aarig statsrente, daglig (kurvens sammensaetning, near-term forward spread, F38)"),
+    "DGS2":            ("kontekst", "pd",       "Board of Governors (H.15)",             "2-aarig statsrente, daglig (kurvens sammensaetning front/bag, F38)"),
+    "DGS3MO":          ("kontekst", "pd",       "Board of Governors (H.15)",             "3-mdr konstant loebetid, daglig (near-term forward spread, F38)"),
+    "PAYEMS":          ("kontekst", "pd",       "U.S. Bureau of Labor Statistics",       "loenmodtagerbeskaeftigelse (NBER-indikator, F39)"),
+    "CE16OV":          ("kontekst", "pd",       "U.S. Bureau of Labor Statistics",       "husstandsbeskaeftigelse (NBER-indikator, F39)"),
+    "INDPRO":          ("kontekst", "pd",       "Board of Governors (G.17)",             "industriproduktion (NBER-indikator, F39)"),
+    "W875RX1":         ("kontekst", "pd",       "U.S. Bureau of Economic Analysis",      "real personlig indkomst ekskl. overfoersler (NBER-indikator, F39)"),
+    "PCEC96":          ("kontekst", "pd",       "U.S. Bureau of Economic Analysis",      "realt privatforbrug (NBER-indikator, F39)"),
+    "CMRMTSPL":        ("kontekst", "citation", "Federal Reserve Bank of St. Louis",     "realt engros/detail/industri-salg (NBER-indikator, F39)"),
+    "TEMPHELPS":       ("kontekst", "pd",       "U.S. Bureau of Labor Statistics",       "vikarbeskaeftigelse (arbejdsmarkedskontekst, F58)"),
+    "DCOILWTICO":      ("kontekst", "pd",       "U.S. Energy Information Administration", "WTI-oliepris, daglig (regimekontekst, F40)"),
+}
+# Ikke-FRED-kilder der hentes og hashes som serier (fetch.fetch_series kender URL'en og kolonnen)
+EKSTERNE = {
+    "EBP": dict(url="https://www.federalreserve.gov/econres/notes/feds-notes/ebp_csv.csv", kolonne="ebp",
+                rolle="kontekst", licens="pd", kilde="Board of Governors (Gilchrist-Zakrajsek EBP, FEDS Notes)",
+                formaal="excess bond premium + GZ-spaend, maanedlig 1973- (kreditkontekst, F36)"),
+}
+VETO = tuple(s for s, v in SERIER.items() if v[0] in ("P", "refit"))       # fetch-fejl -> snapshot ukomplet
+P_SERIER = tuple(s for s, v in SERIER.items() if v[0] == "P")
+LOKALE = tuple(s for s, v in SERIER.items() if v[1] == "lokal")              # committes aldrig
+LOKALE_FILER = ("multpl_cape.html", "cape_multpl.csv")                       # multpl-siden ordret (F12)
+
 
 def _mk(d):
     return d[:7]
@@ -118,12 +180,18 @@ def overlap_check(shiller_rows, sp500_m, cape_m):
     return res
 
 
-def outlier_check(cape_m, fra=None):
-    """[(maaned, problem)] for CAPE uden for niveau-baandet eller med |m/m| >= CAPE_MM_MAX (§1.6)."""
+def outlier_check(cape_m, fra=None, accepterede=None):
+    """[(maaned, problem)] for CAPE uden for niveau-baandet eller med |m/m| >= CAPE_MM_MAX (§1.6).
+    `accepterede` = {maaned: cape} fra manual/outliers_accepteret.json (F31): et (maaned, vaerdi)-par
+    der een gang er accepteret med --accept-outlier, udloeser ikke guarden igen ved hver hentning —
+    men en senere REVISION af vaerdien (andet tal for samme maaned) fanges igen."""
+    acc = {(k, round(float(v), 4)) for k, v in (accepterede or {}).items()}
     ks = sorted(k for k in cape_m if fra is None or k >= fra)
     bad = []
     for i, k in enumerate(ks):
         v = cape_m[k]
+        if (k, round(float(v), 4)) in acc:
+            continue
         if not (CAPE_NIVEAU[0] <= v <= CAPE_NIVEAU[1]):
             bad.append((k, f"niveau {v:.2f} uden for [{CAPE_NIVEAU[0]:.0f}, {CAPE_NIVEAU[1]:.0f}]"))
         if i > 0:
@@ -133,12 +201,19 @@ def outlier_check(cape_m, fra=None):
     return bad
 
 
-def build_spine(shiller_rows, sp500_m, cpi_m, gs10_m, cape_m):
+def build_spine(shiller_rows, sp500_m, cpi_m, gs10_m, cape_m, tidligere_sp500=None):
     """-> [(YYYY-MM, sp500, cpi, ltr, cape, kilde)], Shiller t.o.m. SEAM, komposit derefter saa
     langt SP500 og CAPE begge findes (de to kilder der definerer kompositten; en delvis
     komposit-maaned uden dem accepteres aldrig, §1.7). CPI maa mangle for en enkelt maaned
     (BLS udgav aldrig oktober 2025) — feltet skrives tomt -> NaN, som Shillers egne huller;
-    kvartalsaggregeringen tager sidste ikke-NaN maaned, saa ingen kvartalsfeature tabes."""
+    kvartalsaggregeringen tager sidste ikke-NaN maaned, saa ingen kvartalsfeature tabes.
+
+    `tidligere_sp500` = {YYYY-MM: sp500} fra forrige komplette snapshots spine.csv (F2): FRED
+    leverer SP500 som et RULLENDE 10-aars vindue, saa fra 2033 falder de foerste komposit-maaneder
+    ud af kilden. Allerede lukkede maaneder baeres da uaendret videre fra forrige rygrad (samme
+    tal, ingen ny estimering); maaneder FRED stadig leverer tages altid fra FRED."""
+    tidligere_sp500 = tidligere_sp500 or {}
+    sp500_m = {**{k: v for k, v in tidligere_sp500.items() if k > SEAM}, **sp500_m}
     out = []
     for k in sorted(shiller_rows):
         if k <= SEAM:
@@ -158,8 +233,13 @@ def build_spine(shiller_rows, sp500_m, cpi_m, gs10_m, cape_m):
 
 
 def cpi_huller(rows):
-    """Komposit-maaneder uden CPI (aegte datahuller, fx 2025-10)."""
-    return [r[0] for r in rows if r[5] != "shiller" and r[2] is None]
+    """Komposit-maaneder uden CPI, delt i to (F50): 'huller' = aegte interne huller (en SENERE
+    komposit-maaned har CPI — fx BLS's aldrig udgivne 2025-10) og 'afventer_udgivelse' =
+    afsluttende maaneder hvor CPI blot ikke er udgivet endnu."""
+    komp = [r for r in rows if r[5] != "shiller"]
+    sidste_med = max((i for i, r in enumerate(komp) if r[2] is not None), default=-1)
+    return dict(huller=[r[0] for i, r in enumerate(komp) if r[2] is None and i < sidste_med],
+                afventer_udgivelse=[r[0] for i, r in enumerate(komp) if r[2] is None and i > sidste_med])
 
 
 def staleness(sidste_dato, today=None, regler=None):

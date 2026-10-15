@@ -94,7 +94,8 @@
     "version": "5.0.1",
     "manifest_hash": "72c3371d",
     "snapshot": "2026-09-19",
-    "created_utc": "2026-09-19T22:03:23+00:00",
+    "refit_maaned": "2026-09",
+    "created_utc": "2026-10-15T12:46:23+00:00",
     "primaer": {
       "n": 198,
       "n_pos": 32,
@@ -561,25 +562,305 @@
       ],
       "note": "faelles origins har identiske traeningssaet i begge paneler; forskellen er per konstruktion de tilfoejede origins"
     },
+    "sti": {
+      "raekker": [
+        {
+          "onset": "1970-01",
+          "sidste_origin": "1969Q4",
+          "p_sidste": 0.347,
+          "top_origin": "1968Q2",
+          "p_top": 0.442,
+          "fald_pp": 9.5,
+          "mdr_top_til_onset": 19
+        },
+        {
+          "onset": "1973-12",
+          "sidste_origin": "1973Q3",
+          "p_sidste": 0.668,
+          "top_origin": "1973Q3",
+          "p_top": 0.668,
+          "fald_pp": 0.0,
+          "mdr_top_til_onset": 3
+        },
+        {
+          "onset": "1980-02",
+          "sidste_origin": "1979Q4",
+          "p_sidste": 0.881,
+          "top_origin": "1979Q4",
+          "p_top": 0.881,
+          "fald_pp": 0.0,
+          "mdr_top_til_onset": 2
+        },
+        {
+          "onset": "1981-08",
+          "sidste_origin": "1981Q2",
+          "p_sidste": 0.805,
+          "top_origin": "1980Q4",
+          "p_top": 0.968,
+          "fald_pp": 16.3,
+          "mdr_top_til_onset": 8
+        },
+        {
+          "onset": "1990-08",
+          "sidste_origin": "1990Q2",
+          "p_sidste": 0.285,
+          "top_origin": "1989Q2",
+          "p_top": 0.497,
+          "fald_pp": 21.2,
+          "mdr_top_til_onset": 14
+        },
+        {
+          "onset": "2001-04",
+          "sidste_origin": "2001Q1",
+          "p_sidste": 0.357,
+          "top_origin": "2000Q4",
+          "p_top": 0.734,
+          "fald_pp": 37.6,
+          "mdr_top_til_onset": 4
+        },
+        {
+          "onset": "2008-01",
+          "sidste_origin": "2007Q4",
+          "p_sidste": 0.167,
+          "top_origin": "2007Q1",
+          "p_top": 0.701,
+          "fald_pp": 53.4,
+          "mdr_top_til_onset": 10
+        },
+        {
+          "onset": "2020-03",
+          "sidste_origin": "2019Q4",
+          "p_sidste": 0.409,
+          "top_origin": "2019Q3",
+          "p_top": 0.619,
+          "fald_pp": 21.0,
+          "mdr_top_til_onset": 6
+        }
+      ],
+      "n_onsets": 8,
+      "n_under_top": 6,
+      "median_fald_pp": 21.1,
+      "median_mdr_top_til_onset": 9,
+      "note": "beskrivende historik bag sti-advarslen; ingen fremskrivning og ingen indflydelse paa P"
+    },
+    "pre_onset_analoger": [
+      {
+        "origin": "1990Q1",
+        "p": 0.303,
+        "baand": [
+          0.197,
+          0.56
+        ],
+        "basisrate_traening": 0.241,
+        "Y": 1.0,
+        "dom": "ikke skelnelig"
+      },
+      {
+        "origin": "1990Q2",
+        "p": 0.285,
+        "baand": [
+          0.185,
+          0.539
+        ],
+        "basisrate_traening": 0.239,
+        "Y": 1.0,
+        "dom": "ikke skelnelig"
+      },
+      {
+        "origin": "2000Q4",
+        "p": 0.734,
+        "baand": [
+          0.601,
+          0.921
+        ],
+        "basisrate_traening": 0.208,
+        "Y": 1.0,
+        "dom": "over basisraten"
+      },
+      {
+        "origin": "2007Q4",
+        "p": 0.167,
+        "baand": [
+          0.104,
+          0.274
+        ],
+        "basisrate_traening": 0.201,
+        "Y": 1.0,
+        "dom": "ikke skelnelig"
+      },
+      {
+        "origin": "2019Q4",
+        "p": 0.409,
+        "baand": [
+          0.32,
+          0.582
+        ],
+        "basisrate_traening": 0.183,
+        "Y": 1.0,
+        "dom": "over basisraten"
+      }
+    ],
+    "start_sensitivitet": {
+      "1947Q2 (protokol)": {
+        "P": 0.1773,
+        "basisrate": 0.1798,
+        "n_obs": 267,
+        "w": [
+          -2.0697,
+          -1.4884
+        ]
+      },
+      "1953Q2": {
+        "P": 0.1503,
+        "basisrate": 0.166,
+        "n_obs": 247,
+        "w": [
+          -2.3319,
+          -1.675
+        ]
+      },
+      "1960Q1": {
+        "P": 0.1264,
+        "basisrate": 0.146,
+        "n_obs": 226,
+        "w": [
+          -2.5832,
+          -1.7153
+        ]
+      },
+      "input": {
+        "curve": 0.96
+      }
+    },
+    "flips": {
+      "L12": {
+        "n": 8,
+        "origins": [
+          "1969Q1",
+          "1969Q2",
+          "1969Q3",
+          "1969Q4",
+          "1972Q4",
+          "1973Q1",
+          "1973Q2",
+          "1973Q3"
+        ]
+      },
+      "L18": {
+        "n": 7,
+        "origins": [
+          "1969Q1",
+          "1969Q2",
+          "1969Q3",
+          "1972Q4",
+          "1973Q1",
+          "1973Q2",
+          "1973Q3"
+        ]
+      },
+      "L24": {
+        "n": 4,
+        "origins": [
+          "1969Q1",
+          "1972Q4",
+          "1973Q1",
+          "1973Q2"
+        ]
+      }
+    },
+    "kimi_r6": {
+      "median_episoder_i_traening": 32,
+      "min_episoder_i_traening": 27,
+      "skill_uden_nyeste_episode": {
+        "n": 156,
+        "n_pos": 28,
+        "logloss": 0.3741,
+        "baseline": 0.4706,
+        "improvement": 20.52,
+        "brier": 17.25
+      },
+      "nyeste_blok": 34
+    },
+    "styrke": {
+      "middel_d": 0.1197,
+      "se_cluster_historisk": 0.081,
+      "n_blokke_historisk": 9,
+      "aar_pr_blok": 6.4,
+      "tabel": [
+        {
+          "blokke": 1,
+          "aar": 6,
+          "styrke": 0.12
+        },
+        {
+          "blokke": 2,
+          "aar": 13,
+          "styrke": 0.17
+        },
+        {
+          "blokke": 3,
+          "aar": 19,
+          "styrke": 0.21
+        },
+        {
+          "blokke": 5,
+          "aar": 32,
+          "styrke": 0.29
+        },
+        {
+          "blokke": 8,
+          "aar": 52,
+          "styrke": 0.4
+        },
+        {
+          "blokke": 10,
+          "aar": 64,
+          "styrke": 0.46
+        },
+        {
+          "blokke": 15,
+          "aar": 97,
+          "styrke": 0.6
+        },
+        {
+          "blokke": 20,
+          "aar": 129,
+          "styrke": 0.71
+        },
+        {
+          "blokke": 30,
+          "aar": 193,
+          "styrke": 0.85
+        },
+        {
+          "blokke": 40,
+          "aar": 258,
+          "styrke": 0.93
+        }
+      ],
+      "blokke_80pct": 26,
+      "aar_80pct": 168,
+      "note": "ensidet 5 %, cluster-t paa cyklusblokke; iid-tests paa overlappende maanedsraekker og 4.4-bootstrap ved faa blokke er FORBUDT (falsk signifikans). Kun til bedoemmelsesnoeglen — aendrer intet."
+    },
     "erklaering_36": "Publiceret baseline = poolet basisrate over scorede origins (C.metrics). Konsensustekstens 'expanding intercept' var sekretaerens fejl; expanding printes som ekstra kolonne, gaten aendres ikke."
   },
   "live_input": {
     "kilde": "daglig",
     "vindue": [
-      "2026-09-09",
-      "2026-10-08"
+      "2026-09-14",
+      "2026-10-13"
     ],
-    "n_dage": 22,
-    "curve": 1.1059,
-    "y10": 5.1109,
-    "tb3": 4.005,
+    "n_dage": 21,
+    "curve": 1.1181,
+    "y10": 5.15,
+    "tb3": 4.0319,
     "y10_seneste": [
-      "2026-10-08",
-      5.22
+      "2026-10-13",
+      5.21
     ],
     "tb3_seneste": [
-      "2026-10-08",
-      4.05
+      "2026-10-13",
+      4.09
     ],
     "maanedlig": {
       "curve": 1.0500000000000003,
@@ -590,8 +871,14 @@
     "p_maanedlig": 0.160963,
     "fed_funds": {
       "vaerdi": 3.88,
-      "dato": "2026-10-08",
+      "dato": "2026-10-13",
       "kilde": "DFF dagligt"
+    },
+    "sammensaetning": {
+      "front_2y_3m": 0.7552,
+      "bag_10y_2y": 0.3629,
+      "n_dage": 21,
+      "ntfs_approks": 0.9133
     }
   },
   "trigger": "manuel/reparation (foerste kalibrering efter v5.0)",
@@ -610,8 +897,13 @@
     "d_beta_pr_pp": 0.2068,
     "d_alpha": -0.2197
   },
-  "snapshot": "2026-10-10",
-  "snapshot_hash": "4397dbc136",
+  "koersel": null,
+  "rekalibrering_paakraevet": [],
+  "log_blokeringer": [
+    "2026-10 er allerede logget (2026-10-10) — historiske raekker roeres ikke"
+  ],
+  "snapshot": "2026-10-15",
+  "snapshot_hash": "c14c62cbc1",
   "model": "curve-only-logit",
   "label": "NBER-onset inden 4 kvartaler",
   "kalibreret": "2026-09-19",
@@ -619,39 +911,54 @@
   "n_episoder": 12,
   "wf_log_loss": 27.05,
   "wf_brier": 24.15,
-  "p": 0.151424,
+  "wf_note": "fast lambda=1 (arvet fra v4); fuld-sti-valg mellem to modeller, ikke nested (G1.1/G1.2)",
+  "p": 0.149408,
   "baand": [
-    0.104202,
-    0.216084
+    0.102461,
+    0.212921
   ],
   "basisrate": 0.1798,
   "baand_udelukker_basisrate": false,
   "ratio": null,
   "baand_fodnote": "Not a predictive interval; reflects weight sensitivity to episode composition",
-  "dom": "P er 15.1% mod basisraten 18.0%, men baandet [10.4-21.6%] indeholder basisraten: IKKE SKELNELIG FRA BASISRATEN.",
+  "dom": "P er 14.9% mod basisraten 18.0%, men baandet [10.2-21.3%] indeholder basisraten: IKKE SKELNELIG FRA BASISRATEN.",
+  "dom_ord": "ikke skelnelig",
+  "parret": {
+    "baand": [
+      -0.063774,
+      -0.002335
+    ],
+    "skelnelig": true,
+    "enig_med_baandregel": false,
+    "daekning": "coverage not established"
+  },
+  "censureret": {
+    "aktiv": false,
+    "onset": null
+  },
   "inputs": [
     {
       "navn": "Rentekurve 10y-3m",
-      "vaerdi": 1.1059,
-      "z": -0.2326,
+      "vaerdi": 1.1181,
+      "z": -0.222,
       "operationel": true
     },
     {
       "navn": "Realrente 10y-CPI",
-      "vaerdi": 1.7144,
-      "z": -0.0208,
+      "vaerdi": 1.4123,
+      "z": -0.1235,
       "operationel": false
     },
     {
       "navn": "S&P vs 12-mdr hoejde",
-      "vaerdi": -0.0009,
-      "z": 0.5824,
+      "vaerdi": 0.0,
+      "z": 0.5996,
       "operationel": false
     },
     {
       "navn": "Aendring i inflation",
-      "vaerdi": 0.4804,
-      "z": 0.2048,
+      "vaerdi": 0.725,
+      "z": 0.2962,
       "operationel": false
     },
     {
@@ -661,62 +968,79 @@
       "operationel": false
     }
   ],
+  "dd_kilde": "kalibreringsstatistik (trailing maanedsmiddel fra 2026-09-15 mod 12-mdr max af maanedsmidler)",
   "benchmarks": [
     {
       "navn": "intercept (basisrate)",
       "wf": 0.0,
       "live_p": 0.1798,
-      "status": null
+      "status": null,
+      "panel": null
     },
     {
       "navn": "curve-only-logit (NY Fed-stil-bm.)",
       "wf": 27.05,
-      "live_p": 0.151424,
-      "status": "OPERATIONEL"
+      "live_p": 0.149408,
+      "status": "OPERATIONEL",
+      "panel": "fuld sti t.o.m. 2024Q1",
+      "note": "fast lambda=1 (arvet fra v4); fuld-sti-valg mellem to modeller, ikke nested"
     },
     {
       "navn": "fuldmodel (5 features)",
       "wf": 23.16,
-      "live_p": 0.067481,
-      "status": "testet, ikke bestaaet mod benchmark (trin 6; genkoert v5.0.1)"
+      "live_p": 0.065601,
+      "status": "testet, ikke bestaaet mod benchmark (trin 6; genkoert v5.0.1)",
+      "panel": "fuld sti t.o.m. 2024Q1"
+    },
+    {
+      "navn": "curve-only, samme panel (reference)",
+      "wf": 34.32,
+      "live_p": null,
+      "status": "reference for de afviste kandidater",
+      "panel": "t.o.m. 2023Q2"
     },
     {
       "navn": "curve+cape (praereg. v5.1-test)",
       "wf": 36.81,
       "live_p": null,
-      "status": "testet, ikke bestaaet (data-foreslaaet) [panel t.o.m. 2023Q2]"
+      "status": "testet, ikke bestaaet (data-foreslaaet) [panel t.o.m. 2023Q2]",
+      "panel": "t.o.m. 2023Q2"
     },
     {
       "navn": "curve+awh (praereg. v5.2-test)",
       "wf": 33.87,
       "live_p": null,
-      "status": "testet, ikke bestaaet (sidste skud; soegning lukket) [panel t.o.m. 2023Q2]"
+      "status": "testet, ikke bestaaet (sidste skud; soegning lukket) [panel t.o.m. 2023Q2]",
+      "panel": "t.o.m. 2023Q2"
     },
     {
       "navn": "v4-arv (teknisk label)",
       "wf": null,
-      "live_p": 0.034614,
-      "status": "andet maal - arv"
+      "live_p": 0.03526,
+      "status": "andet maal - arv",
+      "panel": null
     },
     {
       "navn": "realtids-Sahm (trigger 0,50)",
       "wf": null,
       "live_p": null,
       "vaerdi": 0.0,
-      "status": "naerhorisont-signal"
+      "status": "naerhorisont-signal",
+      "panel": null
     },
     {
       "navn": "Chauvet-Piger nowcast",
       "wf": null,
       "live_p": 0.0062,
-      "status": "coincident, publiceringslag - anden disciplin"
+      "status": "coincident, publiceringslag - anden disciplin",
+      "panel": null
     }
   ],
   "monitors": [
     {
       "navn": "Kurven inverteret",
       "tilstand": "inaktiv",
-      "vaerdi": "+1.11pp",
+      "vaerdi": "+1.12pp",
       "klasse": "operationel feature"
     },
     {
@@ -726,9 +1050,27 @@
       "klasse": "testet, ikke bestaaet (trin 4)"
     },
     {
+      "navn": "HY OAS > 600bp",
+      "tilstand": "inaktiv",
+      "vaerdi": "316bp (2026-10-13)",
+      "klasse": "v4-flag/seed-taerskel 600bp; ineligible (historik 1997-, FRED leverer kun rullende 3 aar); svaerm-zone 350-450bp = eneste atlas-taerskel med 3+ kanaler (5)"
+    },
+    {
+      "navn": "S&P dagsluk vs 52u-top < -20%",
+      "tilstand": "inaktiv",
+      "vaerdi": "-1% (manuel, 2026-10-14)",
+      "klasse": "fuldmodel-feature (kalibreringens dd i sektion 2)"
+    },
+    {
+      "navn": "Advance-estimat: 2 neg. BNP-print",
+      "tilstand": "inaktiv",
+      "vaerdi": "2026Q1 +2.1% (1. set 08-09), 2026Q2 +1.5% (1. set 08-09)",
+      "klasse": "uvalideret realtidsdiagnostik paa foerste print (vintage-flip dokumenteret, trin 5)"
+    },
+    {
       "navn": "Claims-momentum",
       "tilstand": "kontekst",
-      "vaerdi": "4u-snit 198k; 12m -11.6% (2026-09)",
+      "vaerdi": "4u-snit 198k; maanedssnit 12m -14.3% (2026-09); fortsatte 1.71M (12m -12.2%); vikarer 12m +0.6%",
       "klasse": "testet, ikke bestaaet (trin 4)"
     },
     {
@@ -738,22 +1080,10 @@
       "klasse": "testet, ikke bestaaet (trin 4)"
     },
     {
-      "navn": "HY OAS > 600bp",
-      "tilstand": "inaktiv",
-      "vaerdi": "315bp (2026-10-08)",
-      "klasse": "ineligible (historik 1997-); svaerm-zone 350-450bp"
-    },
-    {
-      "navn": "S&P drawdown > 20%",
-      "tilstand": "inaktiv",
-      "vaerdi": "-0%",
-      "klasse": "fuldmodel-feature"
-    },
-    {
-      "navn": "Advance-estimat: 2 neg. BNP-print",
-      "tilstand": "inaktiv",
-      "vaerdi": "+2.5%, +2.2%",
-      "klasse": "uvalideret realtidsdiagnostik (vintage-flip dokumenteret, trin 5)"
+      "navn": "Arbejdstimer industri (6m ann.)",
+      "tilstand": "kontekst",
+      "vaerdi": "42.0 t (2026-09); +2.4%",
+      "klasse": "testet, ikke bestaaet (v5.2, sidste skud)"
     },
     {
       "navn": "Inversionsnote",
@@ -762,42 +1092,70 @@
       "klasse": "uvalideret kontekst"
     },
     {
-      "navn": "CP-spaend 3m > 75bp",
+      "navn": "Kurve-sti (P ved frosne vaegte)",
+      "tilstand": "kontekst",
+      "vaerdi": "top 35.4% (2025-10), 12 mdr siden; nu 14.9% (-20.4pp fra top)",
+      "klasse": "beskrivende sti, ingen fremskrivning (R4/F11)"
+    }
+  ],
+  "scenarie": [
+    {
+      "navn": "CP-spaend 3m > 75bp i 2+ uger",
       "tilstand": "inaktiv",
-      "vaerdi": "3bp (2026-10-06)",
-      "klasse": "svaerm-tripwire: funding-stress foer kreditspaend"
+      "vaerdi": "-1bp (2026-10-13); >75bp 0/10 seneste dage; siden 2026-10-10: max -1bp (2026-10-13), 0/1 dage over",
+      "klasse": "svaerm-tripwire, 1-2 kanaler (funding); atlas-def. alle 10 seneste faelles handelsdage"
     },
     {
       "navn": "10Y > 5,25%",
       "tilstand": "inaktiv",
-      "vaerdi": "5.22% (2026-10-08) / ACM TP +1.08pp (10-02)",
-      "klasse": "svaerm-tripwire: fiskal/term-praemie-kanalen"
+      "vaerdi": "5.21% (2026-10-13) / KW TP +1.07pp (Kim-Wright, Fed Board, 10-09); siden 2026-10-10: max 5.21% (2026-10-13), 0/1 dage over",
+      "klasse": "1 kanal (fiskal); kanalens ANTAGNE trigger, ikke Q2-varsel; maaleregel: seneste daglige niveau"
     },
     {
       "navn": "Realkredit 30Y > 7,8%",
       "tilstand": "inaktiv",
       "vaerdi": "7.40% (2026-10-08)",
-      "klasse": "svaerm-tripwire: boligkanalen"
+      "klasse": "1 kanal (fiskal); kanalens antagne transmission, ikke Q2-varsel"
+    }
+  ],
+  "forudsaetninger": [
+    {
+      "navn": "Marginlaan y/y > 40%",
+      "tilstand": "inaktiv",
+      "vaerdi": "+37.2%",
+      "klasse": "svaerm (1 kanal)"
+    },
+    {
+      "navn": "Permits < 1,40M + 3 mdr y/y neg.",
+      "tilstand": "inaktiv",
+      "vaerdi": "1403 (2026-08); 12m +4.2%",
+      "klasse": "svaerm (1 kanal)"
+    },
+    {
+      "navn": "Realt kontantafkast FF-PCE < 0",
+      "tilstand": "inaktiv",
+      "vaerdi": "+0.46pp",
+      "klasse": "v4-debaseringsflag (seed-ekko, G2.3)"
     }
   ],
   "market_conditions": [
     {
       "navn": "CAPE-percentil (expanding)",
-      "vaerdi": "92.7. pct"
+      "vaerdi": "92.7. pct (CAPE 41.38, 2026-10-14)"
     },
     {
       "navn": "Aktierisikopraemie 1/CAPE - y10",
-      "vaerdi": "-2.83pp"
+      "vaerdi": "-2.79pp"
     },
     {
       "navn": "Marginlaan y/y",
-      "vaerdi": "+37.2% (manual, 2026-10-10)"
+      "vaerdi": "+37.2% (FINRA, datamaaned 2026-08)"
     }
   ],
   "pengepolitik": [
     {
       "navn": "Fed funds (effektiv)",
-      "vaerdi": "3.88% (2026-10-08, DFF dagligt)"
+      "vaerdi": "3.88% (2026-10-13, DFF dagligt)"
     },
     {
       "navn": "Realt kontantafkast FF - PCE",
@@ -805,7 +1163,7 @@
     },
     {
       "navn": "3m-bill minus Fed funds",
-      "vaerdi": "+17bp (2026-10-08, diskonto)"
+      "vaerdi": "+21bp (2026-10-13, diskonto)"
     },
     {
       "navn": "PCE-infl. 3m/6m/12m ann.",
@@ -813,19 +1171,181 @@
     },
     {
       "navn": "CPI (SA) 3m/6m/12m ann.",
-      "vaerdi": "0.2 / 4.1 / 3.7%"
+      "vaerdi": "4.6 / 3.7 / 3.7%"
     },
     {
       "navn": "10y = term-praemie + forventet",
-      "vaerdi": "5.28 = 1.08 + 4.20 (2026-10-02)"
+      "vaerdi": "5.24 = 1.07 + 4.17 (2026-10-09, Kim-Wright)"
+    },
+    {
+      "navn": "Kurve = front (2y-3m) + bag (10y-2y)",
+      "vaerdi": "+1.12 = +0.76 + +0.36pp (trailing, 21 dage)"
+    },
+    {
+      "navn": "Near-term forward spread (approks.)",
+      "vaerdi": "+0.91pp (2*2y - 1y - 3m; negativ = lempelser prissat)"
+    },
+    {
+      "navn": "WTI y/y (regimekontekst, R2)",
+      "vaerdi": "$96.24 (2026-10-06); maanedssnit 2026-10 y/y +60% — nettoproducent; ikke feature, ikke tripwire"
     }
   ],
+  "kredit": [
+    {
+      "navn": "Excess bond premium (GZ/Fed Board)",
+      "vaerdi": "-0.39pp (2026-09); GZ-spaend 0.93pp; ekstern in-sample-probit 9% (andet maal, ikke sammenlignelig med P)"
+    },
+    {
+      "navn": "Baa minus 10Y (Moody's)",
+      "vaerdi": "1.46pp (2026-10-13)"
+    }
+  ],
+  "nber_indikatorer": [
+    {
+      "serie": "PAYEMS",
+      "navn": "Loenmodtagerbeskaeftigelse",
+      "maaned": "2026-09",
+      "yoy": 0.31,
+      "fra_12m_top": 0.0,
+      "note": "foederale engangsbevaegelser kan dominere"
+    },
+    {
+      "serie": "CE16OV",
+      "navn": "Husstandsbeskaeftigelse",
+      "maaned": "2026-09",
+      "yoy": -0.31,
+      "fra_12m_top": -0.51,
+      "note": "januar-befolkningskontrol giver spring"
+    },
+    {
+      "serie": "INDPRO",
+      "navn": "Industriproduktion",
+      "maaned": "2026-08",
+      "yoy": 1.42,
+      "fra_12m_top": 0.0,
+      "note": ""
+    },
+    {
+      "serie": "W875RX1",
+      "navn": "Real indkomst ekskl. overfoersler",
+      "maaned": "2026-08",
+      "yoy": 0.8,
+      "fra_12m_top": -0.08,
+      "note": ""
+    },
+    {
+      "serie": "PCEC96",
+      "navn": "Realt privatforbrug",
+      "maaned": "2026-08",
+      "yoy": 2.57,
+      "fra_12m_top": 0.0,
+      "note": ""
+    },
+    {
+      "serie": "CMRMTSPL",
+      "navn": "Realt engros/detail/industri-salg",
+      "maaned": "2026-07",
+      "yoy": 2.27,
+      "fra_12m_top": 0.0,
+      "note": ""
+    }
+  ],
+  "manual_friskhed": {
+    "cape": {
+      "dato": "2026-10-14",
+      "alder_dage": 1,
+      "stale": false
+    },
+    "spx_vs_hi": {
+      "dato": "2026-10-14",
+      "alder_dage": 1
+    },
+    "margin_yoy": {
+      "periode": "2026-08",
+      "forventet_nyeste": "2026-08",
+      "foraeldet": false
+    }
+  },
+  "utilgaengelige": [],
+  "sti": {
+    "punkter": [
+      [
+        "2025-10",
+        0.3538
+      ],
+      [
+        "2025-11",
+        0.3334
+      ],
+      [
+        "2025-12",
+        0.2682
+      ],
+      [
+        "2026-01",
+        0.246
+      ],
+      [
+        "2026-02",
+        0.2733
+      ],
+      [
+        "2026-03",
+        0.246
+      ],
+      [
+        "2026-04",
+        0.2296
+      ],
+      [
+        "2026-05",
+        0.1929
+      ],
+      [
+        "2026-06",
+        0.2075
+      ],
+      [
+        "2026-07",
+        0.195
+      ],
+      [
+        "2026-08",
+        0.1773
+      ],
+      [
+        "2026-09",
+        0.161
+      ],
+      [
+        "trailing 2026-10-13",
+        0.1494
+      ]
+    ],
+    "top": "2025-10",
+    "p_top": 0.3538,
+    "maaneder_siden_top": 12,
+    "fald_fra_top_pp": 20.4,
+    "note": "beskrivende — ingen fremskrivning, ingen indflydelse paa P (DASHBOARD-BRIEF regel 9)"
+  },
+  "maanedens_aendring": {
+    "fra": "2026-10-10",
+    "dP_pp": -0.16,
+    "dK_pp": 0.0081,
+    "d10Y_pp": 0.0391,
+    "d3m_pp": 0.0269,
+    "bidrag_10Y_pp": -0.64,
+    "bidrag_3m_pp": 0.44,
+    "maerke": "lang-ende-drevet (bear steepening)",
+    "input_foer": "daglig"
+  },
   "advarsler": {
     "vaerste_fejlalarm": {
       "p": 0.9383,
       "origin": "2023Q2"
     },
-    "sti_advarsel": "Modellen laeser kurvens NIVEAU; +1.11pp behandles som +1.11pp uden forhistorie. Seneste inversion: sluttede 2024-11 (22 mdr siden), dybde -1.57pp. Historiske onsets er ofte sket i re-steepening-fasen; balance-sheet-drevne recessioner uden frisk inversion er usynlige for modellen.",
+    "sti_advarsel": "Modellen laeser kurvens NIVEAU; +1.12pp behandles som +1.12pp uden forhistorie. Seneste inversion: sluttede 2024-11 (22 mdr siden), dybde -1.57pp. Historisk (diagnostik): P var under sin top ved sidste origin foer onset i 6/8 onsets — median 21pp fald, median 9 mdr fra top til onset. 2007Q4: P 16.7% [10.4-27.4%], ikke skelnelig — onset kom maaneden efter. Balance-sheet-drevne recessioner uden frisk inversion er usynlige for modellen.",
+    "lang_ende": "En stigning i den lange ende saenker P mekanisk (ca. 1.6pp pr. 10bp ved nuvaerende kurve); atlassets kanal 5 laeser samme bevaegelse som risiko. Dommen er uaendret.",
     "eksogen": "Eksogene chok kan ikke forudsiges."
   },
   "hovedbog": [
@@ -846,7 +1366,8 @@
         0.292
       ],
       "basisrate_tal": 0.182,
-      "kurve_tal": 0.87
+      "kurve_tal": 0.87,
+      "p_maanedlig_tal": null
     },
     {
       "logget": "2026-09-09",
@@ -865,7 +1386,8 @@
         0.263
       ],
       "basisrate_tal": 0.182,
-      "kurve_tal": 0.96
+      "kurve_tal": 0.96,
+      "p_maanedlig_tal": null
     },
     {
       "logget": "2026-10-10",
@@ -878,13 +1400,17 @@
       "antaending": "ingen",
       "note": "input: daglig (kurve = trailing maaned DGS10-DTB3; foer: GS10-TB3MS maanedssnit); bro: P(v? 6baeade4)=15.0% / P(v5.0.1 72c3371d)=15.1% ved identiske inputs; trigger: manuel/reparation (foerste kalibrering efter v5.0)",
       "kalibrering": "72c3371d",
+      "vindue": "",
       "p_tal": 0.151,
       "baand_tal": [
         0.104,
         0.216
       ],
       "basisrate_tal": 0.18,
-      "kurve_tal": 1.11
+      "kurve_tal": 1.11,
+      "p_maanedlig_tal": null
     }
-  ]
+  ],
+  "hovedbog_note": "Den eneste fuldt prospektive test — beskytter mod look-ahead, men statistisk svag: der kraeves mange komplette konjunkturcykler foer den kan skelne modellen fra basisraten (BEDOEMMELSESNOEGLE.md). Vises uden samlet score eller dom.",
+  "noegle": "3d2e218f"
 }

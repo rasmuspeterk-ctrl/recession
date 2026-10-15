@@ -2,28 +2,36 @@
 """
 fetch.py — v5 datalag (trin 1 i raadets byggeorden).
 
-Henter alle FRED-serier noeglefrit via fredgraph.csv (parallelt), skriver et
-dateret, byte-eksakt hashet snapshot i data/raw/<YYYY-MM-DD>/ og printer diff
-mod forrige snapshot til menneskeligt eftersyn (raadets T6): ny observation,
-aendret sidste vaerdi eller stille revision af historikken.
+Henter alle serier noeglefrit via fredgraph.csv (parallelt; EBP fra Fed Boards CSV), skriver et
+dateret, byte-eksakt hashet snapshot i data/raw/<YYYY-MM-DD>/ og printer diff mod forrige
+snapshot til menneskeligt eftersyn (raadets T6): ny observation, aendret sidste vaerdi, stille
+revision af historikken — og for de rullende licensvinduer (SP500, HY OAS) blot 'start flyttet'.
 
-Snapshottet bygges i data/raw/<dato>.ny og flyttes foerst paa plads naar alt er
-hentet: fejler en kraevet serie (reserveserierne GDPC1/CPIAUCSL/THREEFYTP10
-undtaget) eller mangler shiller.csv/manual.json, gemmes forsoeget som
-data/raw/<dato>.ukomplet ("complete": false; ignoreres af calibrate/motor), og et
-eksisterende komplet dagssnapshot roeres ikke (koer fetch.py igen).
+Seriernes roller staar i EEN tabel, spine.SERIER (kode-review 2026-10-15, F18): kun serierne med
+rolle P/refit (spine.VETO) nedlaegger veto, naar de fejler; alt andet er kontekst. Licensmaerket
+'lokal' (ICE HY OAS, S&P 500, Moody's Baa og multpl-siden) hentes og hashes, men committes aldrig
+(.gitignore) — meta.json beholder sha256/first/last/last_value (F1/F12).
 
-Rygraden (v5.0.1, RAADETS_V501 §1): Yales ie_data.xls er frosset ved 2023-09, saa
-snapshottets spine.csv bygges som komposit — manual/shiller_yale_2023-09.csv (uforanderlig
-kopi) byte-identisk t.o.m. 2023-07, derefter FRED SP500 (dagligt -> maanedsmiddel), CPIAUCNS,
-GS10 som LTR og multpl's maanedlige CAPE, med proveniens-kolonne. Overlap-tolerancer (§1.2),
-multpl-assertions (§1.3), outlier-guard (§1.6, `--accept-outlier "<hvad blev tjekket; hvorfor>"`)
-og den udgivelses-bevidste friskheds-guard (§1.7) haandhaeves her; resultatet staar i meta.json.
+Snapshottet bygges i data/raw/<dato>.ny og flyttes foerst paa plads naar alt er hentet: fejler en
+vetoserie eller mangler manual.json/rygraden, gemmes forsoeget som data/raw/<dato>.ukomplet
+("complete": false; ignoreres af calibrate/motor), og et eksisterende komplet dagssnapshot roeres
+ikke. En senere vellykket koersel samme dag sletter det afloeste .ukomplet-forsoeg (F24).
+
+Rygraden (v5.0.1, RAADETS_V501 §1): Yales ie_data.xls er frosset ved 2023-09, saa snapshottets
+spine.csv bygges som komposit — manual/shiller_yale_2023-09.csv (uforanderlig kopi) byte-identisk
+t.o.m. 2023-07, derefter FRED SP500 (dagligt -> maanedsmiddel), CPIAUCNS, GS10 som LTR og multpl's
+maanedlige CAPE, med proveniens-kolonne. Overlap-tolerancer (§1.2; FRED's foerste, delvise maaned
+indgaar aldrig — F2), multpl-assertions og revisionsdiff (§1.3, F25), outlier-guard (§1.6,
+`--accept-outlier "<hvad blev tjekket; hvorfor>"`; accepterede (maaned, vaerdi)-par gemmes i
+manual/outliers_accepteret.json, F31) og den udgivelses-bevidste friskheds-guard (§1.7) haandhaeves
+her. Snapshottet faar `spine.refit_klar` (F5): false hvis multpl eller SP500 fejlede, eller rygraden
+er stale — saa naegter finalize6/diagnostik at rekalibrere, mens den maanedlige laesning fortsaetter.
 
 Manuelle inputs (dokumenteret protokol, raadets Section 9):
-  manual/manual.json  — {"spx_vs_hi": .., "cape": .., "margin_yoy": ..,
-                         "as_of": "YYYY-MM-DD"}  (S&P vs 12m-hoejde som decimal,
-                        live Shiller-CAPE fra multpl.com, FINRA marginlaan y/y %).
+  manual/manual.json  — {"spx_vs_hi": .., "cape": .., "margin_yoy": .., "as_of": "YYYY-MM-DD",
+                         "margin_periode": "YYYY-MM", "cape_dato": "YYYY-MM-DD", "spx_dato": "YYYY-MM-DD"}
+                        (S&P vs 12m-hoejde som decimal, live Shiller-CAPE fra multpl.com, FINRA
+                        marginlaan y/y % og hvilken datamaaned/-dag tallene gaelder, F30).
 
 Kun stdlib. Koer:  python fetch.py
 """
@@ -37,40 +45,24 @@ import spine as SP
 HERE = Path(__file__).parent
 RAW = HERE / "data" / "raw"
 MANUAL = HERE / "manual"
-WORKERS = 8          # parallelle FRED-kald: 20 serier tog ~12 s serielt, ~1 s parallelt
+WORKERS = 8          # parallelle kald: 37 serier ~3-5 s parallelt
 
-# Serier og hvorfor de hentes (raadets blueprint, Section 8-9 + kandidatliste)
-SERIES = {
-    "GS10":            "10-aarig statsrente, maanedlig (feature: curve/realrate)",
-    "TB3MS":           "3-mdr T-bill, maanedlig (feature: curve)",
-    "CPIAUCNS":        "CPI NSA (inflations-features; Shiller-konsistent)",
-    "CPIAUCSL":        "CPI SA (reserve/diagnostik)",
-    "UNRATE":          "ledighed (Sahm-transform-kandidat, trin 4)",
-    "SAHMREALTIME":    "Sahm-reglen realtid (monitor + benchmark)",
-    "ICSA":            "initial claims, ugentlig (kandidat, trin 4)",
-    "PERMIT":          "byggetilladelser (kandidat, trin 4)",
-    "BAMLH0A0HYM2":    "HY OAS, daglig (monitor — ineligible som feature)",
-    "USREC":           "NBER-recessionsmaaneder (label fra trin 2)",
-    "A191RL1Q225SBEA": "real BNP %-aendring ann. (teknisk label + advance-diagnostik)",
-    "GDPC1":           "real BNP niveau (reserve)",
-    "FEDFUNDS":        "effektiv fed funds (market conditions: realt kontantafkast)",
-    "PCEPI":           "PCE-prisindeks (market conditions: realt kontantafkast)",
-    "THREEFYTP10":     "ACM 10-aars term-praemie, FRED-spejl 1990+ (trin 4: substitutionstest)",
-    "RECPROUSM156N":   "Chauvet-Piger glattet recessionssandsynlighed (benchmark, coincident nowcast)",
-    "AWHMAN":          "ugentlige arbejdstimer, industri, 1939+ (trin: sidste praeregistrerede feature-skud)",
-    "RIFSPPFAAD90NB":  "90-dages AA finansiel commercial paper-rente (svaerm-tripwire: funding-spaend)",
-    "DTB3":            "3-mdr T-bill sekundaermarked, daglig (live-input til kurven: trailing maaned; CP-spaend)",
-    "DGS10":           "10-aarig statsrente, daglig (live-input til kurven: trailing maaned; 10Y-tripwire)",
-    "DFF":             "effektiv fed funds, daglig (pengepolitik-blok; FEDFUNDS er maanedssnittet)",
-    "MORTGAGE30US":    "30-aars realkreditrente, ugentlig (svaerm-tripwire: fiskal/term-praemie-kanalen)",
-    "SP500":           "S&P 500 dagligt luk, ~10 aar (rygradens SP500-kolonne efter 2023-07 som maanedsmiddel)",
-}
+# Serier og hvorfor de hentes: afledt af spine.SERIER (+ ikke-FRED-kilder i spine.EKSTERNE)
+SERIES = {sid: v[3] for sid, v in SP.SERIER.items()}
+SERIES.update({sid: v["formaal"] for sid, v in SP.EKSTERNE.items()})
 MULTPL_URL = "https://www.multpl.com/shiller-pe/table/by-month"
 YALE = "shiller_yale_2023-09.csv"          # uforanderlig kopi af Yales ie_data.xls (sidste raekke 2023.09)
+OUTLIERS_ACC = "outliers_accepteret.json"  # F31: accepterede (maaned, vaerdi)-par, committes
 
-def parse_rows(raw):
-    """FRED-csv-bytes -> [(dato, vaerdi)] uden manglende ('.'/tomme) observationer."""
+def parse_rows(raw, kolonne=None):
+    """FRED-csv-bytes -> [(dato, vaerdi)] uden manglende ('.'/tomme) observationer. `kolonne`
+    vaelger en navngiven vaerdikolonne i en bredere CSV (EBP-filen); ellers kraeves praecis 2 kolonner."""
     rows = list(csv.reader(io.StringIO(raw.decode("utf-8-sig"))))
+    if kolonne is not None:
+        if len(rows) < 2 or kolonne not in rows[0]:
+            raise RuntimeError(f"uventet format (kolonne {kolonne!r} mangler: {rows[:1]})")
+        j = rows[0].index(kolonne)
+        return [(r[0], r[j]) for r in rows[1:] if len(r) > j and r[j] not in (".", "")]
     if len(rows) < 2 or len(rows[0]) != 2:
         raise RuntimeError(f"uventet format ({rows[:1]})")
     return [(d, v) for d, v in rows[1:] if v not in (".", "")]
@@ -78,13 +70,15 @@ def parse_rows(raw):
 def fetch_series(sid, attempts=3):
     """Raa bytes + parsede raekker. Netvaerksfejl, 5xx, 429 (ratelimit) og misdannede
     svar proeves igen; oevrige 4xx (ukendt serie) ikke."""
-    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
+    ekst = SP.EKSTERNE.get(sid)
+    url = ekst["url"] if ekst else f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (MOTOR v5 fetch)"}) if ekst else url
     last_err = None
     for k in range(attempts):
         try:
-            with urllib.request.urlopen(url, timeout=60) as r:
+            with urllib.request.urlopen(req, timeout=60) as r:
                 raw = r.read()
-            data = parse_rows(raw)             # inde i forsoeget: et flygtigt ikke-CSV-svar retries
+            data = parse_rows(raw, ekst["kolonne"] if ekst else None)   # inde i forsoeget: et flygtigt ikke-CSV-svar retries
             if not data:
                 raise RuntimeError("tom serie")
             return raw, data
@@ -120,8 +114,10 @@ def last_snapshot_before(today_dir):
 
 def diff_mark(prev_s, prev_dir, sid, data, cur):
     """Diff mod forrige snapshot: hash, sidste observation, og (for at fange stille revisioner)
-    om det gamle snapshots observationer stadig er et praefiks af de nye. Mangler seriens
-    meta-post, men filen findes, koeres praefikstjekket alligevel."""
+    om det gamle snapshots vaerdier er uaendrede paa de FAELLES datoer (F23). En observation der
+    er forsvundet midt i det nye vindue er ogsaa en revision. At vinduets START er flyttet (FRED's
+    rullende licensvinduer for SP500 og HY OAS) er ikke en revision og markeres for sig. Mangler
+    seriens meta-post, men filen findes, koeres tjekket alligevel."""
     pf = (prev_dir / f"{sid}.csv") if prev_dir else None
     if prev_s is None and not (pf and pf.exists()):
         return "  (ny serie)"
@@ -136,15 +132,22 @@ def diff_mark(prev_s, prev_dir, sid, data, cur):
         marks.append("AENDRET sidste vaerdi")
     if pf and pf.exists():
         try:
-            old = parse_rows(pf.read_bytes())
-            if data[:len(old)] != old:
+            ekst = SP.EKSTERNE.get(sid)
+            old = dict(parse_rows(pf.read_bytes(), ekst["kolonne"] if ekst else None))
+            new = dict(data)
+            start = min(new) if new else ""
+            faelles = [d for d in old if d in new]
+            forsvundet = [d for d in old if d not in new and d >= start]
+            if any(old[d] != new[d] for d in faelles) or forsvundet:
                 marks.append("REVIDERET historik")
+            if old and min(old) < start:
+                marks.append(f"rullende vindue (start flyttet {min(old)} -> {start})")
         except Exception:
             marks.append("forrige fil ulaeselig")
     return "  <-- " + (", ".join(marks) if marks else "andet indhold")
 
-RESERVE = {"GDPC1", "CPIAUCSL", "THREEFYTP10", "SP500", "DFF"}   # fejl her nedlaegger ikke veto
-# (SP500: rygraden stopper blot; DFF: motor falder tilbage til FEDFUNDS-maanedssnittet)
+RESERVE = {s for s in SERIES if s not in SP.VETO}      # fejl her nedlaegger ikke veto (F18)
+# (SP500: rygraden stopper/baeres videre og refit_klar=false; DFF: motor falder tilbage til FEDFUNDS)
 KRAEVEDE_MANUAL = ("manual.json",)                 # calibrate/motor kan ikke koere uden
 
 def fetch_multpl(attempts=3):
@@ -171,12 +174,30 @@ def read_yale(path):
             out[row["Date"].strip()] = (num("SP500"), num("CPI"), num("LTR"), num("CAPE"))
     return out
 
+def read_cape_csv(path):
+    """cape_multpl.csv -> {YYYY-MM: cape} ({} hvis filen mangler eller er ulaeselig)."""
+    try:
+        with path.open(encoding="utf-8") as fh:
+            return {r["Date"]: float(r["CAPE"]) for r in csv.DictReader(fh)}
+    except Exception:
+        return {}
+
+def read_spine_sp500(path):
+    """Komposit-raekkernes SP500 fra en tidligere spine.csv -> {YYYY-MM: sp500} (F2-baering)."""
+    try:
+        with path.open(encoding="utf-8") as fh:
+            return {r["Date"]: float(r["SP500"]) for r in csv.DictReader(fh)
+                    if r.get("Kilde") != "shiller" and r.get("SP500")}
+    except Exception:
+        return {}
+
 def monthly_last(data):
     """FRED-maanedsserie [(YYYY-MM-DD, v)] -> {YYYY-MM: float} (stemplet den 1.)."""
     return {d[:7]: float(v) for d, v in data}
 
-def byg_rygrad(outdir, series_data, argv, today):
-    """Bygger spine.csv (§1) + koerer overlap/outlier/friskheds-guards. Returnerer (meta-blok, kritiske_fejl)."""
+def byg_rygrad(outdir, series_data, argv, today, prev=None):
+    """Bygger spine.csv (§1) + koerer overlap/outlier/revisions-guards. Returnerer (meta-blok, kritiske_fejl).
+    `prev` = forrige komplette snapshot (multpl-revisionsdiff, F25; baering af lukkede SP500-maaneder, F2)."""
     info, kritiske = {}, []
     yale_src = MANUAL / YALE
     if not yale_src.exists():
@@ -192,37 +213,65 @@ def byg_rygrad(outdir, series_data, argv, today):
         (outdir / "multpl_cape.html").write_bytes(html)
         cape_m = SP.parse_multpl(html, today)
         info["multpl"] = dict(sha256=sha256(html), bytes=len(html), maaneder=len(cape_m),
-                              foerste=min(cape_m), sidste=max(cape_m))
+                              foerste=min(cape_m), sidste=max(cape_m),
+                              note="seneste maanedsraekke er multpl's foreloebige vaerdi og kan revideres (§1.3)")
         (outdir / "cape_multpl.csv").write_text(
             "Date,CAPE\n" + "".join(f"{k},{cape_m[k]}\n" for k in sorted(cape_m)), encoding="utf-8")
+        # §1.3 revisionsmarkering (F25): diff mod forrige snapshots LOKALE kopi (filen committes ikke, F12)
+        gl = read_cape_csv(prev / "cape_multpl.csv") if prev else {}
+        if gl:
+            rev = {k: [gl[k], cape_m[k]] for k in sorted(set(gl) & set(cape_m)) if abs(gl[k] - cape_m[k]) > 1e-9}
+            info["multpl"]["revideret"] = rev
+            info["multpl"]["diff_mod"] = prev.name
     except Exception as e:
         info["multpl"] = dict(fejl=str(e)[:300])
         cape_m = {}
     sp_d = series_data.get("SP500"); cpi_d = series_data.get("CPIAUCNS"); gs_d = series_data.get("GS10")
     sp500_m = SP.monthly_mean(sp_d) if sp_d else {}
-    # daglig SP500: en maaned taeller kun som lukket hvis den er FOER hentemaaneden
+    # daglig SP500: en maaned taeller kun som lukket hvis den er FOER hentemaaneden — og FRED's
+    # rullende 10-aars vindue starter midt i en maaned, saa den FOERSTE maaned er delvis (F2): den
+    # indgaar hverken i overlap-tjekket eller i kompositten (dokumenteret undtagelse, §1.2)
     sp500_m = {k: v for k, v in sp500_m.items() if k < today.isoformat()[:7]}
+    if sp500_m:
+        info["sp500_delvis_foerste_maaned_udeladt"] = min(sp500_m)
+        sp500_m = {k: v for k, v in sp500_m.items() if k != min(sp500_m)}
     cpi_m = monthly_last(cpi_d) if cpi_d else {}
     gs10_m = monthly_last(gs_d) if gs_d else {}
+    tidl = read_spine_sp500(prev / "spine.csv") if prev and (prev / "spine.csv").exists() else {}
 
     # §1.2 overlap (kun hvis begge kilder kom hjem)
     if sp500_m and cape_m:
         ov = SP.overlap_check(yale, sp500_m, cape_m)
+        if ov["sp500_n"] < 12 and prev:
+            # Fra ~2033 overlapper FRED's 10-aars vindue ikke laengere Shiller: overlap-resultatet
+            # er da et engangsverificeret artefakt, arvet fra forrige snapshot hvis det bestod dér.
+            gl_ov = json.loads((prev / "meta.json").read_text(encoding="utf-8")).get("spine", {}).get("overlap", {})
+            if gl_ov.get("bestaaet"):
+                ov = dict(gl_ov, arvet_fra=gl_ov.get("arvet_fra", prev.name),
+                          note="FRED-vinduet overlapper ikke laengere Shiller; verificeret tidligere")
         info["overlap"] = ov
         if not ov["bestaaet"]:
             kritiske.append("rygrad: overlap-tolerancer (§1.2) ikke overholdt")
-    # §1.6 outlier-guard paa komposit-delen
-    probs = SP.outlier_check(cape_m, fra=SP.SEAM) if cape_m else []
+    # §1.6 outlier-guard paa komposit-delen; allerede accepterede (maaned, vaerdi)-par springes over (F31)
+    acc_f = MANUAL / OUTLIERS_ACC
+    acc = json.loads(acc_f.read_text(encoding="utf-8")) if acc_f.exists() else {}
+    probs = SP.outlier_check(cape_m, fra=SP.SEAM, accepterede={k: v["cape"] for k, v in acc.items()}) if cape_m else []
     if probs:
         if "--accept-outlier" in argv:
             begr = argv[argv.index("--accept-outlier") + 1] if len(argv) > argv.index("--accept-outlier") + 1 else ""
             info["outlier_override"] = dict(observationer=[f"{k}: {p}" for k, p in probs],
                                             tjekket="multpl CAPE mod FRED SP500-maanedsmiddel og CPIAUCNS (ingen uafhaengig CAPE-kilde findes)",
                                             begrundelse=begr)
+            for k, _p in probs:
+                acc[k] = dict(cape=cape_m[k], begrundelse=begr, accepteret=today.isoformat())
+            acc_f.write_text(json.dumps(acc, indent=1, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
         else:
             info["outliers"] = [f"{k}: {p}" for k, p in probs]
             kritiske.append("rygrad: CAPE-outlier (§1.6) — gentag med --accept-outlier \"<hvad blev tjekket; hvorfor>\"")
-    rows = SP.build_spine(yale, sp500_m, cpi_m, gs10_m, cape_m)
+    rows = SP.build_spine(yale, sp500_m, cpi_m, gs10_m, cape_m, tidligere_sp500=tidl)
+    baaret = sorted(k for k in tidl if k > SP.SEAM and k not in sp500_m and any(r[0] == k for r in rows))
+    if baaret:
+        info["sp500_baaret_fra_forrige"] = dict(fra=prev.name, maaneder=baaret)
     # Shiller-raekker skrives ORDRET fra Yale-kopien (§1.1: byte-identiske felter), komposit med 6 dec.
     raa = {}
     for line in yale_src.read_text(encoding="utf-8-sig").splitlines()[1:]:
@@ -248,6 +297,20 @@ def byg_rygrad(outdir, series_data, argv, today):
         except ValueError:
             info["seam_check"] = {"fejl": "ulaeselig seam_check_2023.json"}
     return info, kritiske
+
+def refit_klar(spine_info, reserve_fejl, stale):
+    """F5: et snapshot er kun egnet til (re)kalibrering hvis rygraden er hel og frisk. Den maanedlige
+    curve-only-laesning paavirkes ikke (§1.7) — kun finalize6/diagnostik naegter at koere."""
+    grunde = []
+    if "fejl" in spine_info.get("multpl", {}):
+        grunde.append("multpl fejlede (CAPE-kolonnen mangler efter 2023-07)")
+    if "SP500" in reserve_fejl:
+        grunde.append("SP500 fejlede (komposittens prisserie mangler)")
+    if "spine" in stale:
+        grunde.append(f"rygraden er stale (sidste {stale['spine']['sidste']})")
+    if not spine_info.get("sidste"):
+        grunde.append("ingen rygrad bygget")
+    return not grunde, grunde
 
 def main():
     today = date.today().isoformat()
@@ -276,8 +339,10 @@ def main():
             raw, data = futs[sid].result()
             (outdir / f"{sid}.csv").write_bytes(raw)      # byte-eksakt: hashen nedenfor ER filens hash
             last_d, last_v = data[-1]
+            rolle, licens, kilde = (SP.SERIER[sid][:3] if sid in SP.SERIER
+                                    else (SP.EKSTERNE[sid]["rolle"], SP.EKSTERNE[sid]["licens"], SP.EKSTERNE[sid]["kilde"]))
             cur = dict(rows=len(data), first=data[0][0], last=last_d, last_value=last_v,
-                       sha256=sha256(raw), purpose=why)
+                       sha256=sha256(raw), purpose=why, rolle=rolle, licens=licens, kilde=kilde)
             mark = diff_mark(ps, prev, sid, data, cur)  # inde i try: en fejl her koster serien, ikke snapshottet
         except Exception as e:
             failed.append(sid)
@@ -304,7 +369,7 @@ def main():
 
     # ---- rygraden (§1) + friskheds-guard (§1.7) ----
     idag = date.fromisoformat(today)
-    spine_info, spine_krit = byg_rygrad(outdir, series_data, sys.argv, idag)
+    spine_info, spine_krit = byg_rygrad(outdir, series_data, sys.argv, idag, prev=prev)
     meta["spine"] = spine_info
     if spine_info.get("sidste"):
         sidste_dato["spine"] = spine_info["sidste"] + "-01"
@@ -321,12 +386,25 @@ def main():
               + (f"; overlap SP500 median {spine_info['overlap'].get('sp500_median_abs_pct')} % / CAPE median "
                  f"{spine_info['overlap'].get('cape_median_abs_pct')} % -> {'OK' if spine_info['overlap'].get('bestaaet') else 'FEJL'}"
                  if "overlap" in spine_info else "; (overlap ikke tjekket: kilde manglede)"))
+    rev = spine_info.get("multpl", {}).get("revideret")
+    if rev:
+        print(f"rygrad: multpl REVIDEREDE {len(rev)} maaned(er) mod {spine_info['multpl']['diff_mod']}: "
+              + ", ".join(f"{k} {a}->{b}" for k, (a, b) in list(rev.items())[:6]) + (" ..." if len(rev) > 6 else ""))
     for k in spine_krit:
         print(f"rygrad: {k}")
 
     kritiske = [s for s in failed if s not in RESERVE] + manglende_manual + spine_krit + stale_krit
     reserve_fejl = [s for s in failed if s in RESERVE]
     meta["complete"] = not kritiske
+    klar, grunde = refit_klar(spine_info, reserve_fejl, stale)
+    meta["spine"]["refit_klar"] = klar
+    if grunde:
+        meta["spine"]["refit_blokeret"] = grunde
+        print("rygrad: IKKE egnet til rekalibrering (finalize6/diagnostik naegter) — " + "; ".join(grunde)
+              + ". Den maanedlige laesning paavirkes ikke.")
+    meta["lokale_filer"] = dict(serier=[s for s in SP.LOKALE if s in meta["series"]],
+                                filer=[f for f in SP.LOKALE_FILER if (outdir / f).exists()],
+                                note="licensbegraensede kilder: hashet her, committes aldrig (.gitignore; README 'Datakilder og vilkaar')")
     if reserve_fejl:
         meta["reserve_fejlede"] = reserve_fejl
     rygrad_hashes = [f"spine:{meta['spine'].get('sha256', '')}",
@@ -338,10 +416,10 @@ def main():
     meta["snapshot_sha256"] = sha256(combined.encode())
     (outdir / "meta.json").write_bytes(json.dumps(meta, indent=1).encode("utf-8"))
     if reserve_fejl:
-        print(f"ADVARSEL: reserveserier fejlede ({', '.join(reserve_fejl)}) — bruges af ingen forbruger; "
-              "snapshottet er stadig komplet.")
+        print(f"ADVARSEL: ikke-veto-serier fejlede ({', '.join(reserve_fejl)}) — motor viser dem som utilgaengelige; "
+              "snapshottet er stadig komplet til den maanedlige laesning.")
+    kv = RAW / f"{today}.ukomplet"
     if kritiske:
-        kv = RAW / f"{today}.ukomplet"
         if kv.exists():
             shutil.rmtree(kv)
         outdir.rename(kv)
@@ -351,6 +429,9 @@ def main():
     if final_dir.exists():
         shutil.rmtree(final_dir)              # dagens tidligere snapshot erstattes foerst NU — af et komplet
     outdir.rename(final_dir)
+    if kv.exists():
+        shutil.rmtree(kv)                     # F24: det afloeste forsoeg ville ellers blokere motor --log
+        print(f"(afloest forsoeg {kv.name} slettet)")
     print(f"\nSnapshot-hash: {meta['snapshot_sha256'][:16]}...  ({final_dir})")
 
 if __name__ == "__main__":

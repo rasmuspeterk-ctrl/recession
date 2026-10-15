@@ -1,46 +1,74 @@
-# MOTOR v5 — trin 1: reproducerbarheds-refaktor
+# MOTOR v5 — kode, ritualer og byggelog
 
 Bygget efter raadets enstemmige blueprint ([../RAADETS_KONSENSUS.md](../RAADETS_KONSENSUS.md)).
-Trin 1 aendrer INGEN modellering: samme L2-logit, samme tekniske label, samme
-walk-forward som v4 — men reproducerbart og uden haandkopierede konstanter.
+**I drift:** v5.0.1 (manifest 72c3371d, refit 2026-09), curve-only-logit paa NBER-onset-labelen,
+daglig live-kurve fra 2026-09-28, kode-review 2026-10-15 indarbejdet (afsnittet nederst).
+Byggeloggen fra trin 1 og frem staar laengere nede som historik — den beskriver hvordan modellen
+blev til, ikke hvordan den koeres i dag.
 
-## Filerne
+## Filerne (aktuel drift)
 
 | Fil | Rolle |
 |---|---|
-| `fetch.py` | Henter 20 FRED-serier noeglefrit (parallelt), skriver byte-eksakt hashet snapshot i `data/raw/<dato>/`, printer diff mod forrige snapshot (ny obs / aendret vaerdi / revideret historik) |
-| `calibrate.py` | Genopbygger v4's kalibrering fra snapshottet, skriver `weights.json` (vaegte + datahash + protokolversion). `--check` koerer determinisme-test. Indbygget acceptancetest mod v4's konstanter |
-| `motor.py` | Maanedlig aflaesning: laeser weights.json + snapshot + manual.json. Naegter snapshots >40 dage (`--allow-stale` for at overstyre). CAPE-percentil beregnes af snapshottets egen historik — ingen 2026-knuder |
-| `nber_announcements.csv` | Committet tabel over NBERs annonceringsdatoer (til trin 2's mekaniske label-regel) |
-| `manual/` | Manuelle inputs: `manual.json` (spx_vs_hi, cape, margin_yoy), `shiller_yale_2023-09.csv` (uforanderlig Yale-kopi; rygraden `spine.csv` bygges af fetch, se v5.0.1) |
-| `kalibreringer/` | Kalibreringsmanifester (v5.0.1 §3.3): et pr. rekalibrering, index.json, legacy_mapping.json |
+| `fetch.py` | Henter 37 serier noeglefrit (36 FRED + Fed Boards EBP-CSV) parallelt (~30 s), skriver byte-eksakt hashet snapshot i `data/raw/<dato>/`, bygger rygraden, printer diff mod forrige snapshot (ny obs / aendret vaerdi / revideret historik / rullende vindue) |
+| `spine.py` | Rygraden (komposit Shiller + FRED + multpl) og dens guards — og **seriernes rolletabel** `SERIER` (rolle P/refit/rygrad/kontekst + licens). Kun P- og refit-serier nedlaegger veto |
+| `motor.py` | Maanedlig aflaesning og hovedbogslogning (`--log` kun dag 10-20), `--json` til dashboardet |
+| `finalize6.py` | Rekalibrering — KUN ved en §3.2-trigger (september-snapshot eller ny raekke i `nber_announcements.csv`); ellers kraeves `--reparation "<begrundelse>"`. `--legacy` = legacy-replay |
+| `diagnostik.py` | RAADETS_V501 §4-diagnostik + sti, universstart, flips, styrke -> `diagnostik.json` |
+| `calibrate.py` | Hjaelpefunktioner for hele kaeden (read_fred, live_kurve, fit ...). Som script HISTORISK (trin 1): skriver `calibrate_resultat.json`, roerer aldrig `weights.json` |
+| `ablation2_nber.py` | NBER-labelen, annonceringstabellen, USREC-krydstjekket, eligibility og den forklarede origin-audit. Som script (`--promote`) HISTORISK — koer ikke i drift |
+| `ablation3/4/7/8_*.py`, `audit5_alfred.py` | Historiske, afsluttede tests (frekvens, features, curve+cape, AWHMAN, ALFRED) — koer ikke i drift |
+| `test_v5.py` | 111 tests, stdlib unittest, ingen netvaerk (~35 s) |
+| `nber_announcements.csv` | NBER's annonceringsdatoer (top/bund) — se *NBER-vedligehold* nedenfor |
+| `manual/` | `manual.json` (S&P vs 52u-top, live-CAPE, marginlaan y/y + deres datoer), `shiller_yale_2023-09.csv` (uforanderlig Yale-kopi), `seam_check_2023.json`, evt. `outliers_accepteret.json` |
+| `kalibreringer/` | Kalibreringsmanifester (v5.0.1 §3.3): et pr. kalibrering, index.json, legacy_mapping.json |
+| `weights.json`, `diagnostik.json` | Den kalibrering der er i drift og dens diagnostik (skrives kun af finalize6/diagnostik) |
 
-## Maanedligt ritual (~5 min) — v5.0.1: ingen re-ankring
+## Maanedligt ritual (~5 min) — logvindue dag 10-20
 
 ```
 python fetch.py                  # hent + rygrad + guards + diff-tjek med oejnene
-# opdater manual/manual.json (3 tal); koer fetch.py igen saa snapshottet baerer dem
-python motor.py --log --json     # aflaesning, prospektiv logfoering i ../LOG.md, dashboard.json
-python -m unittest test_v5       # 76 tests
+# opdater manual/manual.json: spx_vs_hi + spx_dato, cape + cape_dato, margin_yoy + margin_periode
+python fetch.py                  # igen, saa snapshottet baerer de manuelle tal
+python motor.py --log --json     # aflaesning, prospektiv raekke i ../LOG.md + ../hovedbog.jsonl, dashboard.json
+python -m unittest test_v5       # 111 tests
 ```
-Hovedbogen (`../LOG.md`) er den eneste aegte out-of-sample-eksamen: een raekke
-pr. maaned, skrevet FOER udfaldet kendes; historiske raekker roeres aldrig.
+Hovedbogen (`../LOG.md`) er den eneste fuldt prospektive test: een raekke pr. maaned, skrevet FOER
+udfaldet kendes; historiske raekker roeres aldrig. Den beskytter mod look-ahead, men er statistisk
+svag — hvordan den scores, og hvorfor ingen dom maa formuleres foer mindst 3 komplette cyklusblokke,
+staar i [../BEDOEMMELSESNOEGLE.md](../BEDOEMMELSESNOEGLE.md). `--log` virker kun dag 10-20; en maaned
+uden raekke bliver en eksplicit `ikke logget`-raekke. Mellemlaesninger (motor uden `--log`) er frie.
+
+## NBER-vedligehold (F7) — FOER fetch.py, hver maaned
+
+Tjek [nber.org/research/business-cycle-dating](https://www.nber.org/research/business-cycle-dating).
+Har komiteen dateret en ny top eller bund, tilfoej en raekke i `nber_announcements.csv`
+(`event,cycle_month,announcement_date,source`, fx `peak_2027,2027-01,2027-09-15,nber.org/...`) og commit
+den FOER fetch.py. Motor krydstjekker tabellen mod USREC ved hver koersel og blokerer `--log`
+("ANNONCERINGSTABEL UDE AF SYNK MED USREC"), hvis USREC har en post-1979-onset uden peak-raekke, eller
+tabellen har en raekke uden USREC-episode (fx fordi FRED endnu ikke har opdateret USREC — vent saa).
+En ny raekke er en deterministisk rekalibreringstrigger (§3.2b). Tabellen hashes kanonisk (raekkernes
+indhold, ikke bytes), saa linjeskift og formatering ikke udloeser en falsk datering.
 
 ## Rekalibrering (RAADETS_V501 §3) — hver september, eller naar nber_announcements.csv faar en ny top/bund
 
 ```
-python finalize6.py      # gulv + audit mod forrige manifest + bro + nyt manifest -> weights.json
+python finalize6.py      # gulv + forklaret audit mod forrige manifest + bro + manifest -> weights.json
 python diagnostik.py     # §4-diagnostik -> diagnostik.json (~95 s)
 python motor.py --json   # verificer; naeste --log-raekke faar automatisk bro-noten
 ```
-Vaegte, standardisering og basisrate er frosne mellem rekalibreringer. Et skift af den
-operationelle model kraever `kalibreringer/raadsbeslutning.json` (§6). Legacy-replay til
-enhver tid: `python finalize6.py --legacy` (skal give w=[-2.1755,-1.6907], n_obs 264).
+Vaegte, standardisering og basisrate er frosne mellem rekalibreringer. finalize6 naegter at koere uden
+deterministisk trigger (en reparation kraever `--reparation "<begrundelse>"`, som skrives i manifestet),
+paa et snapshot hvis rygrad ikke er refit-klar (multpl/SP500-udfald eller stale rygrad), og naar
+annonceringstabellen er ude af synk med USREC. En ny kalibrering faar en ny version (5.0.2, 5.0.3 ...),
+en uaendret genbruger manifestet og registrerer koerslen i `weights.json.koersel`. Et skift af den
+operationelle model kraever `kalibreringer/raadsbeslutning.json` (§6). Legacy-replay til enhver tid:
+`python finalize6.py --legacy` (skal give w=[-2.1755,-1.6907], n_obs 264; CI koerer den ved hvert push).
 
-Test (stdlib unittest, ingen netvaerk, ~3 s): `cd v5 && python -m unittest -v test_v5`
-— daekker snapshot-livscyklussen (.ny/.ukomplet, retry, diff-markering), komplethedsgaten,
-finalize6's permanente linjer og promotion-bevaring, motor's --log-guards og debate.py's
-arkiv-layout. Koer den efter enhver kodeaendring, foer maanedsritualet.
+Test (stdlib unittest, ingen netvaerk, ~35 s): `cd v5 && python -m unittest -v test_v5`. Koer den
+efter enhver kodeaendring, foer maanedsritualet.
+
+# Byggelog (historik)
 
 ## MANGLER FOER ACCEPTANCETESTEN KAN KOERES: manual/shiller.csv
 
@@ -116,8 +144,9 @@ er acceptancetestens reelle formaal, og DEN er bestaaet.
 
 ## v5.0 ER KOMPLET — alle 6 trin gennemfoert 2026-08-09
 
-Rekalibreringskaede (sjaelden): `fetch.py` → `ablation2_nber.py --promote` →
-`finalize6.py`. Maanedligt ritual uaendret: `fetch.py` + manual.json + `motor.py`.
+*(v5.0-tekst, afloest af v5.0.1:)* Rekalibreringskaede (sjaelden): `fetch.py` → `ablation2_nber.py --promote` →
+`finalize6.py`. Maanedligt ritual uaendret: `fetch.py` + manual.json + `motor.py`. **I dag:** kun
+`finalize6.py && diagnostik.py` ved en §3.2-trigger; `ablation2 --promote` koeres ikke.
 
 ## v5.2-testen: AWHMAN — TESTET, IKKE BESTAAET; INFORMATIONSSOEGNINGEN LUKKET
 
@@ -166,7 +195,7 @@ begrundelse (praeregistreret i ablation7's header). Resultat: ablation7_resultat
   fejlet forsoeg gemmes som `<dato>.ukomplet` og roerer aldrig et eksisterende komplet
   dagssnapshot. Skrivning/diff ligger igen inde i per-serie-try'en; 429 og misdannede svar
   retries; reserveserierne (GDPC1/CPIAUCSL/THREEFYTP10, ingen forbrugere) nedlaegger ikke
-  veto; manglende shiller.csv/manual.json goer snapshottet ukomplet; diff-baselinen er det
+  veto *(afloest 2026-10-15: kun P/refit-serierne i spine.SERIER nedlaegger veto)*; manglende shiller.csv/manual.json goer snapshottet ukomplet; diff-baselinen er det
   nyeste KOMPLETTE snapshot.
 - `calibrate.find_snapshot` advarer hoejlydt naar det nyeste snapshot springes over, og
   `snapshot_complete` kraever nu ogsaa alle serier/filer kaeden laeser (aeldre snapshots uden
@@ -348,3 +377,177 @@ for kaeden — som ved tidligere serieudvidelser. Foerste hovedbogsraekke paa da
 motor laeste versionen i manifestets model-blok i stedet for i toppen. Hashen 6baeade4 identificerer v5.0
 entydigt, og ingen tal er beroert. Raekken er IKKE redigeret (historiske raekker roeres aldrig); fejlen er
 rettet i koden efter logfoeringen og daekket af en test.
+
+
+## Kode-review 2026-10-15 — alt rettet, intet i P aendret
+
+Et adversarielt review af hele setuppet (`REVIEW-2026-10-15.md`, 85 verificerede fund) blev rettet i
+fem batches. **Hverken vaegte, P, baand, basisrate eller historiske hovedbogsraekker er aendret.**
+Legacy-replay er eksakt, og diagnostikken reproducerer de publicerede tal til sidste decimal.
+
+**Tidskritiske fejl (ville have ramt november-laesningen):**
+
+- **F3 CPI-hullet:** BLS udgav aldrig oktober 2025. Naar oktober-CPI 2026 udkommer, ville motor
+  crashe (KeyError), og "CPI (SA) 12m" var allerede en 13-maaneders aendring. Nu bruges
+  kalendernoegler: y/y er udefineret, fuldmodellen staar "unavailable — CPI-hul", og P er uaendret.
+- **F2 SP500-overlap:** FRED's rullende 10-aars vindue starter midt i en maaned, og den delvise
+  foerste maaned vaeltede overlap-tjekket (foerste gang ca. 9.-30. nov. 2026). Maaneden udelades nu
+  (dokumenteret undtagelse, §1.2). Allerede lukkede komposit-maaneder baeres videre fra forrige
+  rygrad, naar vinduet ruller forbi dem (fra 2033).
+- **F24:** Et afloest `.ukomplet`-forsoeg slettes nu efter en vellykket genkoersel samme dag (det
+  blokerede `--log`).
+- **F15:** Annonceringstabellen hashes kanonisk, og `.gitattributes` beskytter den mod CRLF. En
+  linjeskiftsaendring udloeste foer en falsk "nber-datering".
+- **F4:** September-formlen skubbede rekalibreringen et aar ved enhver refit uden for september. Ny
+  formel: `(aar, 9) if maaned < 9 else (aar + 1, 9)`, testet for alle 12 maaneder.
+- **F13:** "fuldmodel unavailable"-stien crashede motor. Den er nu crash-fri i alle sektioner og i JSON.
+
+**Licenser og kildeangivelse (F1, F12, F19, F20, F56):** ICE BofA HY OAS og S&P 500 (FRED: "Copyrighted:
+Pre-Approval Required"), Moody's Baa og multpl-siden ordret committes ikke laengere (`.gitignore`;
+hentes og hashes lokalt; meta.json beholder sha256/sidste vaerdi, og motor falder tilbage til den).
+`spine.csv`'s afledte S&P-maanedssnit beholdes, fordi kalibreringen kraever dem. Se rod-README'ens
+"Datakilder og vilkaar". **Ikke gjort (Rasmus' beslutning):** filerne ligger stadig i git-historikken
+siden 2026-08-09; en omskrivning (filter-repo + force-push) giver alle commits nye SHA'er og svaekker
+hovedbogens proveniens. Repoet har endnu ingen LICENSE.
+
+**Seriernes roller (F18):** EEN tabel (`spine.SERIER`), som VETO/RESERVE/KRAEVEDE afledes af. Kun
+GS10, TB3MS, DGS10, DTB3, USREC, A191RL1Q225SBEA og CPIAUCNS nedlaegger veto. En manglende
+monitor-serie vises som `[?] utilgaengelig` og noteres i hovedbogen, og den vaelter aldrig laesningen.
+
+**Firewallen genoprettet (F9, G2.1-G2.4, F27, F28, F47):** De tre MiroFish-tripwires (CP-spaend, 10Y,
+realkredit) staar nu i et separat SCENARIE-APPENDIKS uden for antaendings-kolonnen, som grand reviewets R3
+besluttede enstemmigt. LOG.md-headeren har en dateret note. Ingen af dem har vaeret aktive i raekke 1-3.
+Linjerne baerer deres proveniens (1 kanal; kanalens antagne trigger, ikke et varsel). CP-spaendet bruger
+atlassets definition (alle 10 seneste faelles handelsdage) og markeres stale efter 10 dage, og hver linje
+viser max og antal dage over taersklen siden sidste logning. HY-linjen siger nu, at 600bp er et v4-flag,
+og at 350-450bp-zonen er den eneste atlas-taerskel med 3+ kanaler.
+
+**Mere information — kun kontekst, aldrig i P (F10, F11, F30, F32, F33, F36, F38-F41, F46, F58, F59):**
+
+- dekomposition af maanedens kurveaendring (d10Y/d3m og hvert bens P-bidrag ved frosne vaegte,
+  bear/bull) og saetningen om at et lang-ende-udsalg saenker P mekanisk (~1,6pp pr. 10bp i dag);
+- P-stien ved frosne vaegte (top, maaneder siden top, fald). Sti-advarslen har faaet historiske tal:
+  P var under sin top ved sidste origin foer onset i 6 af 8 onsets, med et median-fald paa 21pp og
+  median 9 mdr fra top til onset. 2007Q4 havde P 16,7 % og var "ikke skelnelig" en maaned foer onset;
+- manuelle inputs med datoer og friskhedsflag (CAPE > 45 dage -> fuldmodel unavailable);
+- BNP-linjen paa FOERSTE print (advance) pr. kvartal, udledt af de arkiverede snapshots;
+- fuldmodellens dd paa kalibreringens statistik (trailing maanedsmiddel mod 12-mdr max af
+  maanedsmidler), naar SP500 findes lokalt. Monitoren viser fortsat den manuelle dagsluk;
+- kurvens sammensaetning (front 2y-3m + bag 10y-2y) og near-term forward spread (DGS1/DGS2/DGS3MO);
+- kredit ud over HY: EBP + GZ-spaend (Fed Board) og Baa-10Y. NBER-komiteens seks indikatorer (y/y og
+  afstand fra 12m-top, uden taerskler). WTI y/y som regimekontekst. Claims som maanedsmiddel af alle
+  uger (erratum §5) + fortsatte ansoegninger + vikarer. AWHMAN 6m. Forudsaetnings-tripwires med aktuel
+  status.
+
+**Protokol (F6, F7, F8, F14, F26, F45, F48-F51, F54, G1.7, G3.x, G4.x):**
+
+- Origin-auditten var en tautologi (n_ny = n_gl + tilf - fjern gaelder altid). Nu skal hver aendring
+  forklares: *modnet* (kvartalsslut + 30 mdr i (R_gl, R]), *censureret* (top annonceret i (R_gl, R]) eller
+  *omlabelet* (onset annonceret i (R_gl, R]). Alt andet stopper finalize6.
+- `load_announcements` fejler haardt ved en post-1979-onset uden peak-raekke. Trough+18 bruges kun foer
+  1979 og aldrig paa en aaben episode. Motor krydstjekker tabellen mod USREC.
+- **Live-censurering (F14):** en laesning inde i en annonceret recession faar dommen `censureret`.
+- Gatens egen MDE beregnes og printes: **21,2pp** (episode-blok-bootstrap af den parrede skill-forskel).
+  Beslutningsreglen bruger fortsat den ratificerede trin 3-MDE (4,42pp, laant fra frekvenstesten).
+  En taerskel aendres ikke efter at resultatet er set — til raadet foer september 2027.
+- diagnostik.py bruger kalibreringens refit-maaned og snapshot. finalize6/diagnostik afviser et
+  snapshot, hvis rygrad ikke er refit-klar. `--log` blokeres, naar diagnostik.json ikke passer til
+  vaegtene.
+- calibrate.py roerer aldrig `weights.json`. Bro-noten slaar op i den kalibrering, der staar i sidste
+  raekke, og `|` i noter neutraliseres. Fuldmodellens statustekst foelger gatens beslutning.
+- Manifesterne baerer python/numpy-version, en hash af baandets vaegte, L_R-auditten (stoerste
+  top-annonceringslag 12 mdr -> L_R = 18 = gulvet) og dateringens faktiske effekt. CI laaser numpy.
+- Versionen bumpes af kaeden (naeste nye kalibrering = 5.0.2). Et genbrugt manifest beholder sin
+  refit-maaned, og koerslen registreres separat (`weights.json.koersel`), saa september-kravet stadig
+  opfyldes. `n_episoder` taeller fra naeste refit kun onsets med et berettiget positivt origin (G4.1).
+- **Bedoemmelsesnoeglen** (`../BEDOEMMELSESNOEGLE.md`) er praeregistreret foer raekke 4: metrik, vindue,
+  afgoerelse, censurering, cluster-inferens, styrketabel (80 % styrke kraever ca. 26 cyklusblokke ≈ 168
+  aar), referencetal +20,4 % (ikke +27,1 %) og logvindue dag 10-20. Udfald foeres i `../UDFALD.csv`, og
+  hver raekke faar en fuld record i `../hovedbog.jsonl`.
+
+### Afvigelser fra blueprintet (erklaeret 2026-10-15)
+
+Reviewet gik blueprintets §1-§10 igennem punkt for punkt. Det meste er implementeret. Disse
+afvigelser var tavse indtil nu og erklaeres her. Ingen af dem aendrer P i dag.
+
+| # | Blueprintet siger | Koden goer | Konsekvens / status |
+|---|---|---|---|
+| G1.1 | §3/§6: L2-straffen vaelges INDE i hvert traeningsvindue | Fast λ = 1 overalt (arvet fra v4/curve.py) | v5.0's modelvalg vendte allerede ved λ = 2 (legacy-panel). Ved nested λ falder curve-onlys wf-skill til 17-23 %, men curve-only vinder i alle varianter. +27,1 % maerkes "fast λ=1, ikke nested". Et nested design praeregistreres separat foer koersel |
+| G1.2 | §4/§6: nested selektion; kun den sti kaldes wf-skill | +27,1 % (og +34,3 %) er en max over to modeller paa den fulde sti | Maerket "fuld-sti-valg mellem to modeller (ikke nested)" i motor og dashboard. Med al moden historik vaelger en nested selektor i dag curve-only |
+| G1.3 | §2: frekvensgaten | Rollerne er byttet: den bogstavelige gate ville have gjort den maanedlige model primaer | Forelaegges raadet ved september-refit 2027 med begge udfald publiceret. Intet skiftes automatisk |
+| G1.4 | §4: "ingen arvefred" for incumbents | Demotionsreglen var asymmetrisk; realrate, dd og d_infl ville vaere faldet under udfordrernes bar | "5 incumbents bestaar" laeses som "beholdt under asymmetrisk demotionsregel". Fuldmodellen er ikke operationel, og soegningen er lukket |
+| G1.5 | Praeregistrering foer koersel | Gates for trin 2-4, 6 og v5.1 ligger i filer, der er committet sammen med resultatet | Kun blueprintets og RAADETS_REVIEW's gates er verificerbare udefra. Fremtidige praeregistreringer pushes i en separat commit foer koersel (som V501 §8) |
+| G1.6 | §9: ALFRED-audit af alle realtidsinputs | Kun CPI og BNP; UNRATE, claims og permits er udeladt | Erklaeret i koden, nu ogsaa her. Immaterielt: de tre er afviste features, og realtids-Sahm er tjekket separat |
+| F8 | Gaten maaler mod stoejgulvet | Gulvet 4,42pp er frekvenstestens MDE; gatens egen er ~21pp | Begge printes. Reglen aendres kun ved raadsbeslutning (erratum-procedure) foer sept. 2027 |
+| F34 | Universstart | 1947Q2 inkl. 24 kvartaler med Shiller-LTR i stedet for 10Y; dommens basisrate (18,0 %) er fit-samplets, ikke walk-forwardens (16,2 %) | Diagnostik: P 17,7/15,0/12,6 % ved start 1947Q2/1953Q2/1960Q1. Universstarten er en protokolkonstant og saettes paa raadets dagsorden foer sept. 2027 med praeregistrering |
+| F51 | §1: aarlig L_R-audit | Var ikke implementeret | Implementeret i finalize6 (manifestets `L_R_audit`). Korrektionsbroens trin (ii) er nu en test |
+| F52 | §4.1-4.2: 12 onset-raekker / 12 LOEO-blokke | 8 onset-raekker og 7 LOEO-blokke | De 4 onsets 1948-1960 ligger foer foerste scorede origin (1960). 1981-blokken har kun positive origins (udefineret skill) |
+| G1.8 | §1: rapportér provisoriske nuller der senere blev et; Kimi R6 | Kun et antal (7) ved L = 18 | diagnostik.json: flips L12/L18/L24 = 8/7/4 (alle pre-1979-konventionen). Kimi R6: median 32 episoder i traeningen pr. origin (min 27); skill uden nyeste episodeblok +20,5 % mod +27,1 % |
+
+### Driftsaendringer uden raadsmandat (F29) — forelaegges til ratifikation ved september-refit 2027
+
+| Dato / commit | Aendring | Hvorfor uden mandat | Sporbarhed |
+|---|---|---|---|
+| 2026-09-28 / 8cdb9f0 | Live-kurven maales paa trailing maaned af daglige DGS10 - DTB3 i stedet for seneste publicerede GS10 - TB3MS | Samme statistik, uden publiceringsforsinkelse (bevist i TestLiveKurve). Vaegtene er uaendrede, men maaleinstrumentet for P er aendret midt i hovedbogen | Raekke 3 har noten "input: daglig". Fra raekke 4 staar `P_maanedlig` (P paa maanedstal) i hver raekke |
+| 2026-09-28 / 8cdb9f0 | 10Y-tripwiren laeser seneste daglige niveau | Samme begrundelse | Linjen er siden flyttet til scenarie-appendikset |
+| 2026-10-15 | Svaerm-tripwires ud af antaendings-kolonnen | Retter en tavs afvigelse fra R3 (enstemmig) | LOG.md-headerens note |
+| 2026-10-15 | Advance-print fra arkiverede snapshots; CP paa atlas-definitionen; fuldmodellens dd paa kalibreringsstatistik | Fejlrettelser (F32/F27/F33). Kun advance-print er i antaendings-klassen og har aldrig vaeret aktiv | Kode-review-afsnittet ovenfor |
+| 2026-10-15 | Logvindue dag 10-20, `ikke logget`-raekker, live-censurering, nye kolonner | Praeregistreret i bedoemmelsesnoeglen foer raekke 4 | BEDOEMMELSESNOEGLE.md + noten `noegle <hash>` |
+
+### FORUDSIGELSE: september-refit 2027 (F35) — skrevet 2026-10-15, et aar foer koersel
+
+Som §7.1, falsificerbar og ikke en acceptancetest. Beregnet ved at koere den uaendrede refit-kode med
+R = 2027-09 paa snapshot 2026-10-15 og **antage at NBER ikke daterer en top foer da**:
+
+- **Origin-audit:** tilfoejet 2024Q2, 2024Q3, 2024Q4, 2025Q1 (alle modnet, alle label 0); fjernet ingen;
+  omlabelet ingen; n_obs 267 -> 271.
+- **Kurvekoefficienten svaekkes igen:** beta -1,295 -> **ca. -1,18** pr. pp (alpha -0,29 -> -0,43).
+- **P ved faste inputs falder lidt:** P(kurve +1,11) 15,1 % -> **ca. 14,8 %**. Ved inversion falder den mere:
+  P(0,0) 42,8 -> 39,3 %, P(-0,5) 58,8 -> 53,9 %. Inversionssignalet svaekkes, fordi 2023-25 var en lang
+  inversion uden onset.
+- **Walk-forward-skill:** +27,1 % -> **ca. +21 %** (Brier +24,1 -> ca. +16,8 %). Fuldmodellen ca. +17 %, saa
+  curve-only forbliver operationel.
+- Afviger tallene ved koerslen, skyldes det datarevisioner eller en NBER-datering. Begge publiceres.
+
+Geminis forbehold fra v5.0.1-raadet gaelder ogsaa her (sammenfattet, ikke citeret): en lang
+inversion uden onset fortynder inversionssignalet ved hver refit. Det er modellens kendte
+regime-risiko og ikke en fejl, og det er grunden til, at forudsigelsen er skrevet nu.
+
+### Register: vurderede, fravalgte monitorkandidater (F60)
+
+En kandidat genaabnes kun med et nyt argument.
+
+| Kandidat (serie) | Status | Grund | Noeglefri? |
+|---|---|---|---|
+| NFCI / ANFCI (Chicago Fed) | fravalgt | Kraftigt revideret (vintage-audittens lektion); konstrueret med kendskab til senere kriser | ja |
+| STLFSI4 (St. Louis Fed stressindeks) | fravalgt | Samme revisionsproblem; overlapper HY OAS + EBP | ja |
+| SLOOS (udlaanspraksis) | fravalgt | Kvartalsvis, kort historik, allerede afvist som feature-klasse | ja |
+| BIS-kreditgab | fravalgt | Lang publiceringsforsinkelse | ja |
+| VIX (VIXCLS) | fravalgt | Maaler aktievolatilitet (coincident), som allerede ses i dd/CAPE-blokken; Cboe-copyright (kildeangivelse paakraevet) | ja |
+| Michigan-forbrugertillid (UMCSENT) | fravalgt | Sentiment med svag ledetid ud over kurven; copyright (kildeangivelse paakraevet) | ja |
+| ISM PMI | fravalgt | Proprietaer, ikke paa FRED | nej |
+| Conference Board LEI | fravalgt | Proprietaer; indeholder kurven selv | nej |
+| 10y-2y-kurven | indbygget som kontekst | Vises som front/bag-opdeling af den operationelle kurve; ingen ny feature | ja |
+| EBP / GZ-spaend (Fed Board) | **tilfoejet som kontekst 2026-10-15** | Kreditkanalen ud over HY OAS; lang historik (1973-) | ja |
+| Baa-10Y (Moody's) | **tilfoejet som kontekst** (lokal fil) | Kredit 1986-; Moody's forbyder videregivelse, saa filen committes ikke | ja, men licensbegraenset |
+| NBER's seks indikatorer | **tilfoejet som kontekst** | Komiteens egne coincident-serier; ingen taerskler | ja |
+| WTI (DCOILWTICO) | **tilfoejet som kontekst** | Regime (atlassets kanal 6); USA er nettoproducent | ja |
+| Fortsatte ansoegninger, vikarer | **tilfoejet i claims-linjen** | Arbejdsmarkedskanalen | ja |
+
+### Aaben praeregistreringskandidat: EBP (F37) — IKKE i P
+
+Feature-soegningen blev lukket uden en kreditvariabel med lang historik. Gilchrist-Zakrajseks excess
+bond premium (1973-) har en oekonomisk begrundelse uafhaengig af den aktuelle laesning: kreditudbuddets
+pris, renset for default-risiko, leder realoekonomien. Den er derfor noteret som en AABEN kandidat. Den
+kommer kun i P via: raadsmandat; forseglet spec (niveau, lag, forventet fortegn +) committet og pushet
+foer koersel; G5-aera-split; og en deklaration af, at EBP's vaerdier op til onsets er SET i dette review
+(kontamineringsrisiko). Indtil da er EBP kun en kontekstlinje.
+
+### Snapshot-arkivet og FRED's vilkaar (F20)
+
+Snapshots af public domain-serier arkiveres i repoet af hensyn til reproducerbarheden (hver P kan
+genberegnes byte for byte). FRED's vilkaar har bestemmelser om arkivering og maskinlaering, ogsaa for
+offentlige serier. Anbefalet handling (Rasmus): send en kort forespoergsel til FRED
+(stlsFRED@stls.frb.org) om et skriftligt OK til et ikke-kommercielt, offentligt forskningsarkiv. Hvis
+svaret er nej, hentes de operationelle serier fra primaerkilden (Fed Boards H.15). Tallene er de samme,
+men pipelinen og hasherne aendres, saa det kraever en protokolbeslutning.

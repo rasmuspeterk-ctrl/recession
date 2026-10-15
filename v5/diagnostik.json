@@ -2,7 +2,8 @@
  "version": "5.0.1",
  "manifest_hash": "72c3371d",
  "snapshot": "2026-09-19",
- "created_utc": "2026-09-19T22:03:23+00:00",
+ "refit_maaned": "2026-09",
+ "created_utc": "2026-10-15T12:46:23+00:00",
  "primaer": {
   "n": 198,
   "n_pos": 32,
@@ -468,6 +469,286 @@
    }
   ],
   "note": "faelles origins har identiske traeningssaet i begge paneler; forskellen er per konstruktion de tilfoejede origins"
+ },
+ "sti": {
+  "raekker": [
+   {
+    "onset": "1970-01",
+    "sidste_origin": "1969Q4",
+    "p_sidste": 0.347,
+    "top_origin": "1968Q2",
+    "p_top": 0.442,
+    "fald_pp": 9.5,
+    "mdr_top_til_onset": 19
+   },
+   {
+    "onset": "1973-12",
+    "sidste_origin": "1973Q3",
+    "p_sidste": 0.668,
+    "top_origin": "1973Q3",
+    "p_top": 0.668,
+    "fald_pp": 0.0,
+    "mdr_top_til_onset": 3
+   },
+   {
+    "onset": "1980-02",
+    "sidste_origin": "1979Q4",
+    "p_sidste": 0.881,
+    "top_origin": "1979Q4",
+    "p_top": 0.881,
+    "fald_pp": 0.0,
+    "mdr_top_til_onset": 2
+   },
+   {
+    "onset": "1981-08",
+    "sidste_origin": "1981Q2",
+    "p_sidste": 0.805,
+    "top_origin": "1980Q4",
+    "p_top": 0.968,
+    "fald_pp": 16.3,
+    "mdr_top_til_onset": 8
+   },
+   {
+    "onset": "1990-08",
+    "sidste_origin": "1990Q2",
+    "p_sidste": 0.285,
+    "top_origin": "1989Q2",
+    "p_top": 0.497,
+    "fald_pp": 21.2,
+    "mdr_top_til_onset": 14
+   },
+   {
+    "onset": "2001-04",
+    "sidste_origin": "2001Q1",
+    "p_sidste": 0.357,
+    "top_origin": "2000Q4",
+    "p_top": 0.734,
+    "fald_pp": 37.6,
+    "mdr_top_til_onset": 4
+   },
+   {
+    "onset": "2008-01",
+    "sidste_origin": "2007Q4",
+    "p_sidste": 0.167,
+    "top_origin": "2007Q1",
+    "p_top": 0.701,
+    "fald_pp": 53.4,
+    "mdr_top_til_onset": 10
+   },
+   {
+    "onset": "2020-03",
+    "sidste_origin": "2019Q4",
+    "p_sidste": 0.409,
+    "top_origin": "2019Q3",
+    "p_top": 0.619,
+    "fald_pp": 21.0,
+    "mdr_top_til_onset": 6
+   }
+  ],
+  "n_onsets": 8,
+  "n_under_top": 6,
+  "median_fald_pp": 21.1,
+  "median_mdr_top_til_onset": 9,
+  "note": "beskrivende historik bag sti-advarslen; ingen fremskrivning og ingen indflydelse paa P"
+ },
+ "pre_onset_analoger": [
+  {
+   "origin": "1990Q1",
+   "p": 0.303,
+   "baand": [
+    0.197,
+    0.56
+   ],
+   "basisrate_traening": 0.241,
+   "Y": 1.0,
+   "dom": "ikke skelnelig"
+  },
+  {
+   "origin": "1990Q2",
+   "p": 0.285,
+   "baand": [
+    0.185,
+    0.539
+   ],
+   "basisrate_traening": 0.239,
+   "Y": 1.0,
+   "dom": "ikke skelnelig"
+  },
+  {
+   "origin": "2000Q4",
+   "p": 0.734,
+   "baand": [
+    0.601,
+    0.921
+   ],
+   "basisrate_traening": 0.208,
+   "Y": 1.0,
+   "dom": "over basisraten"
+  },
+  {
+   "origin": "2007Q4",
+   "p": 0.167,
+   "baand": [
+    0.104,
+    0.274
+   ],
+   "basisrate_traening": 0.201,
+   "Y": 1.0,
+   "dom": "ikke skelnelig"
+  },
+  {
+   "origin": "2019Q4",
+   "p": 0.409,
+   "baand": [
+    0.32,
+    0.582
+   ],
+   "basisrate_traening": 0.183,
+   "Y": 1.0,
+   "dom": "over basisraten"
+  }
+ ],
+ "start_sensitivitet": {
+  "1947Q2 (protokol)": {
+   "P": 0.1773,
+   "basisrate": 0.1798,
+   "n_obs": 267,
+   "w": [
+    -2.0697,
+    -1.4884
+   ]
+  },
+  "1953Q2": {
+   "P": 0.1503,
+   "basisrate": 0.166,
+   "n_obs": 247,
+   "w": [
+    -2.3319,
+    -1.675
+   ]
+  },
+  "1960Q1": {
+   "P": 0.1264,
+   "basisrate": 0.146,
+   "n_obs": 226,
+   "w": [
+    -2.5832,
+    -1.7153
+   ]
+  },
+  "input": {
+   "curve": 0.96
+  }
+ },
+ "flips": {
+  "L12": {
+   "n": 8,
+   "origins": [
+    "1969Q1",
+    "1969Q2",
+    "1969Q3",
+    "1969Q4",
+    "1972Q4",
+    "1973Q1",
+    "1973Q2",
+    "1973Q3"
+   ]
+  },
+  "L18": {
+   "n": 7,
+   "origins": [
+    "1969Q1",
+    "1969Q2",
+    "1969Q3",
+    "1972Q4",
+    "1973Q1",
+    "1973Q2",
+    "1973Q3"
+   ]
+  },
+  "L24": {
+   "n": 4,
+   "origins": [
+    "1969Q1",
+    "1972Q4",
+    "1973Q1",
+    "1973Q2"
+   ]
+  }
+ },
+ "kimi_r6": {
+  "median_episoder_i_traening": 32,
+  "min_episoder_i_traening": 27,
+  "skill_uden_nyeste_episode": {
+   "n": 156,
+   "n_pos": 28,
+   "logloss": 0.3741,
+   "baseline": 0.4706,
+   "improvement": 20.52,
+   "brier": 17.25
+  },
+  "nyeste_blok": 34
+ },
+ "styrke": {
+  "middel_d": 0.1197,
+  "se_cluster_historisk": 0.081,
+  "n_blokke_historisk": 9,
+  "aar_pr_blok": 6.4,
+  "tabel": [
+   {
+    "blokke": 1,
+    "aar": 6,
+    "styrke": 0.12
+   },
+   {
+    "blokke": 2,
+    "aar": 13,
+    "styrke": 0.17
+   },
+   {
+    "blokke": 3,
+    "aar": 19,
+    "styrke": 0.21
+   },
+   {
+    "blokke": 5,
+    "aar": 32,
+    "styrke": 0.29
+   },
+   {
+    "blokke": 8,
+    "aar": 52,
+    "styrke": 0.4
+   },
+   {
+    "blokke": 10,
+    "aar": 64,
+    "styrke": 0.46
+   },
+   {
+    "blokke": 15,
+    "aar": 97,
+    "styrke": 0.6
+   },
+   {
+    "blokke": 20,
+    "aar": 129,
+    "styrke": 0.71
+   },
+   {
+    "blokke": 30,
+    "aar": 193,
+    "styrke": 0.85
+   },
+   {
+    "blokke": 40,
+    "aar": 258,
+    "styrke": 0.93
+   }
+  ],
+  "blokke_80pct": 26,
+  "aar_80pct": 168,
+  "note": "ensidet 5 %, cluster-t paa cyklusblokke; iid-tests paa overlappende maanedsraekker og 4.4-bootstrap ved faa blokke er FORBUDT (falsk signifikans). Kun til bedoemmelsesnoeglen — aendrer intet."
  },
  "erklaering_36": "Publiceret baseline = poolet basisrate over scorede origins (C.metrics). Konsensustekstens 'expanding intercept' var sekretaerens fejl; expanding printes som ekstra kolonne, gaten aendres ikke."
 }

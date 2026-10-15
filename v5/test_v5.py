@@ -5,7 +5,9 @@ test_v5.py — deterministisk testsuite for v5-kaeden (stdlib unittest, ingen ne
 Daekker praecis de mekanismer kode-reviewet 2026-09-09 fandt fejl i: fetch's
 snapshot-livscyklus (.ny/.ukomplet, retry, diff-markering), komplethedsgaten,
 finalize6's permanente linjer og promotion-bevaring, motor's --log-guards og
-debate.py's arkiv-layout. Alle tests koerer i temp-mapper; rigtige snapshots
+debate.py's arkiv-layout — plus fundene fra kode-reviewet 2026-10-15 (F1-F60, G1-G4):
+seriernes roller, CPI-hullet, september-formlen, rullende licensvinduer, .ukomplet-oprydning,
+forklaret origin-audit, USREC-krydstjek, logvindue, scenarie-appendiks m.m. (klasserne Test1015*). Alle tests koerer i temp-mapper; rigtige snapshots
 laeses kun (kopieres), weights.json/LOG.md roeres aldrig.
 
 Koer:  cd v5 && python -m unittest -v test_v5
@@ -204,7 +206,7 @@ class TestSnapshotSelection(unittest.TestCase):
         self.assertTrue(C.snapshot_complete(REAL_SNAP))
 
 
-class TestFetchMain(unittest.TestCase):
+class _FetchMainBase(unittest.TestCase):
     """Ende-til-ende paa fetch.main() med falsk fetch_series — ingen netvaerk."""
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -237,6 +239,9 @@ class TestFetchMain(unittest.TestCase):
 
     def meta(self, name):
         return json.loads((self.raw / name / "meta.json").read_text(encoding="utf-8"))
+
+
+class TestFetchMain(_FetchMainBase):
 
     def test_friskhed_kritisk_serie_giver_ukomplet_snapshot(self):
         """§1.7: stale GS10 nedlaegger veto; stale PERMIT goer det ikke, men staar i meta."""
@@ -433,7 +438,7 @@ class TestFinalize6Main(unittest.TestCase):
 
 
 # ============================================================== motor.py
-class TestMotor(unittest.TestCase):
+class _MotorBase(unittest.TestCase):
     """Rigtigt snapshot kopieret til temp-RAW under dagens dato; weights kopieret; LOG.md i temp."""
     @classmethod
     def setUpClass(cls):
@@ -441,20 +446,24 @@ class TestMotor(unittest.TestCase):
         cls.raw = base / "raw"; cls.here = base / "v5"; cls.here.mkdir()
         cls.today = date.today().isoformat()
         shutil.copytree(REAL_SNAP, cls.raw / cls.today)
-        for fn in ("weights.json", "weights_trin1_teknisk.json", "nber_announcements.csv"):
+        for fn in ("weights.json", "weights_trin1_teknisk.json", "nber_announcements.csv", "diagnostik.json"):
             shutil.copy(HERE / fn, cls.here / fn)
         if (HERE / "kalibreringer").exists():
             shutil.copytree(HERE / "kalibreringer", cls.here / "kalibreringer")
     @classmethod
     def tearDownClass(cls): cls.tmp.cleanup()
 
-    def _motor(self, argv, raw=None, here=None):
+    def _motor(self, argv, raw=None, here=None, vindue=(1, 31), dag=None):
         out = io.StringIO()
         with mock.patch.object(C, "RAW", raw or self.raw), mock.patch.object(M, "HERE", here or self.here), \
+             mock.patch.object(M, "LOGDAG_VINDUE", vindue), \
+             mock.patch.object(M, "idag", (lambda: dag) if dag else M.idag), \
              mock.patch.object(sys, "argv", ["motor.py"] + argv), contextlib.redirect_stdout(out):
             M.main()
         return out.getvalue()
 
+
+class TestMotor(_MotorBase):
     def test_log_appender_og_afviser_dublet_samme_maaned(self):
         logf = self.here.parent / "LOG.md"
         logf.write_text("| logget | snapshot | P | baand | basisrate | dom | kurve | antaending | note |\n|---|\n", encoding="utf-8")
@@ -562,7 +571,10 @@ class TestMotor(unittest.TestCase):
         self.assertLess(d["p"], d["baand"][1])
         # Section 6-reglen: ratio kun naar baandet udelukker basisraten
         self.assertEqual(d["ratio"] is None, not d["baand_udelukker_basisrate"])
-        self.assertEqual({m["tilstand"] for m in d["monitors"]} - {"aktiv", "inaktiv", "kontekst"}, set())
+        self.assertEqual({m["tilstand"] for m in d["monitors"]} - {"aktiv", "inaktiv", "kontekst", "utilgaengelig"}, set())
+        for n in ("scenarie", "parret", "rekalibrering_paakraevet", "log_blokeringer", "sti", "manual_friskhed"):
+            self.assertIn(n, d)                                       # F53/F9/F11/F30
+        self.assertNotIn("CP-spaend", " ".join(m["navn"] for m in d["monitors"]))   # R3: svaermen i appendikset
         self.assertEqual(len(d["hovedbog"]), 1)
         self.assertEqual(d["hovedbog"][0]["p_tal"], 0.201)
         self.assertEqual(d["hovedbog"][0]["baand_tal"], [0.144, 0.292])
@@ -727,7 +739,7 @@ class TestSpine(unittest.TestCase):
         rows = S.build_spine(sh, sp, cpi, gs, cape)
         self.assertEqual([r[0] for r in rows], ["2023-07", "2023-08", "2023-09", "2023-10"])
         self.assertIsNone(rows[2][2])                                     # CPI-hul skrives tomt (NaN)
-        self.assertEqual(S.cpi_huller(rows), ["2023-09"])
+        self.assertEqual(S.cpi_huller(rows), dict(huller=["2023-09"], afventer_udgivelse=[]))
 
     def test_staleness_er_udgivelsesbevidst(self):
         today = date(2026, 9, 19)
@@ -902,6 +914,386 @@ class TestDebate(unittest.TestCase):
             (Path(t) / "runder" / "runde1").mkdir(parents=True)
             with mock.patch.object(D, "HERE", Path(t)), self.assertRaises(SystemExit):
                 D.build_prompt("round2", D.MODELS[0])
+
+
+# ============================================================== kode-review 2026-10-15
+class Test1015Roller(unittest.TestCase):
+    """F18/F1: EEN rolletabel; kun P/refit-serier nedlaegger veto; licensbegraensede filer er lokale."""
+
+    def test_veto_er_p_og_refit_og_kraevede_afledes(self):
+        self.assertEqual(set(C.KRAEVEDE), set(S.VETO))
+        self.assertTrue({"GS10", "TB3MS", "DGS10", "DTB3", "USREC"} <= set(S.VETO))
+        for sid in ("BAMLH0A0HYM2", "ICSA", "PERMIT", "SP500", "MORTGAGE30US", "RIFSPPFAAD90NB"):
+            self.assertNotIn(sid, S.VETO)
+            self.assertIn(sid, F.RESERVE)
+        self.assertEqual(set(S.LOKALE), {"BAMLH0A0HYM2", "SP500", "BAA10Y"})
+
+    def test_gitignore_holder_lokale_filer_ude(self):
+        gi = (HERE.parent / ".gitignore").read_text(encoding="utf-8")
+        for sid in S.LOKALE:
+            self.assertIn(f"v5/data/raw/*/{sid}.csv", gi)
+        for fn in S.LOKALE_FILER:
+            self.assertIn(f"v5/data/raw/*/{fn}", gi)
+
+    def test_snapshot_uden_licensfiler_er_komplet(self):
+        with tempfile.TemporaryDirectory() as t:
+            d = make_snapshot(Path(t), "2026-01-01", series=list(S.VETO))
+            self.assertTrue(C.snapshot_complete(d))
+
+
+class Test1015Fetch(unittest.TestCase):
+    """F23/F24/F2/F5/F25/F31 i fetch."""
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(); self.prev = Path(self.tmp.name)
+    def tearDown(self): self.tmp.cleanup()
+
+    def test_rullende_vindue_er_ikke_en_revision(self):
+        old = [("2020-01-01", "1.0"), ("2020-01-02", "1.1"), ("2020-01-03", "1.2")]
+        (self.prev / "X.csv").write_bytes(fred_bytes(old))
+        new = [("2020-01-02", "1.1"), ("2020-01-03", "1.2"), ("2020-01-06", "1.3")]
+        b = fred_bytes(new)
+        cur = dict(sha256=sha(b), last="2020-01-06", last_value="1.3")
+        m = F.diff_mark(dict(sha256="x", last="2020-01-03", last_value="1.2"), self.prev, "X", F.parse_rows(b), cur)
+        self.assertIn("rullende vindue", m); self.assertNotIn("REVIDERET", m)
+        # en aendret vaerdi paa en faelles dato ER en revision — ogsaa i et rullende vindue
+        new2 = [("2020-01-02", "9.9"), ("2020-01-03", "1.2"), ("2020-01-06", "1.3")]
+        b2 = fred_bytes(new2)
+        m2 = F.diff_mark(dict(sha256="x", last="2020-01-03", last_value="1.2"), self.prev, "X", F.parse_rows(b2),
+                         dict(sha256=sha(b2), last="2020-01-06", last_value="1.3"))
+        self.assertIn("REVIDERET", m2)
+
+    def test_parse_rows_kolonne_til_ebp(self):
+        b = b"date,gz_spread,ebp,est_prob\n2026-08-01,0.88,-0.23,0.13\n2026-09-01,0.93,-0.39,0.09\n"
+        self.assertEqual(F.parse_rows(b, "ebp"), [("2026-08-01", "-0.23"), ("2026-09-01", "-0.39")])
+        with self.assertRaises(RuntimeError):
+            F.parse_rows(b)                                    # bred CSV uden kolonnevalg afvises stadig
+
+    def test_refit_klar(self):
+        ok, g = F.refit_klar({"multpl": {"sha256": "x"}, "sidste": "2026-09"}, [], {})
+        self.assertTrue(ok); self.assertEqual(g, [])
+        ok, g = F.refit_klar({"multpl": {"fejl": "x"}, "sidste": "2023-07"}, ["SP500"], {"spine": dict(sidste="2023-07-01")})
+        self.assertFalse(ok); self.assertEqual(len(g), 3)
+
+    def test_build_spine_baerer_lukkede_maaneder_og_fred_vinder(self):
+        sh = {"2023-07": (4500.0, 305.0, 3.9, 30.9)}
+        tidl = {"2023-08": 4457.4, "2023-09": 4409.1}
+        sp = {"2023-09": 4410.0, "2023-10": 4269.0}           # 2023-08 er rullet ud af FRED-vinduet
+        cape = {"2023-08": 30.09, "2023-09": 29.80, "2023-10": 28.7}
+        rows = S.build_spine(sh, sp, {}, {}, cape, tidligere_sp500=tidl)
+        self.assertEqual([r[0] for r in rows], ["2023-07", "2023-08", "2023-09", "2023-10"])
+        self.assertEqual(rows[1][1], 4457.4)                   # baaret uaendret fra forrige rygrad
+        self.assertEqual(rows[2][1], 4410.0)                   # FRED leverer stadig -> FRED
+
+    def test_outlier_accepteret_par_springes_over_men_revision_fanges(self):
+        cape = {"2026-01": 30.0, "2026-02": 20.0, "2026-03": 20.5}
+        self.assertTrue(S.outlier_check(cape))
+        self.assertEqual(S.outlier_check(cape, accepterede={"2026-02": 20.0}), [])
+        cape["2026-02"] = 19.0                                 # revideret vaerdi -> fanges igen
+        self.assertTrue(S.outlier_check(cape, accepterede={"2026-02": 20.0}))
+
+
+class Test1015FetchMain(_FetchMainBase):
+    """F24: et afloest .ukomplet-forsoeg slettes; F5: multpl-udfald -> refit_klar false; F2: delvis foerste maaned."""
+
+    def test_ukomplet_slettes_efter_vellykket_genkoersel(self):
+        with self.assertRaises(SystemExit):
+            self._run(fejler={"GS10"})
+        self.assertTrue((self.raw / f"{self.today}.ukomplet").exists())
+        self._run()
+        self.assertFalse((self.raw / f"{self.today}.ukomplet").exists())
+        self.assertTrue(self.meta(self.today)["complete"])
+
+    def test_multpl_udfald_er_komplet_men_ikke_refit_klar(self):
+        self._run()
+        m = self.meta(self.today)
+        self.assertTrue(m["complete"]); self.assertFalse(m["spine"]["refit_klar"])
+        self.assertTrue(any("multpl" in g for g in m["spine"]["refit_blokeret"]))
+        self.assertIn("lokale_filer", m)
+
+    def test_monitor_serie_fejl_nedlaegger_ikke_veto(self):
+        self._run(fejler={"ICSA", "BAMLH0A0HYM2", "PERMIT"})
+        m = self.meta(self.today)
+        self.assertTrue(m["complete"])
+        self.assertEqual(sorted(m["reserve_fejlede"]), ["BAMLH0A0HYM2", "ICSA", "PERMIT"])
+
+    def test_delvis_foerste_sp500_maaned_udelades(self):
+        sp_rows = [("2023-07-14", "4500"), ("2023-07-31", "4600")] + [(f"2023-{m:02d}-15", "4400") for m in range(8, 13)]
+        def fake(sid, attempts=3):
+            b = fred_bytes(sp_rows if sid == "SP500" else ROWS); return b, F.parse_rows(b)
+        with mock.patch.object(F, "RAW", self.raw), mock.patch.object(F, "MANUAL", self.manual), \
+             mock.patch.object(F, "fetch_series", fake), mock.patch.object(F, "fetch_multpl", mock.Mock(side_effect=RuntimeError("x"))), \
+             mock.patch.object(F.SP, "staleness", lambda *a, **k: {}), quiet():
+            F.main()
+        self.assertEqual(self.meta(self.today)["spine"]["sp500_delvis_foerste_maaned_udeladt"], "2023-07")
+
+
+class Test1015NBER(unittest.TestCase):
+    """F7/F15/G4.3/F14/F6: annonceringstabellen, USREC og den forklarede audit."""
+
+    def _usrec(self, til, episoder):
+        u = {i: 0 for i in range(A2.midx(1975, 1), til + 1)}
+        for o, t in episoder:
+            for i in range(o, min(t, til) + 1):
+                u[i] = 1
+        return u
+
+    def test_krydstjek_fanger_manglende_peak_raekke_og_aaben_episode(self):
+        rows = A2.laes_annonceringer()
+        u0 = A2.load_usrec(REAL_SNAP)
+        self.assertEqual(A2.usrec_krydstjek(A2.episodes_from_usrec(u0), rows, u0), [])        # i synk i dag
+        u = dict(u0)
+        start = max(u0) + 1
+        for i in range(start, A2.midx(2027, 6) + 1):
+            u[i] = 1 if i >= A2.midx(2027, 2) else 0                     # NBER daterer en top; USREC aaben
+        eps = A2.episodes_from_usrec(u)
+        self.assertEqual(A2.aaben_episode(u), A2.midx(2027, 2))
+        fejl = A2.usrec_krydstjek(eps, rows, u)
+        self.assertTrue(any("2027-02" in f and "ingen peak-raekke" in f for f in fejl), fejl)
+        with self.assertRaisesRegex(SystemExit, "UDE AF SYNK"):
+            A2.load_announcements(eps, usrec=u)
+        ekstra = rows + [dict(event="peak_2099", cycle_month="2099-01", announcement_date="2099-07-01", source="t")]
+        self.assertTrue(any("2099-01" in f for f in A2.usrec_krydstjek(A2.episodes_from_usrec(u0), ekstra, u0)))
+
+    def test_tabel_hash_er_kanonisk_og_crlf_er_ikke_en_datering(self):
+        with tempfile.TemporaryDirectory() as t:
+            src = (HERE / "nber_announcements.csv").read_bytes().replace(b"\r\n", b"\n")
+            f = Path(t) / "a.csv"; f.write_bytes(src)
+            gl_sha = hashlib.sha256(src).hexdigest(); gl_k = A2.tabel_hash(f)
+            f.write_bytes(src.replace(b"\n", b"\r\n"))
+            self.assertFalse(A2.tabel_aendret(gl_sha, None, f=f))           # CRLF
+            self.assertFalse(A2.tabel_aendret(gl_sha, gl_k, f=f))
+            self.assertEqual(A2.tabel_hash(f), gl_k)
+            f.write_bytes(src + b"peak_2027,2027-01,2027-09-15,nber.org\n")
+            self.assertTrue(A2.tabel_aendret(gl_sha, None, f=f))
+            self.assertTrue(A2.tabel_aendret(gl_sha, gl_k, f=f))
+
+    def test_live_censurering_inde_i_annonceret_recession(self):
+        u = self._usrec(A2.midx(2009, 12), [(A2.midx(2008, 1), A2.midx(2009, 6))])
+        eps = A2.episodes_from_usrec(u)
+        avail = {eps[0][0]: A2.midx(2008, 12)}
+        self.assertIsNone(A2.i_annonceret_recession(u, eps, avail, A2.midx(2008, 6)))     # ikke annonceret endnu
+        self.assertIsNotNone(A2.i_annonceret_recession(u, eps, avail, A2.midx(2009, 2)))  # annonceret, inde
+        self.assertIsNone(A2.i_annonceret_recession(u, eps, avail, A2.midx(2009, 9)))     # efter bunden
+
+    def test_origin_audit_forklarer_kun_modning_censur_og_ny_annoncering(self):
+        eps = [(A2.midx(2027, 2), A2.midx(2027, 9))]
+        R_gl, R = A2.midx(2026, 9), A2.midx(2027, 9)
+        forrige = [[2023, 4, 0], [2024, 1, 0]]
+        modnet = [[2023, 4, 0], [2024, 1, 0], [2024, 2, 0], [2024, 3, 0]]     # 2024Q2/Q3 modnes i (R_gl, R]
+        a = A2.origin_audit(forrige, modnet, R_gl=R_gl, R=R, eps=eps, avail={eps[0][0]: A2.midx(2028, 1)})
+        self.assertTrue(a["forklaret_ok"]); self.assertEqual(a["forklaringer"]["2024Q2"], "modnet")
+        # omlabeling uden ny annoncering = uforklaret -> fejl (den gamle identitet kunne aldrig fejle)
+        relab = [[2023, 4, 0], [2024, 1, 1], [2024, 2, 0], [2024, 3, 0]]
+        b = A2.origin_audit(forrige, relab, R_gl=R_gl, R=R, eps=eps, avail={eps[0][0]: A2.midx(2028, 1)})
+        self.assertFalse(b["forklaret_ok"]); self.assertTrue(any("2024Q1" in u for u in b["uforklarede"]))
+        # et origin der dukker op uden at vaere modnet = uforklaret
+        c = A2.origin_audit(forrige, forrige + [[2026, 1, 0]], R_gl=R_gl, R=R, eps=eps, avail={})
+        self.assertFalse(c["forklaret_ok"])
+
+
+class Test1015Finalize6(unittest.TestCase):
+    """F4/F5/F8/G1.7/G4.2/G4.4/F49/F51/F54 i finalize6."""
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(); self.here = Path(self.tmp.name)
+        for fn in ("ablation3_resultat.json", "ablation7_resultat.json", "ablation8_resultat.json"):
+            if (HERE / fn).exists():
+                shutil.copy(HERE / fn, self.here / fn)
+        shutil.copy(HERE / "nber_announcements.csv", self.here / "nber_announcements.csv")
+    def tearDown(self): self.tmp.cleanup()
+
+    def _main(self, *extra):
+        with mock.patch.object(F6, "HERE", self.here), mock.patch.object(sys, "argv", ["finalize6.py", *extra]), quiet():
+            F6.main()
+        return json.loads((self.here / "weights.json").read_text(encoding="utf-8"))
+
+    def test_uden_trigger_kraeves_reparation_og_genbrug_bevarer_refit_maaned(self):
+        W1 = self._main()                                          # foerste kalibrering (ingen forrige)
+        self.assertIn("mde_gate_pp", W1["gate"]); self.assertIn("koersel", W1)
+        m1 = json.loads((self.here / "kalibreringer" / f"manifest_{W1['manifest_hash']}.json").read_text(encoding="utf-8"))
+        self.assertIn("miljoe", m1); self.assertIn("band_sha256", m1["bootstrap"]); self.assertTrue(m1["L_R_audit"]["ok"])
+        if int(REAL_SNAP.name[5:7]) != 9:
+            with self.assertRaisesRegex(SystemExit, "ingen deterministisk trigger"):
+                self._main()
+        W2 = self._main("--reparation", "test: genkoersel uden dataaendring")
+        self.assertEqual(W2["manifest_hash"], W1["manifest_hash"])          # samme kalibrering genbrugt
+        self.assertEqual(W2["refit_maaned"], m1["refit_maaned"])            # G4.2: manifestets, ikke koerslens
+        self.assertTrue(W2["koersel"]["manifest_genbrugt"])
+        self.assertEqual(W2["audit"], m1["audit"])                          # F49
+        self.assertEqual(len(list((self.here / "kalibreringer").glob("manifest_*.json"))), 1)
+
+    def test_rygrad_ikke_klar_stopper(self):
+        with tempfile.TemporaryDirectory() as t:
+            snap = Path(t) / REAL_SNAP.name
+            shutil.copytree(REAL_SNAP, snap)
+            m = json.loads((snap / "meta.json").read_text(encoding="utf-8"))
+            m.setdefault("spine", {})["refit_klar"] = False; m["spine"]["refit_blokeret"] = ["multpl fejlede"]
+            (snap / "meta.json").write_text(json.dumps(m), encoding="utf-8")
+            with self.assertRaisesRegex(SystemExit, "ikke egnet til rekalibrering"):
+                self._main("--snapshot", str(snap))
+
+    def test_fuldmodel_status_foelger_gaten(self):
+        self.assertIn("RAADSBESLUTNING", F6.fuldmodel_status(dict(raadsbeslutning_paakraevet=True, fuldmodel_slaar=True)))
+        self.assertIn("under MDE", F6.fuldmodel_status(dict(raadsbeslutning_paakraevet=False, fuldmodel_slaar=True)))
+        self.assertIn("ikke bestaaet", F6.fuldmodel_status(dict(raadsbeslutning_paakraevet=False, fuldmodel_slaar=False)))
+
+    def test_version_bumpes_af_kaeden(self):
+        kal = self.here / "kalibreringer"; kal.mkdir()
+        with mock.patch.object(F6, "HERE", self.here):
+            self.assertEqual(F6.naeste_version(), "5.0.1")
+            (kal / "index.json").write_text(json.dumps([dict(hash="a", version="5.0"), dict(hash="b", version="5.0.1")]), encoding="utf-8")
+            self.assertEqual(F6.naeste_version(), "5.0.2")
+
+    def test_forrige_manifest_fejler_hoejlydt_naar_filen_mangler(self):
+        (self.here / "weights.json").write_text(json.dumps(dict(manifest_hash="deadbeef")), encoding="utf-8")
+        with mock.patch.object(F6, "HERE", self.here), self.assertRaisesRegex(SystemExit, "deadbeef"):
+            F6.forrige_manifest()
+
+    def test_korrektionsbro_trin_ii_rapporteres(self):
+        """F51 (V501 §1.5b): broen ved fast input skal have alle tre trin, og trin (ii) er synligt forskelligt."""
+        m, ekstra = F6.rekalibrer(REAL_SNAP)
+        b = F6.bro(REAL_SNAP, ekstra, F6.live_x(REAL_SNAP))
+        self.assertEqual(set(b["trin"]), {"i_legacy_rygrad", "ii_korrigerede_kilder_samme_origins", "iii_udvidet_panel"})
+        self.assertEqual(b["trin"]["ii_korrigerede_kilder_samme_origins"]["n_obs"], F6.LEGACY_NOBS)
+
+
+class Test1015Motor(_MotorBase):
+    """F3/F4/F13/F18/F14/G3.6/F48/F51 i motor (arver TestMotors temp-opsaetning)."""
+
+    def _log(self, here):
+        logf = here.parent / "LOG.md"
+        logf.write_text("| logget | snapshot | P | baand | basisrate | dom | kurve | antaending | note | kalibrering |"
+                        + chr(10) + "|---|" + chr(10), encoding="utf-8")
+        return logf
+
+    def test_september_formlen(self):
+        d = lambda y, m: date(y, m, 15)
+        self.assertFalse(M.september_forfalden("2026-09", d(2027, 8)))
+        self.assertTrue(M.september_forfalden("2026-09", d(2027, 9)))
+        self.assertTrue(M.september_forfalden("2026-08", d(2026, 9)))      # foer: skubbet et aar (F4)
+        self.assertFalse(M.september_forfalden("2026-10", d(2027, 8)))
+        self.assertTrue(M.september_forfalden("2026-10", d(2027, 9)))
+        for rm in range(1, 13):
+            sep = 2026 if rm < 9 else 2027
+            self.assertTrue(M.september_forfalden(f"2026-{rm:02d}", d(sep, 9)))
+            self.assertFalse(M.september_forfalden(f"2026-{rm:02d}", date(sep, 8, 31)))
+
+    def test_cpi_hul_crasher_ikke_og_p_er_uaendret(self):
+        """F3: naar oktober-CPI 2026 udkommer, er y/y udefineret (BLS 2025-10) — motor maa ikke crashe."""
+        with tempfile.TemporaryDirectory() as t:
+            raw = Path(t) / "raw"; shutil.copytree(self.raw / self.today, raw / self.today)
+            f = raw / self.today / "CPIAUCNS.csv"
+            txt = f.read_text(encoding="utf-8-sig")
+            if any(l.startswith("2025-10-01,") and l.split(",")[1].strip() not in ("", ".") for l in txt.splitlines()):
+                self.skipTest("snapshottet har en 2025-10-CPI")
+            f.write_text(txt.rstrip(chr(10)) + chr(10) + "2026-10-01,330.0" + chr(10), encoding="utf-8")
+            here = Path(t) / "v5"; shutil.copytree(self.here, here)
+            out = self._motor(["--json", str(Path(t) / "d.json")], raw=raw, here=here)
+        self.assertIn("CPI-hul", out)
+        ref = self._motor([])
+        p_ref = [l for l in ref.splitlines() if l.strip().startswith("P(NBER")][0]
+        self.assertIn(p_ref, out)
+
+    def test_ann_rate_bruger_kalendernoegler(self):
+        s2 = {(2025, 10): 100.0, (2026, 10): 103.0}
+        self.assertAlmostEqual(M.ann_rate(s2, 12), 3.0)
+        self.assertTrue(np.isnan(M.ann_rate({(2025, 9): 100.0, (2026, 10): 103.0}, 12)))   # 13 mdr -> NaN
+        self.assertTrue(np.isnan(M.yoy({(2025, 9): 100.0, (2026, 10): 103.0})))
+
+    def test_fuldmodel_unavailable_crasher_ikke(self):
+        """F13: weights.json med fuldmodel 'unavailable — CAPE stale' (V501 §2) koerer med --log og --json."""
+        with tempfile.TemporaryDirectory() as t:
+            here = Path(t) / "v5"; shutil.copytree(self.here, here)
+            W = json.loads((here / "weights.json").read_text(encoding="utf-8"))
+            W["fuldmodel"] = dict(features=C.F5, status="unavailable — CAPE stale", note="test")
+            (here / "weights.json").write_text(json.dumps(W), encoding="utf-8")
+            self._log(here)
+            out = self._motor(["--log", "--json", str(Path(t) / "d.json")], here=here)
+            d = json.loads((Path(t) / "d.json").read_text(encoding="utf-8"))
+        self.assertIn("LOGGET som raekke 1", out); self.assertIn("unavailable", out)
+        self.assertIsNone(next(b for b in d["benchmarks"] if b["navn"].startswith("fuldmodel"))["live_p"])
+
+    def test_manglende_monitor_serier_vaelter_ikke_laesningen(self):
+        """F18/F1: ICSA, PERMIT og den licensbegraensede HY OAS-fil kan mangle (klon uden lokale filer)."""
+        with tempfile.TemporaryDirectory() as t:
+            raw = Path(t) / "raw"; shutil.copytree(self.raw / self.today, raw / self.today)
+            for sid in ("ICSA", "PERMIT", "BAMLH0A0HYM2", "SP500", "SAHMREALTIME"):
+                (raw / self.today / f"{sid}.csv").unlink(missing_ok=True)
+            here = Path(t) / "v5"; shutil.copytree(self.here, here)
+            self._log(here)
+            out = self._motor(["--log"], raw=raw, here=here)
+            logtxt = (here.parent / "LOG.md").read_text(encoding="utf-8")
+        self.assertIn("LOGGET som raekke 1", out)
+        self.assertIn("[?] Sahm", out)
+        self.assertIn("meta.json", out)                               # HY OAS fra meta.json's last_value
+        self.assertIn("monitor utilgaengelig: ICSA, PERMIT, SAHMREALTIME", logtxt)
+
+    def test_scenarie_appendiks_er_uden_for_antaendings_kolonnen(self):
+        out = self._motor([])
+        ant, scen = out.split("SCENARIE-APPENDIKS")[0], out.split("SCENARIE-APPENDIKS")[1]
+        self.assertNotIn("CP-spaend", ant.split("4) MONITORS")[1])
+        for n in ("CP-spaend", "10Y > 5,25%", "Realkredit"):
+            self.assertIn(n, scen.split("5) MARKET")[0])
+        if (self.raw / self.today / "THREEFYTP10.csv").exists():
+            self.assertIn("KW TP", out); self.assertNotIn("ACM TP", out)        # F22: Kim-Wright, ikke ACM
+
+    def test_logvindue_og_ikke_logget_raekker(self):
+        with tempfile.TemporaryDirectory() as t:
+            here = Path(t) / "v5"; shutil.copytree(self.here, here)
+            logf = self._log(here)
+            d0 = date.fromisoformat(self.today)
+            udenfor = date(d0.year, d0.month, 3)
+            out = self._motor(["--log"], here=here, vindue=(10, 20), dag=udenfor)
+            self.assertIn("uden for logvinduet", out); self.assertNotIn("LOGGET", out)
+            out = self._motor(["--log", "--log-uden-for-vindue", "test af undtagelsen"], here=here, vindue=(10, 20), dag=udenfor)
+            self.assertIn("LOGGET som raekke 1", out)
+            self.assertIn("uden for logvindue: test af undtagelsen", logf.read_text(encoding="utf-8"))
+            # tre maaneder senere: de to mellemliggende maaneder skrives som 'ikke logget'
+            senere = date(d0.year + (d0.month + 3 > 12), (d0.month + 2) % 12 + 1, 12)
+            out = self._motor(["--log", "--allow-stale"], here=here, dag=senere)
+            tekst = logf.read_text(encoding="utf-8")
+            self.assertEqual(tekst.count("(ikke logget)"), 2, out)
+            self.assertTrue((here.parent / "hovedbog.jsonl").exists())
+            recs = [json.loads(l) for l in (here.parent / "hovedbog.jsonl").read_text(encoding="utf-8").splitlines()]
+            self.assertEqual(len(recs), 2); self.assertEqual(len(recs[1]["ikke_logget_foer"]), 2)
+            self.assertIn("vindue", recs[0]); self.assertIn("p_maanedlig", recs[0])
+
+    def test_diagnostik_ude_af_synk_blokerer_log(self):
+        with tempfile.TemporaryDirectory() as t:
+            here = Path(t) / "v5"; shutil.copytree(self.here, here)
+            dg = json.loads((here / "diagnostik.json").read_text(encoding="utf-8"))
+            dg["manifest_hash"] = "andet"
+            (here / "diagnostik.json").write_text(json.dumps(dg), encoding="utf-8")
+            self._log(here)
+            out = self._motor(["--log"], here=here)
+        self.assertIn("--log AFVIST: diagnostik.json passer ikke", out)
+
+    def test_ren_note_og_vindue(self):
+        self.assertEqual(M.ren_note("a | b"), "a / b")
+        self.assertEqual(M.maanedsvindue(date(2026, 11, 12)), "2026-11..2027-10")
+        self.assertEqual(M.siden_sidst([("2026-10-01", 5.0), ("2026-10-02", 5.4), ("2026-10-03", 5.3)], "2026-10-01", 5.25),
+                         dict(ekstrem=5.4, dato="2026-10-02", dage_over=2, n=2))
+
+    def test_dd_kalibrering_er_maanedsmiddel_mod_12m_max(self):
+        rows = []
+        for i in range(14):
+            y, m = 2025 + (i + 8) // 12, (i + 8) % 12 + 1
+            v = 100.0 if i < 13 else 80.0
+            rows += [(f"{y}-{m:02d}-{dd:02d}", v) for dd in (5, 15, 25)]
+        r = M.dd_kalibrering(rows)
+        self.assertAlmostEqual(r["dd"], -0.2, places=6)
+
+
+class Test1015Calibrate(unittest.TestCase):
+    def test_calibrate_main_roerer_ikke_weights_json(self):
+        """F45: calibrate.py (ogsaa --check) skriver calibrate_resultat.json, aldrig de frosne driftsvaegte."""
+        with tempfile.TemporaryDirectory() as t:
+            here = Path(t)
+            with mock.patch.object(C, "HERE", here), mock.patch.object(C, "run", lambda snap: dict(periode="x", n_obs=1, n_episoder=1,
+                     base_rate=0.1, episoder=[], wf_table={})), mock.patch.object(C, "acceptance", lambda res: ("", True)), \
+                 mock.patch.object(sys, "argv", ["calibrate.py"]), quiet():
+                C.main()
+            self.assertTrue((here / "calibrate_resultat.json").exists())
+            self.assertFalse((here / "weights.json").exists())
 
 
 if __name__ == "__main__":

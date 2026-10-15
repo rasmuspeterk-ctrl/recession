@@ -47,8 +47,23 @@ def load_usrec(snap):
     keys = sorted(u)
     return {midx(y, m): int(u[(y, m)]) for (y, m) in keys}
 
+def aaben_episode(usrec):
+    """Onset-midx for en IGANGVAERENDE episode (USREC = 1 i seneste datamaaned), ellers None (G4.3).
+    episodes_from_usrec giver en saadan episode trough = seneste maaned — et bevaegeligt maal, som
+    derfor aldrig maa bruges til trough+18-konventionen."""
+    if not usrec:
+        return None
+    sidste = max(usrec)
+    if usrec[sidste] != 1:
+        return None
+    i = sidste
+    while usrec.get(i - 1, 0) == 1:
+        i -= 1
+    return i
+
 def episodes_from_usrec(usrec):
-    """[(onset_idx, trough_idx)] — onset = 0->1-overgang, trough = sidste 1-maaned."""
+    """[(onset_idx, trough_idx)] — onset = 0->1-overgang, trough = sidste 1-maaned. En igangvaerende
+    episode faar trough = seneste datamaaned (se aaben_episode)."""
     idxs = sorted(usrec)
     eps, cur_onset = [], None
     for i in idxs:
@@ -60,13 +75,71 @@ def episodes_from_usrec(usrec):
             cur_onset = None
     return eps
 
-def load_announcements(eps):
-    """onset_idx -> annoncerings-midx. Peak-raekker matches mod naermeste onset (+/-2 mdr);
-    onsets uden raekke: trough + PRE1979_TROUGH_LAG."""
-    avail = {}
-    f = HERE / "nber_announcements.csv"
+POST1979 = 1979 * 12   # midx(1979, 1): annonceringsdatoer findes fra 1979-komiteen og frem
+
+def laes_annonceringer(f=None):
+    """nber_announcements.csv -> [dict(event, cycle_month, announcement_date, source)]."""
+    f = f or HERE / "nber_announcements.csv"
     with f.open(encoding="utf-8-sig") as fh:
-        rows = list(csv.DictReader(fh))
+        return [{k: (v or "").strip() for k, v in r.items()} for r in csv.DictReader(fh)]
+
+def tabel_hash(f=None):
+    """Kanonisk hash af annonceringstabellen (F15): sorterede (event, cycle_month, announcement_date)-
+    tupler — linjeskift, kolonneorden, citationstegn og source-tekst udloeser ikke en falsk trigger."""
+    import hashlib
+    rows = sorted((r.get("event", ""), r.get("cycle_month", ""), r.get("announcement_date", ""))
+                  for r in laes_annonceringer(f))
+    return hashlib.sha256(json.dumps(rows).encode("utf-8")).hexdigest()
+
+def tabel_aendret(gl_sha=None, gl_kanonisk=None, f=None):
+    """Er annonceringstabellen aendret siden en kalibrering (§3.2b)? Kanonisk sammenligning naar den
+    gamle kanoniske hash findes (F15); ellers raa bytes ELLER LF-normaliserede bytes (CRLF-konvertering
+    er ikke en NBER-datering). Uden nogen gammel hash: False."""
+    import hashlib
+    f = f or HERE / "nber_announcements.csv"
+    if not f.exists():
+        return False
+    if gl_kanonisk:
+        return tabel_hash(f) != gl_kanonisk
+    if not gl_sha:
+        return False
+    b = f.read_bytes()
+    lf = b.replace(bytes([13, 10]), bytes([10]))          # CRLF -> LF
+    return gl_sha not in (hashlib.sha256(b).hexdigest(), hashlib.sha256(lf).hexdigest())
+
+def usrec_krydstjek(eps, rows, usrec=None):
+    """F7: annonceringstabellen mod USREC. Returnerer en liste af uoverensstemmelser (tom = i synk):
+    (a) en post-1979-onset i USREC uden peak-raekke (+/-2 mdr) — NBER har dateret en top, raekken mangler;
+    (b) en peak-raekke uden USREC-episode (+/-2 mdr) — FRED har ikke opdateret USREC endnu, eller tastefejl;
+    (c) en trough-raekke uden matchende afsluttet USREC-episode (+/-2 mdr)."""
+    aaben = aaben_episode(usrec) if usrec else None
+    fejl = []
+    peaks = [midx(*map(int, r["cycle_month"].split("-"))) for r in rows if r["event"].startswith("peak")]
+    troughs = [midx(*map(int, r["cycle_month"].split("-"))) for r in rows if r["event"].startswith("trough")]
+    for onset, trough in eps:
+        if onset >= POST1979 and not any(abs(onset - p) <= 2 for p in peaks):
+            fejl.append(f"USREC-onset {onset // 12}-{onset % 12 + 1:02d} har ingen peak-raekke i nber_announcements.csv "
+                        "(NBER har dateret en top — tilfoej raekken med datoen fra nber.org; §3.2b)")
+    for p in peaks:
+        if not any(abs(onset - p) <= 2 for onset, _ in eps):
+            fejl.append(f"peak-raekke {p // 12}-{p % 12 + 1:02d} har ingen USREC-episode (FRED ikke opdateret endnu, eller tastefejl)")
+    for t in troughs:
+        if not any(abs(tr - t) <= 2 for o, tr in eps if o != aaben):
+            fejl.append(f"trough-raekke {t // 12}-{t % 12 + 1:02d} har ingen afsluttet USREC-episode")
+    return fejl
+
+def load_announcements(eps, f=None, usrec=None):
+    """onset_idx -> annoncerings-midx. Peak-raekker matches mod naermeste onset (+/-2 mdr).
+    Onsets uden raekke: trough + PRE1979_TROUGH_LAG — KUN for onsets foer 1979 (komiteen fandtes
+    ikke; konvention) og aldrig for en igangvaerende episode (G4.3). En post-1979-onset uden
+    peak-raekke eller en raekke uden USREC-episode er en HAARD fejl (F7): ellers falder en manglende
+    NBER-datering stille igennem som et bevaegeligt trough+18-maal."""
+    rows = laes_annonceringer(f)
+    if usrec is not None:
+        fejl = usrec_krydstjek(eps, rows, usrec)
+        if fejl:
+            sys.exit("FEJL: ANNONCERINGSTABEL UDE AF SYNK MED USREC — " + " | ".join(fejl))
+    avail = {}
     for r in rows:
         if not r["event"].startswith("peak"):
             continue
@@ -76,10 +149,24 @@ def load_announcements(eps):
         best = min(eps, key=lambda e: abs(e[0] - target))
         if abs(best[0] - target) <= 2:
             avail[best[0]] = midx(ay, am)
+    aaben = aaben_episode(usrec) if usrec else None
     for onset, trough in eps:
         if onset not in avail:
-            avail[onset] = trough + PRE1979_TROUGH_LAG
+            if onset >= POST1979 or onset == aaben:
+                # kun naaet uden usrec-krydstjek: konservativt — ikke annonceret endnu
+                avail[onset] = 10 ** 9
+            else:
+                avail[onset] = trough + PRE1979_TROUGH_LAG
     return avail
+
+def i_annonceret_recession(usrec, eps, avail, idx):
+    """F14: ligger maaned idx i en episode hvis top er annonceret pr. idx (samme regel som eligible_fit)?
+    -> (onset_idx, annonceret_midx) eller None."""
+    for onset, trough in eps:
+        aaben = trough == max(usrec) and usrec.get(trough) == 1
+        if onset <= idx and (idx <= trough or aaben) and avail.get(onset, 10 ** 9) <= idx:
+            return onset, avail[onset]
+    return None
 
 def build_dataset(snap, feats=None, spine_file=None):
     """Raekkeuniverset (RAADETS_V501 §2): start = protokolkonstanten C.START_QK, teknisk label
@@ -153,19 +240,53 @@ def origins_liste(D, elig, yR):
     """[(aar, kvartal, label)] for de berettigede origins — manifestets origin-liste."""
     return [[int(D["qk"][j][0]), int(D["qk"][j][1]), int(yR[j])] for j in range(len(elig)) if elig[j]]
 
-def origin_audit(forrige, nye):
-    """Fortegnsbevidst audit (RAADETS_V501 §3.5, Astra/Kimi R4): tilfoejede, fjernede og
-    om-labelede origins med identiteten n_ny = n_gl + tilfoejede - fjernede. Uforklaret
-    aendring = fejl. `forrige`/`nye` er origin-lister [[aar, kvt, label], ...]."""
+def origin_audit(forrige, nye, R_gl=None, R=None, eps=None, avail=None, L=L_EMBARGO):
+    """Fortegnsbevidst audit (RAADETS_V501 §3.5, Astra/Kimi R4) med FORKLAREDE aendringer (F6 —
+    den gamle identitet n_ny = n_gl + tilfoejede - fjernede var en tautologi og kunne aldrig fejle).
+    Mellem forrige refit-maaned R_gl og den nye R er praecis tre aendringer forklarlige:
+      tilfoejet  : origin modnet, dvs. kvartalsslut + 12 + L i (R_gl, R]
+      fjernet    : origin i en recession hvis top er annonceret i (R_gl, R] (censureret)
+      omlabelet  : en onset i vinduet er annonceret i (R_gl, R] (0 -> 1)
+    Alt andet (fx en datarevision der flytter origins, eller en omlabeling uden ny annoncering) er
+    uforklaret -> forklaret_ok = False -> finalize6 stopper. Uden R_gl (foerste kalibrering efter
+    legacy, eller manifest uden refit_maaned) kan intet forklares: alle aendringer listes, og
+    forklaret_ok saettes kun naar der ingen er. `forrige`/`nye` er origin-lister [[aar, kvt, label], ...]."""
     fo = {(y, q): l for y, q, l in (forrige or [])}
     ny = {(y, q): l for y, q, l in nye}
     tilf = sorted(k for k in ny if k not in fo)
     fjern = sorted(k for k in fo if k not in ny)
     relab = sorted(k for k in ny if k in fo and fo[k] != ny[k])
-    identitet = len(ny) == len(fo) + len(tilf) - len(fjern)
+    uforklaret, grunde = [], {}
+    kan = forrige is not None and R_gl is not None and R is not None and eps is not None and avail is not None
+    if kan:
+        nyann = {o for o, _ in eps if R_gl < avail.get(o, 10 ** 9) <= R}
+        for y, q in tilf:
+            qe = qend_idx(y, q)
+            if R_gl < qe + 12 + L <= R:
+                grunde[f"{y}Q{q}"] = "modnet"
+            else:
+                uforklaret.append(f"{y}Q{q} tilfoejet uden at vaere modnet i ({R_gl}, {R}]")
+        for y, q in fjern:
+            ep = episode_of(qend_idx(y, q), eps)
+            if ep and ep[0] in nyann:
+                grunde[f"{y}Q{q}"] = f"censureret (top {ep[0] // 12}-{ep[0] % 12 + 1:02d} annonceret)"
+            else:
+                uforklaret.append(f"{y}Q{q} fjernet uden ny annonceret recession")
+        for y, q in relab:
+            qe = qend_idx(y, q)
+            hit = [o for o in nyann if qe + 1 <= o <= qe + 12]
+            if hit and ny[(y, q)] == 1:
+                grunde[f"{y}Q{q}"] = f"omlabelet 0->1 (onset {hit[0] // 12}-{hit[0] % 12 + 1:02d} annonceret)"
+            else:
+                uforklaret.append(f"{y}Q{q} omlabelet {fo[(y, q)]}->{ny[(y, q)]} uden ny annoncering")
+    elif forrige is not None and (tilf or fjern or relab):
+        uforklaret.append("ingen forrige refit-maaned (legacy/reparation): aendringerne kan ikke forklares mekanisk")
+    legacy = forrige is not None and not kan
     return dict(n_forrige=len(fo), n_ny=len(ny),
                 tilfoejede=[f"{y}Q{q}" for y, q in tilf], fjernede=[f"{y}Q{q}" for y, q in fjern],
-                omlabelede=[f"{y}Q{q}" for y, q in relab], identitet_ok=identitet)
+                omlabelede=[f"{y}Q{q}" for y, q in relab], forklaringer=grunde, uforklarede=uforklaret,
+                forklaret_ok=not uforklaret or legacy, kun_listet=legacy,
+                identitet_ok=not uforklaret or legacy)
 
 def samme_origins(D1, D2):
     """Gate-assertion (§2): to modellers origin-identiteter skal matche — ikke blot antal."""
