@@ -1,0 +1,1269 @@
+{
+ "analyse": "frekvensgate",
+ "fund": "G1.3 (kode-review 2026-10-15)",
+ "created_utc": "2026-10-15T16:41:51+00:00",
+ "aendrer_drift": false,
+ "blueprint_s2_ordret": "monthly becomes primary iff its purged expanding-origin walk-forward log-loss skill is no worse than the quarterly baseline minus 1pp, with quarterly-thinned scores published beside monthly scores",
+ "ablation3_regel": "G2 maanedlig promoveres kun hvis dens KVARTALS-TYNDEDE walk-forward log-loss-forbedring >= kvartals-baselinens forbedring - 1,0pp (fuld maanedlig score printes ved siden af men indgaar ikke i gaten)",
+ "laesninger": {
+  "A": "bogstavelig §2: fuld maanedlig purget wf-skill >= kvartal - 1pp",
+  "B": "ablation3-kode: kvartals-tyndet (m%3==0) maanedlig skill >= kvartal - 1pp"
+ },
+ "konstanter": {
+  "gate_margin_pp": 1.0,
+  "L_embargo": 18,
+  "seed": 42,
+  "n_draws": 1000,
+  "start_aar": 1960,
+  "min_traening_maanedlig": [
+   180,
+   18
+  ],
+  "min_traening_kvartal": [
+   60,
+   6
+  ]
+ },
+ "sammenfatning": {
+  "a_v50_ablation3/F5_fuldmodel": {
+   "kvartal": 33.23,
+   "fuld": 36.83,
+   "tyndet0": 32.08,
+   "krav": 32.23,
+   "A_bogstavelig": "maanedlig",
+   "B_kode": "kvartal",
+   "mde_tyndet": 4.42,
+   "mde_fuld": 4.28
+  },
+  "a_v50_ablation3/curve_only": {
+   "kvartal": 34.32,
+   "fuld": 37.32,
+   "tyndet0": 34.34,
+   "krav": 33.32,
+   "A_bogstavelig": "maanedlig",
+   "B_kode": "maanedlig",
+   "mde_tyndet": 2.73,
+   "mde_fuld": 2.54
+  },
+  "a_legacy_replay/F5_fuldmodel": {
+   "kvartal": 33.23,
+   "fuld": 36.83,
+   "tyndet0": 32.08,
+   "krav": 32.23,
+   "A_bogstavelig": "maanedlig",
+   "B_kode": "kvartal",
+   "mde_tyndet": 4.42,
+   "mde_fuld": 4.28
+  },
+  "a_legacy_replay/curve_only": {
+   "kvartal": 34.32,
+   "fuld": 37.32,
+   "tyndet0": 34.34,
+   "krav": 33.32,
+   "A_bogstavelig": "maanedlig",
+   "B_kode": "maanedlig",
+   "mde_tyndet": 2.73,
+   "mde_fuld": 2.54
+  },
+  "b_v501/curve_only": {
+   "kvartal": 27.05,
+   "fuld": 29.24,
+   "tyndet0": 26.03,
+   "krav": 26.05,
+   "A_bogstavelig": "maanedlig",
+   "B_kode": "kvartal",
+   "mde_tyndet": 5.05,
+   "mde_fuld": 2.99
+  },
+  "b_v501/F5_fuldmodel": {
+   "kvartal": 23.16,
+   "fuld": 24.59,
+   "tyndet0": 20.02,
+   "krav": 22.16,
+   "A_bogstavelig": "maanedlig",
+   "B_kode": "kvartal",
+   "mde_tyndet": 8.54,
+   "mde_fuld": 4.94
+  }
+ },
+ "paneler": {
+  "a_v50_ablation3": {
+   "beskrivelse": "v5.0-panelet som ablation3 koerte det: snapshot 2026-08-09, ren Yale-rygrad (shiller.csv); R_score 2025-12 = alle origins <= 2023Q2 (ablation3 scorede alle origins uden R_score — identisk maengde)",
+   "snapshot": "2026-08-09",
+   "snapshot_sha256": "16850e47e71bad616ce941771800037cfc087a76e85f3889cd5c36877ae35b2c",
+   "R_score": "2025-12",
+   "modeller": {
+    "F5_fuldmodel": {
+     "features": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "rygrad": "shiller.csv",
+     "kvartal_univers": {
+      "n": 305,
+      "foerste": "1947Q2",
+      "sidste": "2023Q2"
+     },
+     "maanedligt_univers": {
+      "n": 915,
+      "foerste": "1947-04",
+      "sidste": "2023-06"
+     },
+     "kvartal_4q": {
+      "n": 195,
+      "n_pos": 32,
+      "base_rate": 0.1641,
+      "logloss": 0.2981,
+      "baseline": 0.4464,
+      "improvement": 33.23,
+      "brier": 33.6,
+      "foerste": "1967-04",
+      "sidste": "2023-02",
+      "vaerste_fejlalarm": {
+       "p": 0.9874,
+       "origin": "2023-02"
+      }
+     },
+     "maanedlig_12m_fuld": {
+      "n": 582,
+      "n_pos": 96,
+      "base_rate": 0.1649,
+      "logloss": 0.2829,
+      "baseline": 0.4478,
+      "improvement": 36.83,
+      "brier": 38.95,
+      "foerste": "1967-12",
+      "sidste": "2023-06",
+      "vaerste_fejlalarm": {
+       "p": 0.9956,
+       "origin": "2023-05"
+      }
+     },
+     "maanedlig_tyndet": {
+      "m%3==0": {
+       "n": 195,
+       "n_pos": 32,
+       "base_rate": 0.1641,
+       "logloss": 0.3032,
+       "baseline": 0.4464,
+       "improvement": 32.08,
+       "brier": 33.99,
+       "foerste": "1967-12",
+       "sidste": "2023-06",
+       "vaerste_fejlalarm": {
+        "p": 0.9942,
+        "origin": "2023-06"
+       }
+      },
+      "m%3==1": {
+       "n": 194,
+       "n_pos": 32,
+       "base_rate": 0.1649,
+       "logloss": 0.2675,
+       "baseline": 0.4478,
+       "improvement": 40.26,
+       "brier": 42.63,
+       "foerste": "1968-01",
+       "sidste": "2023-04",
+       "vaerste_fejlalarm": {
+        "p": 0.9934,
+        "origin": "2023-04"
+       }
+      },
+      "m%3==2": {
+       "n": 193,
+       "n_pos": 32,
+       "base_rate": 0.1658,
+       "logloss": 0.2778,
+       "baseline": 0.4492,
+       "improvement": 38.15,
+       "brier": 40.25,
+       "foerste": "1968-02",
+       "sidste": "2023-05",
+       "vaerste_fejlalarm": {
+        "p": 0.9956,
+        "origin": "2023-05"
+       }
+      }
+     },
+     "parret_tyndet_vs_kvartal": {
+      "forskel_pp": -1.15,
+      "sd_pp": 2.26,
+      "ci10": -4.42,
+      "ci90": 1.09,
+      "mde_pp": 4.42,
+      "n_parrede_origins": 195,
+      "labels_uenige": 0,
+      "metode": "ablation3.mde_bootstrap: tyndet (m%3==0) minus kvartal paa identiske origins"
+     },
+     "blok_fuld_vs_kvartal": {
+      "forskel_pp": 3.6,
+      "sd_pp": 2.18,
+      "ci10": 1.32,
+      "ci90": 6.2,
+      "mde_pp": 4.28,
+      "n_blokke": 9,
+      "n_draws": 1000,
+      "seed": 42,
+      "metode": "blok_mde: fuld maanedlig minus kvartal paa samme episodeblokke (forskellige origin-maengder)"
+     },
+     "selvtjek_blok_mde_lig_ablation3": true,
+     "gate": {
+      "krav_pp": 32.23,
+      "A_bogstavelig_s2": {
+       "metrik": "fuld maanedlig purget wf-skill",
+       "vaerdi": 36.83,
+       "bestaaet": true,
+       "primaer": "maanedlig"
+      },
+      "B_ablation3_kode": {
+       "metrik": "kvartals-tyndet maanedlig (m%3==0)",
+       "vaerdi": 32.08,
+       "bestaaet": false,
+       "primaer": "kvartal"
+      },
+      "laesningerne_er_uenige": true,
+      "andre_tyndinger_under_B": {
+       "m%3==1": {
+        "vaerdi": 40.26,
+        "bestaaet": true
+       },
+       "m%3==2": {
+        "vaerdi": 38.15,
+        "bestaaet": true
+       }
+      },
+      "under_stoejgulv": {
+       "tyndet_vs_kvartal": true,
+       "fuld_vs_kvartal": true
+      }
+     },
+     "styrke": {
+      "median_pos_i_traening_kvartal": 36,
+      "min_pos_i_traening_kvartal": 16,
+      "median_pos_i_traening_maanedlig": 108,
+      "min_pos_i_traening_maanedlig": 48
+     }
+    },
+    "curve_only": {
+     "features": [
+      "curve"
+     ],
+     "rygrad": "shiller.csv",
+     "kvartal_univers": {
+      "n": 305,
+      "foerste": "1947Q2",
+      "sidste": "2023Q2"
+     },
+     "maanedligt_univers": {
+      "n": 915,
+      "foerste": "1947-04",
+      "sidste": "2023-06"
+     },
+     "kvartal_4q": {
+      "n": 195,
+      "n_pos": 32,
+      "base_rate": 0.1641,
+      "logloss": 0.2932,
+      "baseline": 0.4464,
+      "improvement": 34.32,
+      "brier": 32.85,
+      "foerste": "1967-04",
+      "sidste": "2023-02",
+      "vaerste_fejlalarm": {
+       "p": 0.9383,
+       "origin": "2023-02"
+      }
+     },
+     "maanedlig_12m_fuld": {
+      "n": 582,
+      "n_pos": 96,
+      "base_rate": 0.1649,
+      "logloss": 0.2807,
+      "baseline": 0.4478,
+      "improvement": 37.32,
+      "brier": 37.15,
+      "foerste": "1967-12",
+      "sidste": "2023-06",
+      "vaerste_fejlalarm": {
+       "p": 0.9689,
+       "origin": "2023-05"
+      }
+     },
+     "maanedlig_tyndet": {
+      "m%3==0": {
+       "n": 195,
+       "n_pos": 32,
+       "base_rate": 0.1641,
+       "logloss": 0.2931,
+       "baseline": 0.4464,
+       "improvement": 34.34,
+       "brier": 32.76,
+       "foerste": "1967-12",
+       "sidste": "2023-06",
+       "vaerste_fejlalarm": {
+        "p": 0.9579,
+        "origin": "2023-06"
+       }
+      },
+      "m%3==1": {
+       "n": 194,
+       "n_pos": 32,
+       "base_rate": 0.1649,
+       "logloss": 0.2676,
+       "baseline": 0.4478,
+       "improvement": 40.25,
+       "brier": 40.69,
+       "foerste": "1968-01",
+       "sidste": "2023-04",
+       "vaerste_fejlalarm": {
+        "p": 0.9617,
+        "origin": "2023-04"
+       }
+      },
+      "m%3==2": {
+       "n": 193,
+       "n_pos": 32,
+       "base_rate": 0.1658,
+       "logloss": 0.2812,
+       "baseline": 0.4492,
+       "improvement": 37.39,
+       "brier": 38.0,
+       "foerste": "1968-02",
+       "sidste": "2023-05",
+       "vaerste_fejlalarm": {
+        "p": 0.9689,
+        "origin": "2023-05"
+       }
+      }
+     },
+     "parret_tyndet_vs_kvartal": {
+      "forskel_pp": 0.02,
+      "sd_pp": 1.39,
+      "ci10": -1.97,
+      "ci90": 1.35,
+      "mde_pp": 2.73,
+      "n_parrede_origins": 195,
+      "labels_uenige": 0,
+      "metode": "ablation3.mde_bootstrap: tyndet (m%3==0) minus kvartal paa identiske origins"
+     },
+     "blok_fuld_vs_kvartal": {
+      "forskel_pp": 3.01,
+      "sd_pp": 1.3,
+      "ci10": 1.58,
+      "ci90": 4.67,
+      "mde_pp": 2.54,
+      "n_blokke": 9,
+      "n_draws": 1000,
+      "seed": 42,
+      "metode": "blok_mde: fuld maanedlig minus kvartal paa samme episodeblokke (forskellige origin-maengder)"
+     },
+     "selvtjek_blok_mde_lig_ablation3": true,
+     "gate": {
+      "krav_pp": 33.32,
+      "A_bogstavelig_s2": {
+       "metrik": "fuld maanedlig purget wf-skill",
+       "vaerdi": 37.32,
+       "bestaaet": true,
+       "primaer": "maanedlig"
+      },
+      "B_ablation3_kode": {
+       "metrik": "kvartals-tyndet maanedlig (m%3==0)",
+       "vaerdi": 34.34,
+       "bestaaet": true,
+       "primaer": "maanedlig"
+      },
+      "laesningerne_er_uenige": false,
+      "andre_tyndinger_under_B": {
+       "m%3==1": {
+        "vaerdi": 40.25,
+        "bestaaet": true
+       },
+       "m%3==2": {
+        "vaerdi": 37.39,
+        "bestaaet": true
+       }
+      },
+      "under_stoejgulv": {
+       "tyndet_vs_kvartal": true,
+       "fuld_vs_kvartal": false
+      }
+     },
+     "styrke": {
+      "median_pos_i_traening_kvartal": 36,
+      "min_pos_i_traening_kvartal": 16,
+      "median_pos_i_traening_maanedlig": 108,
+      "min_pos_i_traening_maanedlig": 48
+     }
+    }
+   }
+  },
+  "a_legacy_replay": {
+   "beskrivelse": "legacy-replay (vintage-kontrol af a): snapshot 2026-09-19 + shiller_yale_2023-09.csv, R_score 2025-12 (v5.0-manifest 6baeade4)",
+   "snapshot": "2026-09-19",
+   "snapshot_sha256": "c8c2ffa5261c480de8d9aeb7ccca6f7f88de2044d15e6fdc018535c514f0bbca",
+   "R_score": "2025-12",
+   "modeller": {
+    "F5_fuldmodel": {
+     "features": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "rygrad": "shiller_yale_2023-09.csv",
+     "kvartal_univers": {
+      "n": 305,
+      "foerste": "1947Q2",
+      "sidste": "2023Q2"
+     },
+     "maanedligt_univers": {
+      "n": 915,
+      "foerste": "1947-04",
+      "sidste": "2023-06"
+     },
+     "kvartal_4q": {
+      "n": 195,
+      "n_pos": 32,
+      "base_rate": 0.1641,
+      "logloss": 0.2981,
+      "baseline": 0.4464,
+      "improvement": 33.23,
+      "brier": 33.6,
+      "foerste": "1967-04",
+      "sidste": "2023-02",
+      "vaerste_fejlalarm": {
+       "p": 0.9874,
+       "origin": "2023-02"
+      }
+     },
+     "maanedlig_12m_fuld": {
+      "n": 582,
+      "n_pos": 96,
+      "base_rate": 0.1649,
+      "logloss": 0.2829,
+      "baseline": 0.4478,
+      "improvement": 36.83,
+      "brier": 38.95,
+      "foerste": "1967-12",
+      "sidste": "2023-06",
+      "vaerste_fejlalarm": {
+       "p": 0.9956,
+       "origin": "2023-05"
+      }
+     },
+     "maanedlig_tyndet": {
+      "m%3==0": {
+       "n": 195,
+       "n_pos": 32,
+       "base_rate": 0.1641,
+       "logloss": 0.3032,
+       "baseline": 0.4464,
+       "improvement": 32.08,
+       "brier": 33.99,
+       "foerste": "1967-12",
+       "sidste": "2023-06",
+       "vaerste_fejlalarm": {
+        "p": 0.9942,
+        "origin": "2023-06"
+       }
+      },
+      "m%3==1": {
+       "n": 194,
+       "n_pos": 32,
+       "base_rate": 0.1649,
+       "logloss": 0.2675,
+       "baseline": 0.4478,
+       "improvement": 40.26,
+       "brier": 42.63,
+       "foerste": "1968-01",
+       "sidste": "2023-04",
+       "vaerste_fejlalarm": {
+        "p": 0.9934,
+        "origin": "2023-04"
+       }
+      },
+      "m%3==2": {
+       "n": 193,
+       "n_pos": 32,
+       "base_rate": 0.1658,
+       "logloss": 0.2778,
+       "baseline": 0.4492,
+       "improvement": 38.15,
+       "brier": 40.25,
+       "foerste": "1968-02",
+       "sidste": "2023-05",
+       "vaerste_fejlalarm": {
+        "p": 0.9956,
+        "origin": "2023-05"
+       }
+      }
+     },
+     "parret_tyndet_vs_kvartal": {
+      "forskel_pp": -1.15,
+      "sd_pp": 2.26,
+      "ci10": -4.42,
+      "ci90": 1.09,
+      "mde_pp": 4.42,
+      "n_parrede_origins": 195,
+      "labels_uenige": 0,
+      "metode": "ablation3.mde_bootstrap: tyndet (m%3==0) minus kvartal paa identiske origins"
+     },
+     "blok_fuld_vs_kvartal": {
+      "forskel_pp": 3.6,
+      "sd_pp": 2.18,
+      "ci10": 1.32,
+      "ci90": 6.2,
+      "mde_pp": 4.28,
+      "n_blokke": 9,
+      "n_draws": 1000,
+      "seed": 42,
+      "metode": "blok_mde: fuld maanedlig minus kvartal paa samme episodeblokke (forskellige origin-maengder)"
+     },
+     "selvtjek_blok_mde_lig_ablation3": true,
+     "gate": {
+      "krav_pp": 32.23,
+      "A_bogstavelig_s2": {
+       "metrik": "fuld maanedlig purget wf-skill",
+       "vaerdi": 36.83,
+       "bestaaet": true,
+       "primaer": "maanedlig"
+      },
+      "B_ablation3_kode": {
+       "metrik": "kvartals-tyndet maanedlig (m%3==0)",
+       "vaerdi": 32.08,
+       "bestaaet": false,
+       "primaer": "kvartal"
+      },
+      "laesningerne_er_uenige": true,
+      "andre_tyndinger_under_B": {
+       "m%3==1": {
+        "vaerdi": 40.26,
+        "bestaaet": true
+       },
+       "m%3==2": {
+        "vaerdi": 38.15,
+        "bestaaet": true
+       }
+      },
+      "under_stoejgulv": {
+       "tyndet_vs_kvartal": true,
+       "fuld_vs_kvartal": true
+      }
+     },
+     "styrke": {
+      "median_pos_i_traening_kvartal": 36,
+      "min_pos_i_traening_kvartal": 16,
+      "median_pos_i_traening_maanedlig": 108,
+      "min_pos_i_traening_maanedlig": 48
+     }
+    },
+    "curve_only": {
+     "features": [
+      "curve"
+     ],
+     "rygrad": "shiller_yale_2023-09.csv",
+     "kvartal_univers": {
+      "n": 305,
+      "foerste": "1947Q2",
+      "sidste": "2023Q2"
+     },
+     "maanedligt_univers": {
+      "n": 915,
+      "foerste": "1947-04",
+      "sidste": "2023-06"
+     },
+     "kvartal_4q": {
+      "n": 195,
+      "n_pos": 32,
+      "base_rate": 0.1641,
+      "logloss": 0.2932,
+      "baseline": 0.4464,
+      "improvement": 34.32,
+      "brier": 32.85,
+      "foerste": "1967-04",
+      "sidste": "2023-02",
+      "vaerste_fejlalarm": {
+       "p": 0.9383,
+       "origin": "2023-02"
+      }
+     },
+     "maanedlig_12m_fuld": {
+      "n": 582,
+      "n_pos": 96,
+      "base_rate": 0.1649,
+      "logloss": 0.2807,
+      "baseline": 0.4478,
+      "improvement": 37.32,
+      "brier": 37.15,
+      "foerste": "1967-12",
+      "sidste": "2023-06",
+      "vaerste_fejlalarm": {
+       "p": 0.9689,
+       "origin": "2023-05"
+      }
+     },
+     "maanedlig_tyndet": {
+      "m%3==0": {
+       "n": 195,
+       "n_pos": 32,
+       "base_rate": 0.1641,
+       "logloss": 0.2931,
+       "baseline": 0.4464,
+       "improvement": 34.34,
+       "brier": 32.76,
+       "foerste": "1967-12",
+       "sidste": "2023-06",
+       "vaerste_fejlalarm": {
+        "p": 0.9579,
+        "origin": "2023-06"
+       }
+      },
+      "m%3==1": {
+       "n": 194,
+       "n_pos": 32,
+       "base_rate": 0.1649,
+       "logloss": 0.2676,
+       "baseline": 0.4478,
+       "improvement": 40.25,
+       "brier": 40.69,
+       "foerste": "1968-01",
+       "sidste": "2023-04",
+       "vaerste_fejlalarm": {
+        "p": 0.9617,
+        "origin": "2023-04"
+       }
+      },
+      "m%3==2": {
+       "n": 193,
+       "n_pos": 32,
+       "base_rate": 0.1658,
+       "logloss": 0.2812,
+       "baseline": 0.4492,
+       "improvement": 37.39,
+       "brier": 38.0,
+       "foerste": "1968-02",
+       "sidste": "2023-05",
+       "vaerste_fejlalarm": {
+        "p": 0.9689,
+        "origin": "2023-05"
+       }
+      }
+     },
+     "parret_tyndet_vs_kvartal": {
+      "forskel_pp": 0.02,
+      "sd_pp": 1.39,
+      "ci10": -1.97,
+      "ci90": 1.35,
+      "mde_pp": 2.73,
+      "n_parrede_origins": 195,
+      "labels_uenige": 0,
+      "metode": "ablation3.mde_bootstrap: tyndet (m%3==0) minus kvartal paa identiske origins"
+     },
+     "blok_fuld_vs_kvartal": {
+      "forskel_pp": 3.01,
+      "sd_pp": 1.3,
+      "ci10": 1.58,
+      "ci90": 4.67,
+      "mde_pp": 2.54,
+      "n_blokke": 9,
+      "n_draws": 1000,
+      "seed": 42,
+      "metode": "blok_mde: fuld maanedlig minus kvartal paa samme episodeblokke (forskellige origin-maengder)"
+     },
+     "selvtjek_blok_mde_lig_ablation3": true,
+     "gate": {
+      "krav_pp": 33.32,
+      "A_bogstavelig_s2": {
+       "metrik": "fuld maanedlig purget wf-skill",
+       "vaerdi": 37.32,
+       "bestaaet": true,
+       "primaer": "maanedlig"
+      },
+      "B_ablation3_kode": {
+       "metrik": "kvartals-tyndet maanedlig (m%3==0)",
+       "vaerdi": 34.34,
+       "bestaaet": true,
+       "primaer": "maanedlig"
+      },
+      "laesningerne_er_uenige": false,
+      "andre_tyndinger_under_B": {
+       "m%3==1": {
+        "vaerdi": 40.25,
+        "bestaaet": true
+       },
+       "m%3==2": {
+        "vaerdi": 37.39,
+        "bestaaet": true
+       }
+      },
+      "under_stoejgulv": {
+       "tyndet_vs_kvartal": true,
+       "fuld_vs_kvartal": false
+      }
+     },
+     "styrke": {
+      "median_pos_i_traening_kvartal": 36,
+      "min_pos_i_traening_kvartal": 16,
+      "median_pos_i_traening_maanedlig": 108,
+      "min_pos_i_traening_maanedlig": 48
+     }
+    }
+   }
+  },
+  "b_v501": {
+   "beskrivelse": "v5.0.1-panelet: snapshot 2026-09-19 (weights.json), spine.csv, R_score 2026-09 (manifest 72c3371d)",
+   "snapshot": "2026-09-19",
+   "snapshot_sha256": "c8c2ffa5261c480de8d9aeb7ccca6f7f88de2044d15e6fdc018535c514f0bbca",
+   "R_score": "2026-09",
+   "modeller": {
+    "curve_only": {
+     "features": [
+      "curve"
+     ],
+     "rygrad": "spine.csv",
+     "kvartal_univers": {
+      "n": 316,
+      "foerste": "1947Q2",
+      "sidste": "2026Q1"
+     },
+     "maanedligt_univers": {
+      "n": 948,
+      "foerste": "1947-04",
+      "sidste": "2026-03"
+     },
+     "kvartal_4q": {
+      "n": 198,
+      "n_pos": 32,
+      "base_rate": 0.1616,
+      "logloss": 0.3227,
+      "baseline": 0.4423,
+      "improvement": 27.05,
+      "brier": 24.15,
+      "foerste": "1967-04",
+      "sidste": "2024-01",
+      "vaerste_fejlalarm": {
+       "p": 0.9383,
+       "origin": "2023-02"
+      }
+     },
+     "maanedlig_12m_fuld": {
+      "n": 591,
+      "n_pos": 96,
+      "base_rate": 0.1624,
+      "logloss": 0.3139,
+      "baseline": 0.4437,
+      "improvement": 29.24,
+      "brier": 28.1,
+      "foerste": "1967-12",
+      "sidste": "2024-03",
+      "vaerste_fejlalarm": {
+       "p": 0.9689,
+       "origin": "2023-05"
+      }
+     },
+     "maanedlig_tyndet": {
+      "m%3==0": {
+       "n": 198,
+       "n_pos": 32,
+       "base_rate": 0.1616,
+       "logloss": 0.3272,
+       "baseline": 0.4423,
+       "improvement": 26.03,
+       "brier": 23.5,
+       "foerste": "1967-12",
+       "sidste": "2024-03",
+       "vaerste_fejlalarm": {
+        "p": 0.9579,
+        "origin": "2023-06"
+       }
+      },
+      "m%3==1": {
+       "n": 197,
+       "n_pos": 32,
+       "base_rate": 0.1624,
+       "logloss": 0.3011,
+       "baseline": 0.4437,
+       "improvement": 32.13,
+       "brier": 31.8,
+       "foerste": "1968-01",
+       "sidste": "2024-01",
+       "vaerste_fejlalarm": {
+        "p": 0.9617,
+        "origin": "2023-04"
+       }
+      },
+      "m%3==2": {
+       "n": 196,
+       "n_pos": 32,
+       "base_rate": 0.1633,
+       "logloss": 0.3134,
+       "baseline": 0.445,
+       "improvement": 29.58,
+       "brier": 29.02,
+       "foerste": "1968-02",
+       "sidste": "2024-02",
+       "vaerste_fejlalarm": {
+        "p": 0.9689,
+        "origin": "2023-05"
+       }
+      }
+     },
+     "parret_tyndet_vs_kvartal": {
+      "forskel_pp": -1.02,
+      "sd_pp": 2.58,
+      "ci10": -4.47,
+      "ci90": 1.32,
+      "mde_pp": 5.05,
+      "n_parrede_origins": 198,
+      "labels_uenige": 0,
+      "metode": "ablation3.mde_bootstrap: tyndet (m%3==0) minus kvartal paa identiske origins"
+     },
+     "blok_fuld_vs_kvartal": {
+      "forskel_pp": 2.19,
+      "sd_pp": 1.52,
+      "ci10": 0.59,
+      "ci90": 4.21,
+      "mde_pp": 2.99,
+      "n_blokke": 9,
+      "n_draws": 1000,
+      "seed": 42,
+      "metode": "blok_mde: fuld maanedlig minus kvartal paa samme episodeblokke (forskellige origin-maengder)"
+     },
+     "selvtjek_blok_mde_lig_ablation3": true,
+     "gate": {
+      "krav_pp": 26.05,
+      "A_bogstavelig_s2": {
+       "metrik": "fuld maanedlig purget wf-skill",
+       "vaerdi": 29.24,
+       "bestaaet": true,
+       "primaer": "maanedlig"
+      },
+      "B_ablation3_kode": {
+       "metrik": "kvartals-tyndet maanedlig (m%3==0)",
+       "vaerdi": 26.03,
+       "bestaaet": false,
+       "primaer": "kvartal"
+      },
+      "laesningerne_er_uenige": true,
+      "andre_tyndinger_under_B": {
+       "m%3==1": {
+        "vaerdi": 32.13,
+        "bestaaet": true
+       },
+       "m%3==2": {
+        "vaerdi": 29.58,
+        "bestaaet": true
+       }
+      },
+      "under_stoejgulv": {
+       "tyndet_vs_kvartal": true,
+       "fuld_vs_kvartal": true
+      }
+     },
+     "styrke": {
+      "median_pos_i_traening_kvartal": 36,
+      "min_pos_i_traening_kvartal": 16,
+      "median_pos_i_traening_maanedlig": 108,
+      "min_pos_i_traening_maanedlig": 48
+     }
+    },
+    "F5_fuldmodel": {
+     "features": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "rygrad": "spine.csv",
+     "kvartal_univers": {
+      "n": 316,
+      "foerste": "1947Q2",
+      "sidste": "2026Q1"
+     },
+     "maanedligt_univers": {
+      "n": 947,
+      "foerste": "1947-04",
+      "sidste": "2026-03"
+     },
+     "kvartal_4q": {
+      "n": 198,
+      "n_pos": 32,
+      "base_rate": 0.1616,
+      "logloss": 0.3399,
+      "baseline": 0.4423,
+      "improvement": 23.16,
+      "brier": 23.69,
+      "foerste": "1967-04",
+      "sidste": "2024-01",
+      "vaerste_fejlalarm": {
+       "p": 0.9874,
+       "origin": "2023-02"
+      }
+     },
+     "maanedlig_12m_fuld": {
+      "n": 591,
+      "n_pos": 96,
+      "base_rate": 0.1624,
+      "logloss": 0.3346,
+      "baseline": 0.4437,
+      "improvement": 24.59,
+      "brier": 28.59,
+      "foerste": "1967-12",
+      "sidste": "2024-03",
+      "vaerste_fejlalarm": {
+       "p": 0.9956,
+       "origin": "2023-05"
+      }
+     },
+     "maanedlig_tyndet": {
+      "m%3==0": {
+       "n": 198,
+       "n_pos": 32,
+       "base_rate": 0.1616,
+       "logloss": 0.3538,
+       "baseline": 0.4423,
+       "improvement": 20.02,
+       "brier": 23.62,
+       "foerste": "1967-12",
+       "sidste": "2024-03",
+       "vaerste_fejlalarm": {
+        "p": 0.9942,
+        "origin": "2023-06"
+       }
+      },
+      "m%3==1": {
+       "n": 197,
+       "n_pos": 32,
+       "base_rate": 0.1624,
+       "logloss": 0.3218,
+       "baseline": 0.4437,
+       "improvement": 27.47,
+       "brier": 32.26,
+       "foerste": "1968-01",
+       "sidste": "2024-01",
+       "vaerste_fejlalarm": {
+        "p": 0.9934,
+        "origin": "2023-04"
+       }
+      },
+      "m%3==2": {
+       "n": 196,
+       "n_pos": 32,
+       "base_rate": 0.1633,
+       "logloss": 0.3281,
+       "baseline": 0.445,
+       "improvement": 26.27,
+       "brier": 29.91,
+       "foerste": "1968-02",
+       "sidste": "2024-02",
+       "vaerste_fejlalarm": {
+        "p": 0.9956,
+        "origin": "2023-05"
+       }
+      }
+     },
+     "parret_tyndet_vs_kvartal": {
+      "forskel_pp": -3.14,
+      "sd_pp": 4.36,
+      "ci10": -9.29,
+      "ci90": 0.96,
+      "mde_pp": 8.54,
+      "n_parrede_origins": 198,
+      "labels_uenige": 0,
+      "metode": "ablation3.mde_bootstrap: tyndet (m%3==0) minus kvartal paa identiske origins"
+     },
+     "blok_fuld_vs_kvartal": {
+      "forskel_pp": 1.43,
+      "sd_pp": 2.52,
+      "ci10": -1.43,
+      "ci90": 4.9,
+      "mde_pp": 4.94,
+      "n_blokke": 9,
+      "n_draws": 1000,
+      "seed": 42,
+      "metode": "blok_mde: fuld maanedlig minus kvartal paa samme episodeblokke (forskellige origin-maengder)"
+     },
+     "selvtjek_blok_mde_lig_ablation3": true,
+     "gate": {
+      "krav_pp": 22.16,
+      "A_bogstavelig_s2": {
+       "metrik": "fuld maanedlig purget wf-skill",
+       "vaerdi": 24.59,
+       "bestaaet": true,
+       "primaer": "maanedlig"
+      },
+      "B_ablation3_kode": {
+       "metrik": "kvartals-tyndet maanedlig (m%3==0)",
+       "vaerdi": 20.02,
+       "bestaaet": false,
+       "primaer": "kvartal"
+      },
+      "laesningerne_er_uenige": true,
+      "andre_tyndinger_under_B": {
+       "m%3==1": {
+        "vaerdi": 27.47,
+        "bestaaet": true
+       },
+       "m%3==2": {
+        "vaerdi": 26.27,
+        "bestaaet": true
+       }
+      },
+      "under_stoejgulv": {
+       "tyndet_vs_kvartal": true,
+       "fuld_vs_kvartal": true
+      }
+     },
+     "styrke": {
+      "median_pos_i_traening_kvartal": 36,
+      "min_pos_i_traening_kvartal": 16,
+      "median_pos_i_traening_maanedlig": 108,
+      "min_pos_i_traening_maanedlig": 48
+     }
+    }
+   }
+  }
+ },
+ "reproduktion": {
+  "ablation3_resultat_json": {
+   "kvartal": [
+    33.23,
+    33.23
+   ],
+   "maanedlig_fuld": [
+    36.83,
+    36.83
+   ],
+   "maanedlig_tyndet": [
+    32.08,
+    32.08
+   ],
+   "n": [
+    [
+     195,
+     582
+    ],
+    [
+     195,
+     582
+    ]
+   ],
+   "skill_diff_sd_mde": [
+    [
+     -1.15,
+     2.26,
+     4.42
+    ],
+    [
+     -1.15,
+     2.26,
+     4.42
+    ]
+   ]
+  },
+  "manifest_6baeade4": {
+   "curve_only_wf": [
+    34.32,
+    34.32
+   ],
+   "curve_only_brier": [
+    32.85,
+    32.85
+   ],
+   "F5_wf": [
+    33.23,
+    33.23
+   ]
+  },
+  "manifest_72c3371d": {
+   "curve_only_wf": [
+    27.05,
+    27.05
+   ],
+   "curve_only_brier": [
+    24.15,
+    24.15
+   ],
+   "n": [
+    198,
+    198
+   ],
+   "F5_wf": [
+    23.16,
+    23.16
+   ],
+   "F5_brier": [
+    23.69,
+    23.69
+   ]
+  },
+  "alle_publicerede_tal_reproduceret": true
+ },
+ "P_i_dag": {
+  "nyeste_snapshot": "2026-10-15",
+  "live_input": {
+   "curve_pp": 1.1181,
+   "kilde": "daglig",
+   "vindue": [
+    "2026-09-14",
+    "2026-10-13"
+   ],
+   "n_dage": 21,
+   "y10": 5.15,
+   "tb3": 4.0319,
+   "maanedstal": {
+    "curve_pp": 1.05,
+    "maaned": "2026-09"
+   }
+  },
+  "kvartal_operationel": {
+   "kilde": "weights.json (frosne driftsvaegte)",
+   "version": "5.0.1",
+   "manifest": "72c3371d",
+   "refit_maaned": "2026-09",
+   "snapshot": "2026-09-19",
+   "frekvens": "kvartal",
+   "mu": {
+    "curve": 1.3733
+   },
+   "sd": {
+    "curve": 1.1495
+   },
+   "w": [
+    -2.0697,
+    -1.4884
+   ],
+   "raa": {
+    "beta_curve_pr_pp": -1.2948,
+    "alpha": -0.2915,
+    "note": "P = logit^-1(alpha + beta * kurve_i_pp); samme model som de standardiserede vaegte"
+   },
+   "n_obs": 267,
+   "base_rate": 0.1798,
+   "P_live": 0.1494,
+   "P_maanedstal": 0.161,
+   "baand_10_90_live": [
+    0.1025,
+    0.2129
+   ],
+   "baand_indeholder_basisraten": true,
+   "n_draws_baand": 1000
+  },
+  "kvartal_genudledt_fra_panel_b": {
+   "mu": {
+    "curve": 1.3733
+   },
+   "sd": {
+    "curve": 1.1495
+   },
+   "w": [
+    -2.0697,
+    -1.4884
+   ],
+   "raa": {
+    "beta_curve_pr_pp": -1.2948,
+    "alpha": -0.2915,
+    "note": "P = logit^-1(alpha + beta * kurve_i_pp); samme model som de standardiserede vaegte"
+   },
+   "n_obs": 267,
+   "n_pos": 48,
+   "base_rate": 0.1798,
+   "estimering_slut": "2024Q1",
+   "identisk_med_weights_json": true
+  },
+  "maanedlig_kontrafaktisk": {
+   "kilde": "kontrafaktisk: maanedlig direkte-12m curve-only fittet paa v5.0.1-panelet ved R = 2026-09",
+   "snapshot": "2026-09-19",
+   "mu": {
+    "curve": 1.3868
+   },
+   "sd": {
+    "curve": 1.1545
+   },
+   "w": [
+    -2.1639,
+    -1.6327
+   ],
+   "raa": {
+    "beta_curve_pr_pp": -1.4143,
+    "alpha": -0.2026
+   },
+   "n_obs": 800,
+   "n_pos": 144,
+   "base_rate": 0.18,
+   "estimering_slut": "2024-03",
+   "univers_slut": "2026-03",
+   "P_live": 0.1438,
+   "P_maanedstal": 0.1561,
+   "baand_10_90_live": [
+    0.0933,
+    0.2088
+   ],
+   "baand_indeholder_basisraten": true,
+   "n_draws_baand": 1000,
+   "n_blokke_baand": 13,
+   "seed": 42
+  },
+  "forskel_P_live_pp": -0.56,
+  "P_ved_faste_kurveniveauer": [
+   {
+    "kurve_pp": -1.0,
+    "P_kvartal_op": 0.7317,
+    "P_maanedlig": 0.7706
+   },
+   {
+    "kurve_pp": -0.5,
+    "P_kvartal_op": 0.588,
+    "P_maanedlig": 0.6235
+   },
+   {
+    "kurve_pp": 0.0,
+    "P_kvartal_op": 0.4276,
+    "P_maanedlig": 0.4495
+   },
+   {
+    "kurve_pp": 0.5,
+    "P_kvartal_op": 0.2811,
+    "P_maanedlig": 0.287
+   },
+   {
+    "kurve_pp": 1.0,
+    "P_kvartal_op": 0.1699,
+    "P_maanedlig": 0.1656
+   },
+   {
+    "kurve_pp": 1.12,
+    "P_kvartal_op": 0.1491,
+    "P_maanedlig": 0.1435
+   },
+   {
+    "kurve_pp": 1.5,
+    "P_kvartal_op": 0.0968,
+    "P_maanedlig": 0.0892
+   },
+   {
+    "kurve_pp": 2.0,
+    "P_kvartal_op": 0.0531,
+    "P_maanedlig": 0.046
+   },
+   {
+    "kurve_pp": 3.0,
+    "P_kvartal_op": 0.0151,
+    "P_maanedlig": 0.0116
+   }
+  ],
+  "note": "P under den maanedlige model er en kontrafaktisk beregning til raadet — ikke en aflaesning, ikke logfoert. Baandet er et estimation-sensitivity range (Not a predictive interval)."
+ },
+ "noter": [
+  "Skill = log-loss-forbedring mod den POOLEDE basisrate over de scorede origins (C.metrics); fuld maanedlig og kvartal har forskellige origin-maengder og dermed hver sin basisrate — tallene er ikke origin-parrede.",
+  "Tyndet m%3==0 er kvartalsslut-maanederne og er origin-identisk med kvartalsmodellen (parret, som ablation3).",
+  "Grok R6 (RAADETS_KONSENSUS): taerskler maa aldrig lempes efter at resultater er set — begge udfald er nu kendt; scriptet rapporterer kun fakta.",
+  "Et skifte til maanedlig frekvens er laast bag raadsbeslutning (RAADETS_V501 §6) og sker aldrig automatisk."
+ ]
+}

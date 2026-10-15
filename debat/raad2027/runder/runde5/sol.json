@@ -1,0 +1,55 @@
+{
+ "id": "gen-1792086289-NfNW7lWozMQbzWpewvyu",
+ "object": "chat.completion",
+ "created": 1792086289,
+ "model": "openai/gpt-6.1-sol-pro",
+ "provider": "OpenAI",
+ "system_fingerprint": null,
+ "service_tier": "default",
+ "choices": [
+  {
+   "index": 0,
+   "logprobs": null,
+   "finish_reason": "stop",
+   "native_finish_reason": "completed",
+   "message": {
+    "role": "assistant",
+    "content": "VOTE: APPROVE\n\n\u00a79.2 now defines maturity unambiguously as \\(R \\ge q+12+L_R\\): with \\(L_R=18\\), eligibility starts at **q + 30 months**, not q + 18. The date-stamped 1991/2001 tests address my remaining blocking objection.\n\nThe supplied artifact citation and origin-identity verification support \u00a73.2(b)\u2019s paired interpretation. The minutes explicitly acknowledge overriding the written frequency gate; they do not disguise that decision as compliance.\n\nI accept all ten agenda decisions despite their known effects for the reasons recorded in \u00a711. Keeping \u03bb = 1 is protocol continuity, not evidence that it is optimal; retaining quarterly fitting is an acknowledged discretionary override, not a statistical victory.\n\n**Reservations for the record\u2014non-blocking:**\n\n1. **Power wording (\u00a71.2).** \u201c\u2248150 calendar years\u201d is conditional on the nine-block resampling design, including the adverse 2020\u201324 block. It is neither a universal waiting-time forecast nor a lower bound. The public interpretation should remain: **this replay does not support a realistically timed, adequately powered confirmatory ledger test**. The 36\u201353% false-rejection rates concern the evaluated inference procedures, not ledger recording itself.\n\n2. **Monthly regularisation (\u00a73.3).** The sealed monthly specification should match quarterly shrinkage per observation. Under summed log-loss, that means \\(\\lambda_m=\\lambda_qN_m/N_q\\), recalculated within each training window. Otherwise the diagnostic changes sampling frequency and effective regularisation simultaneously.",
+    "refusal": null,
+    "reasoning": null,
+    "reasoning_details": [
+     {
+      "type": "reasoning.encrypted",
+      "data": "gAAAAABq0REgY-mBn6z-1xz4SGYaE0EjsuDg81szuBFjDbK8CpVQoVxfAd-CHkiQGQglXVJcwNy9pdTsfdayui2WoRQrT3Hx4t750NpWMb3SYhPP8-OGwPF0Nau3WNEdx7GUviMMkouMdoknzPi6VUxb0DKFQHqHEYIDL5RmjgwE27H9JzBXyhNmdVWiXzN5jmdN4Frw8s15u13NKwqPUg3bgZy_p9GldIZyq92vP9FQbEOfLJwnY7fSTn2HhLXfMzOIgSoClyN0PbIdkwSjgOhp-7I_r7O3Urd4eAKQ5clGjQTI8hWVCSZRCFcca9tj880KfYb_7l9Xm2sLSRCMF-PepnsLx27UkuRSnUMg-sVv3J5dHla7bn-HecsNbXEDGS_IpHurVpKq0yMEKIkb5i8UIIbatpqeRpjgnmiuEb-f8gSykaLAiHV0gmmZp8xHM91FfpRd3mIwHkBupgGx4dsuBEK_bEHUbxLIe46kxwhJu3Un-zevkzTPGItvZtnMrz4DSph2vB65VVusxJjqk6yr5TZzSqYANol4kPavy9UZ6of-XqAQ5vxRup1pFPRzo4ggy9-fB2hN5jin9wIUxtAzp9Vx9L8RsXtYgFUAzxHGdYzWWfJzX6UKSckpoFdbmqU5BYgzLbok-f3Ry46gBLeX2vbaZ9df4u-FjGOVOqbD4If42UkFOnetKb7jQPdGn_sq5vfH0t79asgfVsXYX7QWAju8IVijaoENa5k1eZqspHUDLiF_D7UHzU6SJ-qqDXHJMHpyl-QvJFh1qldaMDe0Xidvmk1USrp1LZ9Qxrv4JDXtvngQzLc4ggkQvvlrsmtfI_r7vt61NC-MHNKKT5xgruBbhuJVaS1I5LXtPnBtzGHGbjswA5HllsqfZiVkus6QP6k-n7Udx8JbCPp1D871rrlBq5q7WqDbYJAv7QZNNElWMYLHqQHPgEm52qHN8Pa6O9dbvZRCGh_E9RBguIQeqh0RHtlPhZ650x-RgMwc-t0hhoDA2FfoRQuoMQNqYm4Gan7O7TKg3G3vfdh_D46J9ryv-tPVypBAfjJi2DK4aHxK1QTSPd8cik7dlcZ8q7CzG1TUfw8d31TdJmgrwm4MKpKsX9lOtkN59ypQzDnSqP0iuAxSdf5B9cumvLYXhN44xrppu_rrh1CdfS3-GLA7VA-e4UGz3a5QG3qoRfekbp67psZLJbT6QcDyN9G13KG0q3Z82V9cTGGapWobSJAJIyPVcwj3srYk_pxMnxQ2F5Z7omJ6DOFQsincjnfDU1pTAFMeLdzXvFfBaRXoDP-6sVOXfFBy9JrwlobFJwvq9KvU5M2I0b1cxUMRvHmSFJ8lu20X4k0T77LhUQvF_Ia3LrLWeba5Ie7v-YTqNV9JTTGDXL0IcOb4Tc616I2ODsQsMAnTnDYsunzFGXGmN_cRKka-10H24ZHcSCpm3evo980dxDRYNjpZA4WcaXMxt7wgL7MqZuR1GLq2DvCJXO0LORZU5iiQrY_4aX-zWRzagZ-5xVSoTaab_VYmP01lFHaxhd9K3uHtG1f1AGqLyh0HIYh8Ty6xqJG5hxaReQWL3pvOmPmKPddOSgAnzZdFHvF33DaWJBBFeMvRNGiBa1RoKRnPm8PUIwhnReKyN2_2K_e8RmxFfU-3lyZ2F1o8zyC5cyVFVj_pK7ETbbIMeWBJMYpMkpym8gQe2VQOZpoxliTGQU90MOCEa0ycHkna9puiEYVHtNbcvE_FzRqdQHXkywBX-UJXYPPlTouCmrmT1k7wl1eInQyianaEu_UObqq9OsgPsagc738XdHSB2H_bb3bI4gBjufEA761pYntk5lMhudv8cAmUpY96aQIwVR62g-1k4DQ-WlAwqa69TT2OANlmkKIqhvJBX3_G-KxvEIxR2PVEXpeOo23IRzjUI6-zcPNGNkLi1xvRNuvbiTI0UxI3S7KSELWdYAOVXzHeF7WU_nEuttv1KnssYJ4Q6c5Xb_u3epqVE1xdLiQC6lFke6TN528-2iGFgiQD7vJhih3pwMkrsiKZbBvgnHFC25eZ49JBKFNwvcJU8QI9BK3wCzmxGkun_f2VXl2vYvyZ4EZHowXaUL_xWDnHly6sl898ajntukTCDepDswI_nAM7ajVuyK9nI3koM2_hizCvIIZmWrQO0PudcLLz5U4_XMqhVq91kLug19THr7LnO7h04_AH0j0umZBGFjX9Llv9ZBHqoAxE5hqFqPzkq3IKpX52bLX1rZT_zeBgYlyPfMQpCUoCH9AnGiqeEZa92Oj6n2FsjpeqD7rBXcGE3zBInNcgLdPiV3nVd4FxToGYjSpenhoMq_aCiZqgEcBb4wlKCUCR0ruDh9Au0TqHezdXd-Ukmivzl91sB-cYQGVZ9Y07E62O40DspOHHB_IjW69cwbzlosTvKDUVAsq-Qnrc93rnAxf1BdFyP93nstoWiwE1XgLA1ow9Zx5YViXMVk_yvkoPUUgFxDQJdVHoFlNgRwCewK7t73wTXozuI8LtpzzZzbm92MVd6iV2Q4driYXyDls_4kh9SbGeNX6KWDkmND_occmjY7meKk3lvmLHjBqxdEoHv11Q-ZYBB4sVooYp2-YyMojVDVomSwaryEA6LLrpo-ArrnVcMZOi4ddQMT5zeQ5PQxqQhjdMjCR7r-OOnRYTKztt7WXAuGoOfHq_k6XOTOVayVTg1QLYMSjMY07lGjgGj9YQ8ooIDBi4vW2wpuyC9ECPTRmn3iTfskaLTqmmMyxl8tmK_oJGPhSMhhwPD8xTtk98RzsFusagWEnUQNwzEuLCtF0TJOoA9nxemXNKMtOd_QNdtUdEdFQ-aO27D6wfMS3-y1oGMmmuGEjCVnvJTKBq1LZ8weccpHezw_uKUpoze1AFOW2DvbrBa_v_G_ZJIIB1wswODaDZ69DJBclR2GEyBapz95Q3EbgTkZVQvVnF9l8u5erl4arhE1arclHyjXogn1VuO-rn1dCJJfNBbWo75avBgMqR_msU_k5gPwjfJ50Sz0-wi0dWemSTpx0cXH7fjC4rxFr_T8KXU6NIzCgMNRLq2a7P_0UJ3s-M1Yw2m3xX.eyJlbmRwb2ludF9zbHVnIjoib3BlbmFpL2dwdC02LjEtc29sLXByby0yMDI2MDkyOXxvcGVuYWkifQ",
+      "format": "openai-responses-v1",
+      "id": "rs_04f0e3ae0935f7ea016ad1112007fc87d18d73a8f2dd9ef816",
+      "index": 0
+     }
+    ]
+   }
+  }
+ ],
+ "usage": {
+  "prompt_tokens": 39252,
+  "completion_tokens": 941,
+  "total_tokens": 40193,
+  "cost": 0.0708592,
+  "is_byok": false,
+  "prompt_tokens_details": {
+   "cached_tokens": 12182,
+   "cache_write_tokens": 12182,
+   "audio_tokens": 0,
+   "video_tokens": 0
+  },
+  "cost_details": {
+   "upstream_inference_cost": 0.0708592,
+   "upstream_inference_prompt_cost": 0.0614492,
+   "upstream_inference_completions_cost": 0.00941
+  },
+  "completion_tokens_details": {
+   "reasoning_tokens": 266,
+   "image_tokens": 0,
+   "audio_tokens": 0
+  }
+ }
+}

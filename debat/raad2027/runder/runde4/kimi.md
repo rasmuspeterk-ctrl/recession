@@ -1,0 +1,11 @@
+VOTE: APPROVE
+
+The text matches every position I held at the end of Round 3, and neither of my stated vetoes is triggered: the monthly fit is unscored-only with its loss/penalty normalisation sealed before any run (§3.3), and L_R is the formula giving 18, not a flat 21 (§9.1). My eligibility sentence is in §9.2 verbatim. The §3.2 minute records the override in so many words, including my concession that the full monthly score was published 2026-08-09 and my reservation that the thinned gate was the one fixed before the run. §2.3 is strictly better than my two tiers, as I said in Round 3. §6 is the one-per-onset trigger with a sealed replay whose adoption is not score-conditional. §8 closes the historical EBP test permanently.
+
+Reservations for the record (non-blocking):
+
+1. **§1.2 — complete the triple.** I withdraw my Round-3 demand to label nested +18.32 % an "upper bound" for nested-oracle-free: Sol's monotonicity point is correct, since the oracle-free population carries its own pooled base rate. The text's "not been computed" is the accurate label. The 2027 refit should compute the nested oracle-free figure so the printed sentence compares three realised numbers, not two plus a gap.
+
+2. **§3.2(b) / §3.3 — the paired diagnostic is close, not exact.** The −1.02 pp [−4.47, +1.32] figure is the quarter-end thinned phase against the quarterly fit; Fable's requested comparison (monthly fit scored on the 198 quarterly origins, paired) differs in origin set. The sealed monthly-fit spec should include that exact paired comparison, pushed before the refit so its outcome is unknown at sealing. That is the evidentiary door I said would flip me on frequency; seal it now.
+
+3. **§6.2 — replay commensurability.** The configuration-specific replay must print all three censoring variants (real-time open-episode primary, per §7.2's ordering), so the trigger regime's supplement is line-by-line comparable with the September-only supplement and "adoption not conditional on score" cannot be read as sheltering an adverse variant.

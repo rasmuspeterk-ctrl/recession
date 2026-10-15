@@ -1,0 +1,1015 @@
+{
+ "navn": "styrke_simulation",
+ "besvarer": "G3.2 (kode-review 2026-10-15)",
+ "version_kontekst": "v5.0.1",
+ "created_utc": "2026-10-15T16:49:04+00:00",
+ "aendrer_intet_i_driften": true,
+ "snapshot": "2026-09-19",
+ "R_score": "2026-09",
+ "L_embargo": 18,
+ "seed": 11,
+ "n_sim": 3000,
+ "n_boot": 600,
+ "T_gitter": [
+  5,
+  10,
+  20,
+  50,
+  100,
+  150,
+  200
+ ],
+ "design": {
+  "hovedbog": "maanedlig walk-forward, kvartalsvaegte paa maanedskurven, orakel-censurering, modne origins",
+  "blok": "bund til bund (trough -> trough), kalendermaaneder inkl. censurerede",
+  "start": "tilfaeldigt sted i cyklussen (foerste blok laengdevaegtet, offset uniform), derefter uniform m. tilbagelaegning",
+  "H0": "d centreret med puljens raekkevaegtede middel; blokstruktur bevaret",
+  "tests": "ensidet 5 %: cluster-t (df=K-1), boot44 (600 blok-bootstrap-traek, forkast hvis andel<=0 < 5 %), naiv iid-t, wild-cluster (restriktiv Rademacher-bootstrap paa centrerede blokstykkesummer, 600 traek, egen RNG seed+1000)",
+  "stoerrelsesjusteret": "H1-statistik > H0's empiriske 95 %-fraktil (boot44: p < H0's 5 %-fraktil)",
+  "T": "aar SCOREDE kalendermaaneder; laeg ca. 2,5 aars modning til (12 mdr vindue + 18 mdr gulv)"
+ },
+ "kvartal_wf_kontrol": {
+  "n_origins": 198,
+  "n_pos": 32,
+  "log_loss": 0.3227,
+  "base_log_loss": 0.4423,
+  "skill_pct": 27.0512,
+  "brier_skill_pct": 24.1533,
+  "publiceret": {
+   "n_origins": 198,
+   "skill_pct": 27.05,
+   "brier_skill_pct": 24.15
+  }
+ },
+ "maanedlig_hovedbog": {
+  "n_raekker": 591,
+  "n_pos": 96,
+  "foerste": "1967-12",
+  "sidste": "2024-03",
+  "max_abs_kvartal_minus_maanedskurve": 0.0,
+  "skill_pct_mod_fast_18": 30.1983,
+  "middel_d_mod_fast_18": 0.1343,
+  "skill_pct_mod_poolet_basisrate": 30.0295,
+  "brier_skill_pct_mod_poolet": 28.477,
+  "skill_pct_mod_traeningsbasisrate": 31.9559,
+  "basisrate_H0": 0.18,
+  "weights_base_rate": 0.1798,
+  "onsets_i_perioden": [
+   "1970-01",
+   "1973-12",
+   "1980-02",
+   "1981-08",
+   "1990-08",
+   "2001-04",
+   "2008-01",
+   "2020-03"
+  ]
+ },
+ "blokke": [
+  {
+   "fra": "1967-12",
+   "til": "1970-11",
+   "kal_mdr": 36,
+   "scorede": 25,
+   "positive": 12,
+   "onset": "1970-01",
+   "komplet": true,
+   "sum_d": 3.8564,
+   "middel_d": 0.1543,
+   "skill_pct": 16.653
+  },
+  {
+   "fra": "1970-12",
+   "til": "1975-03",
+   "kal_mdr": 52,
+   "scorede": 36,
+   "positive": 12,
+   "onset": "1973-12",
+   "komplet": true,
+   "sum_d": 9.731,
+   "middel_d": 0.2703,
+   "skill_pct": 38.4011
+  },
+  {
+   "fra": "1975-04",
+   "til": "1980-07",
+   "kal_mdr": 64,
+   "scorede": 58,
+   "positive": 12,
+   "onset": "1980-02",
+   "komplet": true,
+   "sum_d": 18.4493,
+   "middel_d": 0.3181,
+   "skill_pct": 62.1057
+  },
+  {
+   "fra": "1980-08",
+   "til": "1982-11",
+   "kal_mdr": 28,
+   "scorede": 12,
+   "positive": 12,
+   "onset": "1981-08",
+   "komplet": true,
+   "sum_d": 13.0969,
+   "middel_d": 1.0914,
+   "skill_pct": 63.6463
+  },
+  {
+   "fra": "1982-12",
+   "til": "1991-03",
+   "kal_mdr": 100,
+   "scorede": 92,
+   "positive": 12,
+   "onset": "1990-08",
+   "komplet": true,
+   "sum_d": 15.8726,
+   "middel_d": 0.1725,
+   "skill_pct": 43.5418
+  },
+  {
+   "fra": "1991-04",
+   "til": "2001-11",
+   "kal_mdr": 128,
+   "scorede": 120,
+   "positive": 12,
+   "onset": "2001-04",
+   "komplet": true,
+   "sum_d": 16.4861,
+   "middel_d": 0.1374,
+   "skill_pct": 39.2431
+  },
+  {
+   "fra": "2001-12",
+   "til": "2009-06",
+   "kal_mdr": 91,
+   "scorede": 73,
+   "positive": 12,
+   "onset": "2008-01",
+   "komplet": true,
+   "sum_d": 9.7436,
+   "middel_d": 0.1335,
+   "skill_pct": 29.8124
+  },
+  {
+   "fra": "2009-07",
+   "til": "2020-04",
+   "kal_mdr": 130,
+   "scorede": 128,
+   "positive": 12,
+   "onset": "2020-03",
+   "komplet": true,
+   "sum_d": 26.5344,
+   "middel_d": 0.2073,
+   "skill_pct": 60.8616
+  },
+  {
+   "fra": "2020-05",
+   "til": "2024-03",
+   "kal_mdr": 47,
+   "scorede": 47,
+   "positive": 0,
+   "onset": null,
+   "komplet": false,
+   "sum_d": -34.3928,
+   "middel_d": -0.7318,
+   "skill_pct": -368.7373
+  }
+ ],
+ "parametrisk": {
+  "diagnostik_styrke": {
+   "middel_d": 0.1197,
+   "se_cluster_historisk": 0.081,
+   "n_blokke_historisk": 9,
+   "aar_pr_blok": 6.4,
+   "blokke_80pct": 26,
+   "aar_80pct": 168
+  },
+  "fra_44_interval": {
+   "middel_d": 0.1197,
+   "interval_90": [
+    -0.042,
+    0.2388
+   ],
+   "se_ved_9_blokke": 0.0854,
+   "blokke_80pct": 28.3,
+   "aar_80pct": 177.1,
+   "formel": "K = ((z95+z80)*SE9/middel)^2 * 9; normal-approx"
+  },
+  "fra_maanedlige_blokke_her": {
+   "middel_d": 0.1343,
+   "se_cluster_K9": 0.0808,
+   "t_historisk": 1.6625,
+   "t_krit_df8": 1.86,
+   "blokke_80pct": 20.1,
+   "aar_80pct": 126.0,
+   "span_aar": 56.3333
+  }
+ },
+ "simulation": {
+  "A_alle_9_blokke": {
+   "n_blokke": 9,
+   "middel_d_pulje": 0.1343,
+   "H0_shift": 0.1343,
+   "tabel": [
+    {
+     "T_aar": 5,
+     "styrke": {
+      "cluster_t": 0.1137,
+      "boot44": 0.8233,
+      "naiv": 0.7837,
+      "wild_cluster": 0.227
+     },
+     "falsk_positiv_H0": {
+      "cluster_t": 0.0437,
+      "boot44": 0.5263,
+      "naiv": 0.4517,
+      "wild_cluster": 0.112
+     },
+     "fejlalarm_blok": {
+      "P_indgaar": 0.1407,
+      "styrke_cluster_t_med": 0.0213,
+      "styrke_cluster_t_uden": 0.1288,
+      "falsk_positiv_cluster_t_H0_med": 0.0047,
+      "falsk_positiv_cluster_t_H0_uden": 0.05
+     },
+     "styrke_stoerrelsesjusteret": {
+      "cluster_t": 0.1247,
+      "naiv": 0.271,
+      "boot44": 0.0
+     },
+     "kritisk_vaerdi_empirisk_H0": {
+      "t_cluster_95": 5.0117,
+      "t_naiv_95": 5.7775,
+      "p_boot44_05": 0.0
+     },
+     "P_0_onsets": 0.3743,
+     "middel_onsets": 0.7193,
+     "naiv_forkaster_givet_0_onsets": 0.6839,
+     "P_d_ikke_positiv": 0.1187,
+     "skill_pct_kvantiler_10_50_90": [
+      -21.3789,
+      43.1385,
+      74.8615
+     ],
+     "blokstykker_K": {
+      "middel": 1.663,
+      "P_K_under_2": 0.3973,
+      "P_K_under_5": 1.0
+     },
+     "hele_cyklusblokke": {
+      "middel": 0.122,
+      "P_mindst_3": 0.0
+     },
+     "n_sim": 3000
+    },
+    {
+     "T_aar": 10,
+     "styrke": {
+      "cluster_t": 0.344,
+      "boot44": 0.7957,
+      "naiv": 0.8353,
+      "wild_cluster": 0.5263
+     },
+     "falsk_positiv_H0": {
+      "cluster_t": 0.0957,
+      "boot44": 0.464,
+      "naiv": 0.464,
+      "wild_cluster": 0.172
+     },
+     "fejlalarm_blok": {
+      "P_indgaar": 0.2133,
+      "styrke_cluster_t_med": 0.0641,
+      "styrke_cluster_t_uden": 0.4199,
+      "falsk_positiv_cluster_t_H0_med": 0.0031,
+      "falsk_positiv_cluster_t_H0_uden": 0.1208
+     },
+     "styrke_stoerrelsesjusteret": {
+      "cluster_t": 0.1857,
+      "naiv": 0.6197,
+      "boot44": 0.0
+     },
+     "kritisk_vaerdi_empirisk_H0": {
+      "t_cluster_95": 8.1281,
+      "t_naiv_95": 3.9501,
+      "p_boot44_05": 0.0
+     },
+     "P_0_onsets": 0.0717,
+     "middel_onsets": 1.4343,
+     "naiv_forkaster_givet_0_onsets": 0.586,
+     "P_d_ikke_positiv": 0.1537,
+     "skill_pct_kvantiler_10_50_90": [
+      -37.338,
+      39.5631,
+      60.4541
+     ],
+     "blokstykker_K": {
+      "middel": 2.455,
+      "P_K_under_2": 0.0603,
+      "P_K_under_5": 0.997
+     },
+     "hele_cyklusblokke": {
+      "middel": 0.631,
+      "P_mindst_3": 0.0077
+     },
+     "n_sim": 3000
+    },
+    {
+     "T_aar": 20,
+     "styrke": {
+      "cluster_t": 0.6397,
+      "boot44": 0.7033,
+      "naiv": 0.7313,
+      "wild_cluster": 0.6087
+     },
+     "falsk_positiv_H0": {
+      "cluster_t": 0.1133,
+      "boot44": 0.484,
+      "naiv": 0.5,
+      "wild_cluster": 0.144
+     },
+     "fejlalarm_blok": {
+      "P_indgaar": 0.3293,
+      "styrke_cluster_t_med": 0.1053,
+      "styrke_cluster_t_uden": 0.9021,
+      "falsk_positiv_cluster_t_H0_med": 0.0121,
+      "falsk_positiv_cluster_t_H0_uden": 0.163
+     },
+     "styrke_stoerrelsesjusteret": {
+      "cluster_t": 0.462,
+      "naiv": 0.693,
+      "boot44": 0.0
+     },
+     "kritisk_vaerdi_empirisk_H0": {
+      "t_cluster_95": 3.44,
+      "t_naiv_95": 4.5766,
+      "p_boot44_05": 0.0
+     },
+     "P_0_onsets": 0.0,
+     "middel_onsets": 2.8617,
+     "naiv_forkaster_givet_0_onsets": null,
+     "P_d_ikke_positiv": 0.1537,
+     "skill_pct_kvantiler_10_50_90": [
+      -8.4252,
+      40.1825,
+      53.9155
+     ],
+     "blokstykker_K": {
+      "middel": 4.072,
+      "P_K_under_2": 0.0,
+      "P_K_under_5": 0.6933
+     },
+     "hele_cyklusblokke": {
+      "middel": 2.2167,
+      "P_mindst_3": 0.3613
+     },
+     "n_sim": 3000
+    },
+    {
+     "T_aar": 50,
+     "styrke": {
+      "cluster_t": 0.416,
+      "boot44": 0.42,
+      "naiv": 0.847,
+      "wild_cluster": 0.547
+     },
+     "falsk_positiv_H0": {
+      "cluster_t": 0.2823,
+      "boot44": 0.3647,
+      "naiv": 0.3857,
+      "wild_cluster": 0.2947
+     },
+     "fejlalarm_blok": {
+      "P_indgaar": 0.6273,
+      "styrke_cluster_t_med": 0.0691,
+      "styrke_cluster_t_uden": 1.0,
+      "falsk_positiv_cluster_t_H0_med": 0.0175,
+      "falsk_positiv_cluster_t_H0_uden": 0.7281
+     },
+     "styrke_stoerrelsesjusteret": {
+      "cluster_t": 0.395,
+      "naiv": 0.5007,
+      "boot44": 0.0
+     },
+     "kritisk_vaerdi_empirisk_H0": {
+      "t_cluster_95": 3.1126,
+      "t_naiv_95": 5.6543,
+      "p_boot44_05": 0.0
+     },
+     "P_0_onsets": 0.0,
+     "middel_onsets": 7.101,
+     "naiv_forkaster_givet_0_onsets": null,
+     "P_d_ikke_positiv": 0.0567,
+     "skill_pct_kvantiler_10_50_90": [
+      6.5212,
+      31.4033,
+      48.5053
+     ],
+     "blokstykker_K": {
+      "middel": 8.8647,
+      "P_K_under_2": 0.0,
+      "P_K_under_5": 0.0
+     },
+     "hele_cyklusblokke": {
+      "middel": 7.0267,
+      "P_mindst_3": 1.0
+     },
+     "n_sim": 3000
+    },
+    {
+     "T_aar": 100,
+     "styrke": {
+      "cluster_t": 0.6987,
+      "boot44": 0.6617,
+      "naiv": 0.9503,
+      "wild_cluster": 0.7243
+     },
+     "falsk_positiv_H0": {
+      "cluster_t": 0.168,
+      "boot44": 0.168,
+      "naiv": 0.3627,
+      "wild_cluster": 0.177
+     },
+     "fejlalarm_blok": {
+      "P_indgaar": 0.84,
+      "styrke_cluster_t_med": 0.6413,
+      "styrke_cluster_t_uden": 1.0,
+      "falsk_positiv_cluster_t_H0_med": 0.0111,
+      "falsk_positiv_cluster_t_H0_uden": 0.9917
+     },
+     "styrke_stoerrelsesjusteret": {
+      "cluster_t": 0.282,
+      "naiv": 0.689,
+      "boot44": 0.0
+     },
+     "kritisk_vaerdi_empirisk_H0": {
+      "t_cluster_95": 3.6277,
+      "t_naiv_95": 6.3482,
+      "p_boot44_05": 0.0
+     },
+     "P_0_onsets": 0.0,
+     "middel_onsets": 14.2317,
+     "naiv_forkaster_givet_0_onsets": null,
+     "P_d_ikke_positiv": 0.0183,
+     "skill_pct_kvantiler_10_50_90": [
+      13.972,
+      31.6891,
+      44.3159
+     ],
+     "blokstykker_K": {
+      "middel": 16.8653,
+      "P_K_under_2": 0.0,
+      "P_K_under_5": 0.0
+     },
+     "hele_cyklusblokke": {
+      "middel": 15.012,
+      "P_mindst_3": 1.0
+     },
+     "n_sim": 3000
+    },
+    {
+     "T_aar": 150,
+     "styrke": {
+      "cluster_t": 0.8013,
+      "boot44": 0.7757,
+      "naiv": 0.9777,
+      "wild_cluster": 0.8097
+     },
+     "falsk_positiv_H0": {
+      "cluster_t": 0.1133,
+      "boot44": 0.1087,
+      "naiv": 0.3573,
+      "wild_cluster": 0.1447
+     },
+     "fejlalarm_blok": {
+      "P_indgaar": 0.9323,
+      "styrke_cluster_t_med": 0.7869,
+      "styrke_cluster_t_uden": 1.0,
+      "falsk_positiv_cluster_t_H0_med": 0.049,
+      "falsk_positiv_cluster_t_H0_uden": 1.0
+     },
+     "styrke_stoerrelsesjusteret": {
+      "cluster_t": 0.3523,
+      "naiv": 0.7843,
+      "boot44": 0.0
+     },
+     "kritisk_vaerdi_empirisk_H0": {
+      "t_cluster_95": 3.6758,
+      "t_naiv_95": 6.5698,
+      "p_boot44_05": 0.0
+     },
+     "P_0_onsets": 0.0,
+     "middel_onsets": 21.3323,
+     "naiv_forkaster_givet_0_onsets": null,
+     "P_d_ikke_positiv": 0.0057,
+     "skill_pct_kvantiler_10_50_90": [
+      16.3615,
+      30.9948,
+      42.1385
+     ],
+     "blokstykker_K": {
+      "middel": 24.8693,
+      "P_K_under_2": 0.0,
+      "P_K_under_5": 0.0
+     },
+     "hele_cyklusblokke": {
+      "middel": 23.0237,
+      "P_mindst_3": 1.0
+     },
+     "n_sim": 3000
+    },
+    {
+     "T_aar": 200,
+     "styrke": {
+      "cluster_t": 0.8883,
+      "boot44": 0.87,
+      "naiv": 0.9933,
+      "wild_cluster": 0.8927
+     },
+     "falsk_positiv_H0": {
+      "cluster_t": 0.1093,
+      "boot44": 0.104,
+      "naiv": 0.3563,
+      "wild_cluster": 0.1193
+     },
+     "fejlalarm_blok": {
+      "P_indgaar": 0.9727,
+      "styrke_cluster_t_med": 0.8852,
+      "styrke_cluster_t_uden": 1.0,
+      "falsk_positiv_cluster_t_H0_med": 0.0843,
+      "falsk_positiv_cluster_t_H0_uden": 1.0
+     },
+     "styrke_stoerrelsesjusteret": {
+      "cluster_t": 0.749,
+      "naiv": 0.898,
+      "boot44": 0.705
+     },
+     "kritisk_vaerdi_empirisk_H0": {
+      "t_cluster_95": 2.3826,
+      "t_naiv_95": 6.1334,
+      "p_boot44_05": 0.0133
+     },
+     "P_0_onsets": 0.0,
+     "middel_onsets": 28.4933,
+     "naiv_forkaster_givet_0_onsets": null,
+     "P_d_ikke_positiv": 0.0013,
+     "skill_pct_kvantiler_10_50_90": [
+      19.0823,
+      30.9515,
+      40.4484
+     ],
+     "blokstykker_K": {
+      "middel": 32.8873,
+      "P_K_under_2": 0.0,
+      "P_K_under_5": 0.0
+     },
+     "hele_cyklusblokke": {
+      "middel": 31.0493,
+      "P_mindst_3": 1.0
+     },
+     "n_sim": 3000
+    }
+   ],
+   "aar_til_80pct_styrke": {
+    "nominel_cluster_t": {
+     "foerste_T_i_gitter": 150,
+     "interpoleret_aar": 149.4,
+     "note": "lineaer interpolation paa groft gitter"
+    },
+    "stoerrelsesjusteret_cluster_t": {
+     "foerste_T_i_gitter": null,
+     "interpoleret_aar": null,
+     "note": "ikke naaet inden 200 aar (max 0.749)"
+    }
+   }
+  },
+  "B_8_komplette_cyklusser": {
+   "n_blokke": 8,
+   "middel_d_pulje": 0.2091,
+   "H0_shift": 0.2091,
+   "tabel": [
+    {
+     "T_aar": 5,
+     "styrke": {
+      "cluster_t": 0.13,
+      "boot44": 0.934,
+      "naiv": 0.8777,
+      "wild_cluster": 0.2497
+     },
+     "falsk_positiv_H0": {
+      "cluster_t": 0.014,
+      "boot44": 0.104,
+      "naiv": 0.1973,
+      "wild_cluster": 0.0577
+     },
+     "fejlalarm_blok": {
+      "P_indgaar": 0.0,
+      "styrke_cluster_t_med": null,
+      "styrke_cluster_t_uden": 0.13,
+      "falsk_positiv_cluster_t_H0_med": null,
+      "falsk_positiv_cluster_t_H0_uden": 0.014
+     },
+     "styrke_stoerrelsesjusteret": {
+      "cluster_t": 0.344,
+      "naiv": 0.7693,
+      "boot44": 0.0
+     },
+     "kritisk_vaerdi_empirisk_H0": {
+      "t_cluster_95": 1.8318,
+      "t_naiv_95": 2.8338,
+      "p_boot44_05": 0.0
+     },
+     "P_0_onsets": 0.3623,
+     "middel_onsets": 0.763,
+     "naiv_forkaster_givet_0_onsets": 0.8335,
+     "P_d_ikke_positiv": 0.0327,
+     "skill_pct_kvantiler_10_50_90": [
+      18.3021,
+      49.1344,
+      76.0045
+     ],
+     "blokstykker_K": {
+      "middel": 1.616,
+      "P_K_under_2": 0.4423,
+      "P_K_under_5": 1.0
+     },
+     "hele_cyklusblokke": {
+      "middel": 0.1123,
+      "P_mindst_3": 0.0
+     },
+     "n_sim": 3000
+    },
+    {
+     "T_aar": 10,
+     "styrke": {
+      "cluster_t": 0.4193,
+      "boot44": 0.979,
+      "naiv": 0.9967,
+      "wild_cluster": 0.6297
+     },
+     "falsk_positiv_H0": {
+      "cluster_t": 0.0143,
+      "boot44": 0.1073,
+      "naiv": 0.1603,
+      "wild_cluster": 0.0323
+     },
+     "fejlalarm_blok": {
+      "P_indgaar": 0.0,
+      "styrke_cluster_t_med": null,
+      "styrke_cluster_t_uden": 0.4193,
+      "falsk_positiv_cluster_t_H0_med": null,
+      "falsk_positiv_cluster_t_H0_uden": 0.0143
+     },
+     "styrke_stoerrelsesjusteret": {
+      "cluster_t": 0.8247,
+      "naiv": 0.959,
+      "boot44": 0.9653
+     },
+     "kritisk_vaerdi_empirisk_H0": {
+      "t_cluster_95": 1.5296,
+      "t_naiv_95": 2.7354,
+      "p_boot44_05": 0.0233
+     },
+     "P_0_onsets": 0.0423,
+     "middel_onsets": 1.5203,
+     "naiv_forkaster_givet_0_onsets": 1.0,
+     "P_d_ikke_positiv": 0.0,
+     "skill_pct_kvantiler_10_50_90": [
+      29.4313,
+      44.2128,
+      61.2354
+     ],
+     "blokstykker_K": {
+      "middel": 2.3757,
+      "P_K_under_2": 0.0587,
+      "P_K_under_5": 0.9987
+     },
+     "hele_cyklusblokke": {
+      "middel": 0.5543,
+      "P_mindst_3": 0.007
+     },
+     "n_sim": 3000
+    },
+    {
+     "T_aar": 20,
+     "styrke": {
+      "cluster_t": 0.908,
+      "boot44": 0.999,
+      "naiv": 1.0,
+      "wild_cluster": 0.842
+     },
+     "falsk_positiv_H0": {
+      "cluster_t": 0.012,
+      "boot44": 0.0617,
+      "naiv": 0.157,
+      "wild_cluster": 0.0217
+     },
+     "fejlalarm_blok": {
+      "P_indgaar": 0.0,
+      "styrke_cluster_t_med": null,
+      "styrke_cluster_t_uden": 0.908,
+      "falsk_positiv_cluster_t_H0_med": null,
+      "falsk_positiv_cluster_t_H0_uden": 0.012
+     },
+     "styrke_stoerrelsesjusteret": {
+      "cluster_t": 1.0,
+      "naiv": 0.9997,
+      "boot44": 0.9957
+     },
+     "kritisk_vaerdi_empirisk_H0": {
+      "t_cluster_95": 1.1744,
+      "t_naiv_95": 2.7321,
+      "p_boot44_05": 0.0383
+     },
+     "P_0_onsets": 0.0,
+     "middel_onsets": 3.027,
+     "naiv_forkaster_givet_0_onsets": null,
+     "P_d_ikke_positiv": 0.0,
+     "skill_pct_kvantiler_10_50_90": [
+      34.0461,
+      45.171,
+      55.828
+     ],
+     "blokstykker_K": {
+      "middel": 3.8753,
+      "P_K_under_2": 0.0,
+      "P_K_under_5": 0.777
+     },
+     "hele_cyklusblokke": {
+      "middel": 2.05,
+      "P_mindst_3": 0.2877
+     },
+     "n_sim": 3000
+    },
+    {
+     "T_aar": 50,
+     "styrke": {
+      "cluster_t": 1.0,
+      "boot44": 1.0,
+      "naiv": 1.0,
+      "wild_cluster": 1.0
+     },
+     "falsk_positiv_H0": {
+      "cluster_t": 0.0073,
+      "boot44": 0.0487,
+      "naiv": 0.1533,
+      "wild_cluster": 0.006
+     },
+     "fejlalarm_blok": {
+      "P_indgaar": 0.0,
+      "styrke_cluster_t_med": null,
+      "styrke_cluster_t_uden": 1.0,
+      "falsk_positiv_cluster_t_H0_med": null,
+      "falsk_positiv_cluster_t_H0_uden": 0.0073
+     },
+     "styrke_stoerrelsesjusteret": {
+      "cluster_t": 1.0,
+      "naiv": 1.0,
+      "boot44": 1.0
+     },
+     "kritisk_vaerdi_empirisk_H0": {
+      "t_cluster_95": 1.2264,
+      "t_naiv_95": 2.7007,
+      "p_boot44_05": 0.0516
+     },
+     "P_0_onsets": 0.0,
+     "middel_onsets": 7.5723,
+     "naiv_forkaster_givet_0_onsets": null,
+     "P_d_ikke_positiv": 0.0,
+     "skill_pct_kvantiler_10_50_90": [
+      38.2578,
+      44.9256,
+      51.7337
+     ],
+     "blokstykker_K": {
+      "middel": 8.4303,
+      "P_K_under_2": 0.0,
+      "P_K_under_5": 0.0
+     },
+     "hele_cyklusblokke": {
+      "middel": 6.5983,
+      "P_mindst_3": 1.0
+     },
+     "n_sim": 3000
+    },
+    {
+     "T_aar": 100,
+     "styrke": {
+      "cluster_t": 1.0,
+      "boot44": 1.0,
+      "naiv": 1.0,
+      "wild_cluster": 1.0
+     },
+     "falsk_positiv_H0": {
+      "cluster_t": 0.0143,
+      "boot44": 0.0443,
+      "naiv": 0.1563,
+      "wild_cluster": 0.0137
+     },
+     "fejlalarm_blok": {
+      "P_indgaar": 0.0,
+      "styrke_cluster_t_med": null,
+      "styrke_cluster_t_uden": 1.0,
+      "falsk_positiv_cluster_t_H0_med": null,
+      "falsk_positiv_cluster_t_H0_uden": 0.0143
+     },
+     "styrke_stoerrelsesjusteret": {
+      "cluster_t": 1.0,
+      "naiv": 1.0,
+      "boot44": 1.0
+     },
+     "kritisk_vaerdi_empirisk_H0": {
+      "t_cluster_95": 1.3166,
+      "t_naiv_95": 2.7583,
+      "p_boot44_05": 0.0533
+     },
+     "P_0_onsets": 0.0,
+     "middel_onsets": 15.2517,
+     "naiv_forkaster_givet_0_onsets": null,
+     "P_d_ikke_positiv": 0.0,
+     "skill_pct_kvantiler_10_50_90": [
+      40.2342,
+      44.8294,
+      49.7781
+     ],
+     "blokstykker_K": {
+      "middel": 16.0957,
+      "P_K_under_2": 0.0,
+      "P_K_under_5": 0.0
+     },
+     "hele_cyklusblokke": {
+      "middel": 14.258,
+      "P_mindst_3": 1.0
+     },
+     "n_sim": 3000
+    },
+    {
+     "T_aar": 150,
+     "styrke": {
+      "cluster_t": 1.0,
+      "boot44": 1.0,
+      "naiv": 1.0,
+      "wild_cluster": 1.0
+     },
+     "falsk_positiv_H0": {
+      "cluster_t": 0.0233,
+      "boot44": 0.048,
+      "naiv": 0.1547,
+      "wild_cluster": 0.0253
+     },
+     "fejlalarm_blok": {
+      "P_indgaar": 0.0,
+      "styrke_cluster_t_med": null,
+      "styrke_cluster_t_uden": 1.0,
+      "falsk_positiv_cluster_t_H0_med": null,
+      "falsk_positiv_cluster_t_H0_uden": 0.0233
+     },
+     "styrke_stoerrelsesjusteret": {
+      "cluster_t": 1.0,
+      "naiv": 1.0,
+      "boot44": 1.0
+     },
+     "kritisk_vaerdi_empirisk_H0": {
+      "t_cluster_95": 1.3563,
+      "t_naiv_95": 2.7182,
+      "p_boot44_05": 0.0566
+     },
+     "P_0_onsets": 0.0,
+     "middel_onsets": 22.877,
+     "naiv_forkaster_givet_0_onsets": null,
+     "P_d_ikke_positiv": 0.0,
+     "skill_pct_kvantiler_10_50_90": [
+      41.0067,
+      44.8049,
+      48.6762
+     ],
+     "blokstykker_K": {
+      "middel": 23.721,
+      "P_K_under_2": 0.0,
+      "P_K_under_5": 0.0
+     },
+     "hele_cyklusblokke": {
+      "middel": 21.8843,
+      "P_mindst_3": 1.0
+     },
+     "n_sim": 3000
+    },
+    {
+     "T_aar": 200,
+     "styrke": {
+      "cluster_t": 1.0,
+      "boot44": 1.0,
+      "naiv": 1.0,
+      "wild_cluster": 1.0
+     },
+     "falsk_positiv_H0": {
+      "cluster_t": 0.0167,
+      "boot44": 0.041,
+      "naiv": 0.1603,
+      "wild_cluster": 0.0187
+     },
+     "fejlalarm_blok": {
+      "P_indgaar": 0.0,
+      "styrke_cluster_t_med": null,
+      "styrke_cluster_t_uden": 1.0,
+      "falsk_positiv_cluster_t_H0_med": null,
+      "falsk_positiv_cluster_t_H0_uden": 0.0167
+     },
+     "styrke_stoerrelsesjusteret": {
+      "cluster_t": 1.0,
+      "naiv": 1.0,
+      "boot44": 1.0
+     },
+     "kritisk_vaerdi_empirisk_H0": {
+      "t_cluster_95": 1.364,
+      "t_naiv_95": 2.6712,
+      "p_boot44_05": 0.06
+     },
+     "P_0_onsets": 0.0,
+     "middel_onsets": 30.544,
+     "naiv_forkaster_givet_0_onsets": null,
+     "P_d_ikke_positiv": 0.0,
+     "skill_pct_kvantiler_10_50_90": [
+      41.5695,
+      44.8401,
+      48.1088
+     ],
+     "blokstykker_K": {
+      "middel": 31.3963,
+      "P_K_under_2": 0.0,
+      "P_K_under_5": 0.0
+     },
+     "hele_cyklusblokke": {
+      "middel": 29.5623,
+      "P_mindst_3": 1.0
+     },
+     "n_sim": 3000
+    }
+   ],
+   "aar_til_80pct_styrke": {
+    "nominel_cluster_t": {
+     "foerste_T_i_gitter": 20,
+     "interpoleret_aar": 17.8,
+     "note": "lineaer interpolation paa groft gitter"
+    },
+    "stoerrelsesjusteret_cluster_t": {
+     "foerste_T_i_gitter": 10,
+     "interpoleret_aar": 9.7,
+     "note": "lineaer interpolation paa groft gitter"
+    }
+   }
+  }
+ },
+ "falsk_positiv_H0_pr_antal_blokstykker": {
+  "K=1": {
+   "n": 2876,
+   "cluster_t": 0.0,
+   "boot44": 0.2778,
+   "naiv": 0.137,
+   "wild_cluster": 0.0
+  },
+  "K=2": {
+   "n": 6453,
+   "cluster_t": 0.0471,
+   "boot44": 0.2665,
+   "naiv": 0.3194,
+   "wild_cluster": 0.1125
+  },
+  "K=3": {
+   "n": 4304,
+   "cluster_t": 0.0695,
+   "boot44": 0.323,
+   "naiv": 0.358,
+   "wild_cluster": 0.1173
+  },
+  "K=4": {
+   "n": 2765,
+   "cluster_t": 0.0485,
+   "boot44": 0.281,
+   "naiv": 0.3711,
+   "wild_cluster": 0.0691
+  },
+  "K=5-9": {
+   "n": 6077,
+   "cluster_t": 0.1312,
+   "boot44": 0.2429,
+   "naiv": 0.3028,
+   "wild_cluster": 0.1469
+  },
+  "K>=10": {
+   "n": 19525,
+   "cluster_t": 0.0793,
+   "boot44": 0.0954,
+   "naiv": 0.2658,
+   "wild_cluster": 0.0872
+  }
+ },
+ "forbehold": [
+  "Simulationen antager, at fremtidige cykler er resamples af de 9 (hhv. 8) historiske blokke 1967-12..2024-03.",
+  "Hovedbogen er en rekonstrueret MAANEDLIG walk-forward (kvartalsvaegte paa maanedskurven), ikke den publicerede kvartals-wf; basisraten er fast 18,0 % (den loggede), ikke den poolede.",
+  "Censureringen er orakel (endelig kronologi) som primaermetrikken; den levende hovedbog censurerer kun annoncerede recessioner (BEDOEMMELSESNOEGLE (d)), saa dens forventede skill er lavere (diagnostik 4.5: +20,4 %).",
+  "T-gitteret er groft (5/10/20/50/100/150/200); 'aar til 80 %' er lineaer interpolation og en stoerrelsesorden, ikke et punktestimat.",
+  "cluster-t's styrkekurve er ikke monoton i variant A: den afhaenger af om fejlalarm-blokken 2020-05..2024-03 traekkes, og af t-kritiske vaerdier ved smaa K; under H0 holder den ikke sit nominelle niveau ved faa blokke.",
+  "H0 er 'centreret d' (samme spredning som historikken); andre nulhypoteser (fx P = 18 % overalt) er ikke simuleret. I variant A er det en blanding: hovedboeger uden fejlalarm-blokken har positiv drift, med den negativ; se 'fejlalarm_blok'.",
+  "Wild-cluster-testen er tilfoejet ud over reviewets tre tests (skeptikerens korrektion). Den er en restriktiv bootstrap: den observerede t er ikke blandt de 2^K fortegnsudfald, og ved K <= 3 blokstykker er t*-fordelingen degenereret (K = 2: t* i {0, +-n/|N1-N2|}), saa p kan vaere 0. Dens reelle niveau staar i 'falsk_positiv_H0' og pr. K; den er IKKE stoerrelseskontrolleret ved faa blokke."
+ ]
+}

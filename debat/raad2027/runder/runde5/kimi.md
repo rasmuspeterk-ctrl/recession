@@ -1,0 +1,11 @@
+VOTE: APPROVE
+
+Both Round-4 rejections were resolved by verification, not negotiation. Sol's eligibility rule is now executable, and the check of `frekvensgate_resultat.json` establishes that the m%3==0 thinned set is origin-identical to the 198 quarterly origins (0 label disagreements, same pooled base rate 0.1616). That converts my Round-4 reservation 2 from "close, not exact" to exact, and Grok's objection is answered by artifact, not assertion. All three of my Round-4 reservations are now in the text: nested oracle-free computed at the 2027 refit (§1.2), the paired diagnostic re-run with code-checked origin identity (§3.3), three censoring variants with real-time first (§6.2). Neither veto is triggered.
+
+Reservations for the record (non-blocking):
+
+1. **§3.2(b) — pin the artifact by hash, and record what 0.02 pp means.** With origin identity established, the executed gate failed by 0.02 pp against a paired SD of 2.58 pp — 0.008 SD. The paired difference itself is −0.40 SD with an interval [−4.47, +1.32] that does not favour monthly. The minutes should state this in numbers: the council is not overriding evidence, it is declining to act on noise. And because −1.02 pp is the load-bearing reason for declining a preregistered gate, the JSON's commit hash belongs in the minutes — a path can be regenerated, a hash cannot. The secretary verified its own artifact; independent reproduction is noted, but the pin should be cryptographic.
+
+2. **§3.3 — pin the normalisation numerically, not as a promise.** "Including the loss/penalty normalisation" is not a number. Under a summed loss, λ_m = λ_q·(N_m/N_q) ≈ 3.0; E2's counterfactual monthly fit (β −1.41 vs −1.29; live P 14.4 vs 14.9) ran at roughly one-third effective shrinkage, so the unscored column as prototyped confounds sampling frequency with relaxed penalisation. The sealed spec should state the chosen normalisation and its value before any run.
+
+3. **§9.3 — add 1980–81 to the date-stamped tests.** 1991/2001 exercise the trough-lag term; the double-dip is the hardest case for §9.2 condition (2): E5's 83 open-episode months include the entire 1980-08..1981-05 run-up (10 positive rows, P to 96.6 %). A test suite that skips back-to-back onsets has not tested censoring resolution where it actually binds.

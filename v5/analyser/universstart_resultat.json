@@ -1,0 +1,951 @@
+{
+ "analyse": "universstart",
+ "svarer_paa": "F34 (kode-review 2026-10-15)",
+ "aendrer_intet_i_drift": true,
+ "created_utc": "2026-10-15T16:39:41+00:00",
+ "snapshot": "2026-09-19",
+ "snapshot_sha256": "c8c2ffa5261c480de8d9aeb7ccca6f7f88de2044d15e6fdc018535c514f0bbca",
+ "refit_maaned": "2026-09",
+ "kalibrering_i_drift": {
+  "manifest_hash": "72c3371d",
+  "version": "5.0.1"
+ },
+ "live": {
+  "snapshot": "2026-10-15",
+  "note": "pinnet",
+  "kilde": "daglig",
+  "vindue": [
+   "2026-09-14",
+   "2026-10-13"
+  ],
+  "n_dage": 21,
+  "curve": 1.1181,
+  "maanedlig": {
+   "curve": 1.0500000000000003,
+   "y10": 4.99,
+   "tb3": 3.94,
+   "maaned": "2026-09"
+  }
+ },
+ "input_punkter": {
+  "bro": 0.96,
+  "live_i_dag": 1.1181,
+  "maanedlig_nu": 1.05
+ },
+ "protokol": {
+  "START_QK": "1947Q2",
+  "L_embargo": 18,
+  "wf_start": 1960,
+  "seed": 42,
+  "n_draws": 1000,
+  "mde_trin3_pp": 4.42
+ },
+ "ltr": {
+  "gs10_foerste_maaned": "1953-04",
+  "kvartaler_i_universet": 24,
+  "foerste": "1947Q2",
+  "sidste": "1953Q1",
+  "note": "kvartalets curve = sidste maaneds GS10 - TB3MS; uden GS10 bruges Shillers LTR (calibrate.build_monthly)"
+ },
+ "reference_drift": {
+  "w": [
+   -2.0697,
+   -1.4884
+  ],
+  "base_rate": 0.1798,
+  "n_obs": 267,
+  "wf_improvement": 27.05,
+  "wf_brier": 24.15,
+  "fuldmodel_wf": 23.16,
+  "forskel_pp": -3.89,
+  "bro_P_iii": 0.1773,
+  "bro_input": 0.96,
+  "band_sha256": "4b2e54c35c5aaefe",
+  "diagnostik_oracle_fri": {
+   "n": 219,
+   "improvement": 20.37
+  },
+  "diagnostik_base_rate_poolet": 0.1616
+ },
+ "selvtjek_1947Q2_mod_drift": {
+  "w": true,
+  "base_rate": true,
+  "n_obs": true,
+  "wf_improvement": true,
+  "wf_brier": true,
+  "fuldmodel_wf": true,
+  "bro_P": true,
+  "band_sha256": true,
+  "oracle_fri": true,
+  "alle_ok": true
+ },
+ "starter": {
+  "1947Q2": {
+   "start": "1947Q2",
+   "univers": {
+    "n_raekker": 316,
+    "foerste": "1947Q2",
+    "sidste": "2026Q1"
+   },
+   "fit": {
+    "n_obs": 267,
+    "n_pos": 48,
+    "base_rate": 0.1798,
+    "w": [
+     -2.0697,
+     -1.4884
+    ],
+    "mu": {
+     "curve": 1.3733
+    },
+    "sd": {
+     "curve": 1.1495
+    },
+    "raa": {
+     "beta_curve_pr_pp": -1.2948,
+     "alpha": -0.2915
+    },
+    "foerste_origin": "1947Q2",
+    "estimering_slut": "2024Q1",
+    "ltr_kvartaler_i_fit": 20,
+    "foer_1960": {
+     "n": 41,
+     "n_pos": 15,
+     "rate": 0.3659
+    },
+    "fra_1960": {
+     "n": 226,
+     "n_pos": 33,
+     "rate": 0.146
+    }
+   },
+   "P": {
+    "bro": 0.1773,
+    "live_i_dag": 0.1494,
+    "maanedlig_nu": 0.161
+   },
+   "baand": {
+    "bro": {
+     "P": 0.1773,
+     "P_minus_basisrate_pp": -0.25,
+     "baand": [
+      0.1269,
+      0.2558
+     ],
+     "basisrate": 0.1798,
+     "baand_udelukker_basisrate": false,
+     "ratio": null,
+     "dom_ord": "ikke skelnelig",
+     "parret": {
+      "baand_pp": [
+       -3.54,
+       3.73
+      ],
+      "skelnelig": false,
+      "enig_med_baandregel": true
+     }
+    },
+    "live_i_dag": {
+     "P": 0.1494,
+     "P_minus_basisrate_pp": -3.04,
+     "baand": [
+      0.1025,
+      0.2129
+     ],
+     "basisrate": 0.1798,
+     "baand_udelukker_basisrate": false,
+     "ratio": null,
+     "dom_ord": "ikke skelnelig",
+     "parret": {
+      "baand_pp": [
+       -6.38,
+       -0.23
+      ],
+      "skelnelig": true,
+      "enig_med_baandregel": false
+     }
+    },
+    "maanedlig_nu": {
+     "P": 0.161,
+     "P_minus_basisrate_pp": -1.88,
+     "baand": [
+      0.1116,
+      0.2305
+     ],
+     "basisrate": 0.1798,
+     "baand_udelukker_basisrate": false,
+     "ratio": null,
+     "dom_ord": "ikke skelnelig",
+     "parret": {
+      "baand_pp": [
+       -5.07,
+       1.28
+      ],
+      "skelnelig": false,
+      "enig_med_baandregel": true
+     }
+    }
+   },
+   "bootstrap": {
+    "seed": 42,
+    "n_draws": 1000,
+    "n_blokke": 13,
+    "band_sha256": "4b2e54c35c5aaefe",
+    "W_10_90": [
+     -2.3447,
+     -1.0086
+    ],
+    "base_10_90": [
+     0.1465,
+     0.2302
+    ]
+   },
+   "wf": {
+    "n": 198,
+    "n_pos": 32,
+    "foerste": "1967Q4",
+    "sidste": "2024Q1",
+    "base_rate_poolet": 0.1616,
+    "logloss": 0.3227,
+    "baseline_poolet": 0.4423,
+    "improvement": 27.05,
+    "brier": 24.15,
+    "mod_fit_basisrate": {
+     "basisrate": 0.1798,
+     "baseline": 0.4435,
+     "improvement": 27.24,
+     "brier": 24.34
+    },
+    "mod_expanding_intercept": {
+     "improvement_expanding": 29.21,
+     "baseline_expanding": 0.4558
+    },
+    "poolet_minus_fit_basisrate_pp": -1.82,
+    "power_min_pos_i_traening": 16,
+    "power_median_pos_i_traening": 36
+   },
+   "oracle_fri_4_5": {
+    "n": 219,
+    "n_pos": 32,
+    "logloss": 0.3312,
+    "baseline": 0.4159,
+    "improvement": 20.37,
+    "brier": 16.19
+   },
+   "gate": {
+    "identiske_origins": true,
+    "curve_only_wf": 27.05,
+    "curve_only_brier": 24.15,
+    "fuldmodel_wf": 23.16,
+    "fuldmodel_brier": 23.69,
+    "n_origins": 198,
+    "foerste_origin": "1967Q4",
+    "fuldmodel_vaerste_fejlalarm": {
+     "p": 0.9874,
+     "origin": "2023Q2"
+    },
+    "curve_only_vaerste_fejlalarm": {
+     "p": 0.9383,
+     "origin": "2023Q2"
+    },
+    "fuldmodel_vaerste_origins": [
+     {
+      "origin": "2023Q2",
+      "p": 0.9874,
+      "Y": 0
+     },
+     {
+      "origin": "2023Q1",
+      "p": 0.9789,
+      "Y": 0
+     },
+     {
+      "origin": "2023Q4",
+      "p": 0.9655,
+      "Y": 0
+     },
+     {
+      "origin": "2023Q3",
+      "p": 0.9588,
+      "Y": 0
+     },
+     {
+      "origin": "1972Q4",
+      "p": 0.042,
+      "Y": 1
+     }
+    ],
+    "forskel_pp": -3.89,
+    "mde_pp": 4.42,
+    "mde_gate_pp": 21.06,
+    "fuldmodel_slaar": false,
+    "raadsbeslutning_paakraevet": false,
+    "status": "testet, ikke bestaaet mod benchmark (trin 6; genkoert v5.0.1)"
+   },
+   "fuldmodel_fit": {
+    "n_obs": 267,
+    "n_pos": 48,
+    "base_rate": 0.1798,
+    "w": [
+     -2.2226,
+     -1.7011,
+     -0.1238,
+     -0.1902,
+     -0.2371,
+     -0.6536
+    ],
+    "P": {
+     "bro": 0.1665,
+     "live_i_dag": 0.1365,
+     "maanedlig_nu": 0.1488
+    },
+    "P_note": "fuldmodellens oevrige features sat til deres mu i manifest 72c3371d (kun kurven varieres) — illustrativt, ikke motorens live-vektor"
+   },
+   "wf_samme_origins": {
+    "n": 158,
+    "n_pos": 20,
+    "base_rate_poolet": 0.1266,
+    "improvement": 20.47,
+    "brier": 13.58,
+    "logloss": 0.3021,
+    "fuldmodel_improvement": 14.09,
+    "fuldmodel_brier": 10.39,
+    "gate_forskel_pp": -6.38
+   }
+  },
+  "1953Q2": {
+   "start": "1953Q2",
+   "univers": {
+    "n_raekker": 292,
+    "foerste": "1953Q2",
+    "sidste": "2026Q1"
+   },
+   "fit": {
+    "n_obs": 247,
+    "n_pos": 41,
+    "base_rate": 0.166,
+    "w": [
+     -2.3319,
+     -1.675
+    ],
+    "mu": {
+     "curve": 1.3865
+    },
+    "sd": {
+     "curve": 1.1919
+    },
+    "raa": {
+     "beta_curve_pr_pp": -1.4053,
+     "alpha": -0.3835
+    },
+    "foerste_origin": "1953Q2",
+    "estimering_slut": "2024Q1",
+    "ltr_kvartaler_i_fit": 0,
+    "foer_1960": {
+     "n": 21,
+     "n_pos": 8,
+     "rate": 0.381
+    },
+    "fra_1960": {
+     "n": 226,
+     "n_pos": 33,
+     "rate": 0.146
+    }
+   },
+   "P": {
+    "bro": 0.1503,
+    "live_i_dag": 0.124,
+    "maanedlig_nu": 0.1348
+   },
+   "baand": {
+    "bro": {
+     "P": 0.1503,
+     "P_minus_basisrate_pp": -1.57,
+     "baand": [
+      0.1083,
+      0.2105
+     ],
+     "basisrate": 0.166,
+     "baand_udelukker_basisrate": false,
+     "ratio": null,
+     "dom_ord": "ikke skelnelig",
+     "parret": {
+      "baand_pp": [
+       -5.15,
+       1.72
+      ],
+      "skelnelig": false,
+      "enig_med_baandregel": true
+     }
+    },
+    "live_i_dag": {
+     "P": 0.124,
+     "P_minus_basisrate_pp": -4.2,
+     "baand": [
+      0.086,
+      0.1736
+     ],
+     "basisrate": 0.166,
+     "baand_udelukker_basisrate": false,
+     "ratio": null,
+     "dom_ord": "ikke skelnelig",
+     "parret": {
+      "baand_pp": [
+       -7.77,
+       -1.59
+      ],
+      "skelnelig": true,
+      "enig_med_baandregel": false
+     }
+    },
+    "maanedlig_nu": {
+     "P": 0.1348,
+     "P_minus_basisrate_pp": -3.12,
+     "baand": [
+      0.0953,
+      0.1882
+     ],
+     "basisrate": 0.166,
+     "baand_udelukker_basisrate": false,
+     "ratio": null,
+     "dom_ord": "ikke skelnelig",
+     "parret": {
+      "baand_pp": [
+       -6.75,
+       -0.34
+      ],
+      "skelnelig": true,
+      "enig_med_baandregel": false
+     }
+    }
+   },
+   "bootstrap": {
+    "seed": 42,
+    "n_draws": 1000,
+    "n_blokke": 12,
+    "band_sha256": "74fd158a05ab847a",
+    "W_10_90": [
+     -2.6171,
+     -1.1812
+    ],
+    "base_10_90": [
+     0.1359,
+     0.2164
+    ]
+   },
+   "wf": {
+    "n": 178,
+    "n_pos": 25,
+    "foerste": "1973Q3",
+    "sidste": "2024Q1",
+    "base_rate_poolet": 0.1404,
+    "logloss": 0.2829,
+    "baseline_poolet": 0.4058,
+    "improvement": 30.28,
+    "brier": 25.97,
+    "mod_fit_basisrate": {
+     "basisrate": 0.166,
+     "baseline": 0.4082,
+     "improvement": 30.7,
+     "brier": 26.37
+    },
+    "mod_expanding_intercept": {
+     "improvement_expanding": 33.76,
+     "baseline_expanding": 0.4271
+    },
+    "poolet_minus_fit_basisrate_pp": -2.56,
+    "power_min_pos_i_traening": 13,
+    "power_median_pos_i_traening": 29
+   },
+   "oracle_fri_4_5": {
+    "n": 196,
+    "n_pos": 25,
+    "logloss": 0.3015,
+    "baseline": 0.3817,
+    "improvement": 21.0,
+    "brier": 14.87
+   },
+   "gate": {
+    "identiske_origins": true,
+    "curve_only_wf": 30.28,
+    "curve_only_brier": 25.97,
+    "fuldmodel_wf": -0.73,
+    "fuldmodel_brier": -5.84,
+    "n_origins": 178,
+    "foerste_origin": "1973Q3",
+    "fuldmodel_vaerste_fejlalarm": {
+     "p": 0.9931,
+     "origin": "1978Q4"
+    },
+    "curve_only_vaerste_fejlalarm": {
+     "p": 0.9505,
+     "origin": "2023Q2"
+    },
+    "fuldmodel_vaerste_origins": [
+     {
+      "origin": "1978Q4",
+      "p": 0.9931,
+      "Y": 0
+     },
+     {
+      "origin": "1978Q3",
+      "p": 0.9726,
+      "Y": 0
+     },
+     {
+      "origin": "1977Q3",
+      "p": 0.9525,
+      "Y": 0
+     },
+     {
+      "origin": "2023Q2",
+      "p": 0.9522,
+      "Y": 0
+     },
+     {
+      "origin": "2023Q1",
+      "p": 0.9506,
+      "Y": 0
+     }
+    ],
+    "forskel_pp": -31.01,
+    "mde_pp": 4.42,
+    "mde_gate_pp": 56.09,
+    "fuldmodel_slaar": false,
+    "raadsbeslutning_paakraevet": false,
+    "status": "testet, ikke bestaaet mod benchmark (trin 6; genkoert v5.0.1)"
+   },
+   "fuldmodel_fit": {
+    "n_obs": 247,
+    "n_pos": 41,
+    "base_rate": 0.166,
+    "w": [
+     -2.4584,
+     -1.9036,
+     0.2089,
+     -0.0794,
+     0.5151,
+     -0.5888
+    ],
+    "P": {
+     "bro": 0.1475,
+     "live_i_dag": 0.1185,
+     "maanedlig_nu": 0.1304
+    },
+    "P_note": "fuldmodellens oevrige features sat til deres mu i manifest 72c3371d (kun kurven varieres) — illustrativt, ikke motorens live-vektor"
+   },
+   "wf_samme_origins": {
+    "n": 158,
+    "n_pos": 20,
+    "base_rate_poolet": 0.1266,
+    "improvement": 21.45,
+    "brier": 13.63,
+    "logloss": 0.2984,
+    "fuldmodel_improvement": 18.3,
+    "fuldmodel_brier": 10.01,
+    "gate_forskel_pp": -3.15
+   },
+   "wf_protokol_paa_disse_origins": {
+    "n": 178,
+    "improvement": 28.14,
+    "brier": 24.96,
+    "note": "1947Q2-walk-forwardens P'er scoret paa praecis denne starts scorede origins"
+   }
+  },
+  "1960Q1": {
+   "start": "1960Q1",
+   "univers": {
+    "n_raekker": 265,
+    "foerste": "1960Q1",
+    "sidste": "2026Q1"
+   },
+   "fit": {
+    "n_obs": 226,
+    "n_pos": 33,
+    "base_rate": 0.146,
+    "w": [
+     -2.5832,
+     -1.7153
+    ],
+    "mu": {
+     "curve": 1.4257
+    },
+    "sd": {
+     "curve": 1.2295
+    },
+    "raa": {
+     "beta_curve_pr_pp": -1.3952,
+     "alpha": -0.5941
+    },
+    "foerste_origin": "1960Q1",
+    "estimering_slut": "2024Q1",
+    "ltr_kvartaler_i_fit": 0,
+    "foer_1960": {
+     "n": 0,
+     "n_pos": 0,
+     "rate": null
+    },
+    "fra_1960": {
+     "n": 226,
+     "n_pos": 33,
+     "rate": 0.146
+    }
+   },
+   "P": {
+    "bro": 0.1264,
+    "live_i_dag": 0.104,
+    "maanedlig_nu": 0.1131
+   },
+   "baand": {
+    "bro": {
+     "P": 0.1264,
+     "P_minus_basisrate_pp": -1.96,
+     "baand": [
+      0.0891,
+      0.1861
+     ],
+     "basisrate": 0.146,
+     "baand_udelukker_basisrate": false,
+     "ratio": null,
+     "dom_ord": "ikke skelnelig",
+     "parret": {
+      "baand_pp": [
+       -5.46,
+       1.44
+      ],
+      "skelnelig": false,
+      "enig_med_baandregel": true
+     }
+    },
+    "live_i_dag": {
+     "P": 0.104,
+     "P_minus_basisrate_pp": -4.2,
+     "baand": [
+      0.0698,
+      0.1511
+     ],
+     "basisrate": 0.146,
+     "baand_udelukker_basisrate": false,
+     "ratio": null,
+     "dom_ord": "ikke skelnelig",
+     "parret": {
+      "baand_pp": [
+       -7.67,
+       -1.46
+      ],
+      "skelnelig": true,
+      "enig_med_baandregel": false
+     }
+    },
+    "maanedlig_nu": {
+     "P": 0.1131,
+     "P_minus_basisrate_pp": -3.29,
+     "baand": [
+      0.078,
+      0.1642
+     ],
+     "basisrate": 0.146,
+     "baand_udelukker_basisrate": false,
+     "ratio": null,
+     "dom_ord": "ikke skelnelig",
+     "parret": {
+      "baand_pp": [
+       -6.71,
+       -0.31
+      ],
+      "skelnelig": true,
+      "enig_med_baandregel": false
+     }
+    }
+   },
+   "bootstrap": {
+    "seed": 42,
+    "n_draws": 1000,
+    "n_blokke": 10,
+    "band_sha256": "c0c81a9aabdf8686",
+    "W_10_90": [
+     -2.6537,
+     -1.2101
+    ],
+    "base_10_90": [
+     0.1176,
+     0.191
+    ]
+   },
+   "wf": {
+    "n": 158,
+    "n_pos": 20,
+    "foerste": "1980Q3",
+    "sidste": "2024Q1",
+    "base_rate_poolet": 0.1266,
+    "logloss": 0.2967,
+    "baseline_poolet": 0.3798,
+    "improvement": 21.89,
+    "brier": 12.24,
+    "mod_fit_basisrate": {
+     "basisrate": 0.146,
+     "baseline": 0.3814,
+     "improvement": 22.21,
+     "brier": 12.54
+    },
+    "mod_expanding_intercept": {
+     "improvement_expanding": 26.57,
+     "baseline_expanding": 0.4041
+    },
+    "poolet_minus_fit_basisrate_pp": -1.94,
+    "power_min_pos_i_traening": 9,
+    "power_median_pos_i_traening": 21
+   },
+   "oracle_fri_4_5": {
+    "n": 169,
+    "n_pos": 20,
+    "logloss": 0.2815,
+    "baseline": 0.3636,
+    "improvement": 22.58,
+    "brier": 12.54
+   },
+   "gate": {
+    "identiske_origins": true,
+    "curve_only_wf": 21.89,
+    "curve_only_brier": 12.24,
+    "fuldmodel_wf": 3.71,
+    "fuldmodel_brier": -4.68,
+    "n_origins": 158,
+    "foerste_origin": "1980Q3",
+    "fuldmodel_vaerste_fejlalarm": {
+     "p": 0.9315,
+     "origin": "2023Q2"
+    },
+    "curve_only_vaerste_fejlalarm": {
+     "p": 0.9386,
+     "origin": "2023Q2"
+    },
+    "fuldmodel_vaerste_origins": [
+     {
+      "origin": "1981Q2",
+      "p": 0.0144,
+      "Y": 1
+     },
+     {
+      "origin": "1981Q1",
+      "p": 0.0202,
+      "Y": 1
+     },
+     {
+      "origin": "2023Q2",
+      "p": 0.9315,
+      "Y": 0
+     },
+     {
+      "origin": "2023Q1",
+      "p": 0.9286,
+      "Y": 0
+     },
+     {
+      "origin": "1990Q2",
+      "p": 0.0808,
+      "Y": 1
+     }
+    ],
+    "forskel_pp": -18.18,
+    "mde_pp": 4.42,
+    "mde_gate_pp": 24.44,
+    "fuldmodel_slaar": false,
+    "raadsbeslutning_paakraevet": false,
+    "status": "testet, ikke bestaaet mod benchmark (trin 6; genkoert v5.0.1)"
+   },
+   "fuldmodel_fit": {
+    "n_obs": 226,
+    "n_pos": 33,
+    "base_rate": 0.146,
+    "w": [
+     -2.7017,
+     -1.9248,
+     0.195,
+     -0.0197,
+     0.5321,
+     -0.5228
+    ],
+    "P": {
+     "bro": 0.1248,
+     "live_i_dag": 0.1002,
+     "maanedlig_nu": 0.1102
+    },
+    "P_note": "fuldmodellens oevrige features sat til deres mu i manifest 72c3371d (kun kurven varieres) — illustrativt, ikke motorens live-vektor"
+   },
+   "wf_samme_origins": {
+    "n": 158,
+    "n_pos": 20,
+    "base_rate_poolet": 0.1266,
+    "improvement": 21.89,
+    "brier": 12.24,
+    "logloss": 0.2967,
+    "fuldmodel_improvement": 3.71,
+    "fuldmodel_brier": -4.68,
+    "gate_forskel_pp": -18.18
+   },
+   "wf_protokol_paa_disse_origins": {
+    "n": 158,
+    "improvement": 20.47,
+    "brier": 13.58,
+    "note": "1947Q2-walk-forwardens P'er scoret paa praecis denne starts scorede origins"
+   }
+  }
+ },
+ "samme_origins": {
+  "n": 158,
+  "foerste": "1980Q3",
+  "sidste": "2024Q1",
+  "pr_start": {
+   "1947Q2": {
+    "n": 158,
+    "n_pos": 20,
+    "base_rate_poolet": 0.1266,
+    "improvement": 20.47,
+    "brier": 13.58,
+    "logloss": 0.3021,
+    "fuldmodel_improvement": 14.09,
+    "fuldmodel_brier": 10.39,
+    "gate_forskel_pp": -6.38
+   },
+   "1953Q2": {
+    "n": 158,
+    "n_pos": 20,
+    "base_rate_poolet": 0.1266,
+    "improvement": 21.45,
+    "brier": 13.63,
+    "logloss": 0.2984,
+    "fuldmodel_improvement": 18.3,
+    "fuldmodel_brier": 10.01,
+    "gate_forskel_pp": -3.15
+   },
+   "1960Q1": {
+    "n": 158,
+    "n_pos": 20,
+    "base_rate_poolet": 0.1266,
+    "improvement": 21.89,
+    "brier": 12.24,
+    "logloss": 0.2967,
+    "fuldmodel_improvement": 3.71,
+    "fuldmodel_brier": -4.68,
+    "gate_forskel_pp": -18.18
+   }
+  }
+ },
+ "tabel": [
+  {
+   "start": "1947Q2",
+   "n_obs": 267,
+   "n_pos": 48,
+   "basisrate_fit": 0.1798,
+   "basisrate_wf_poolet": 0.1616,
+   "w": [
+    -2.0697,
+    -1.4884
+   ],
+   "beta_pr_pp": -1.2948,
+   "alpha": -0.2915,
+   "P_bro": 0.1773,
+   "P_live": 0.1494,
+   "baand_bro": [
+    0.1269,
+    0.2558
+   ],
+   "dom_bro": "ikke skelnelig",
+   "baand_live": [
+    0.1025,
+    0.2129
+   ],
+   "dom_live": "ikke skelnelig",
+   "parret_skelnelig_bro": false,
+   "parret_skelnelig_live": true,
+   "wf_n": 198,
+   "wf_improvement": 27.05,
+   "wf_brier": 24.15,
+   "wf_samme_origins_improvement": 20.47,
+   "oracle_fri_improvement": 20.37,
+   "gate_fuldmodel_wf": 23.16,
+   "gate_forskel_pp": -3.89,
+   "gate_mde_gate_pp": 21.06,
+   "gate_raadsbeslutning": false
+  },
+  {
+   "start": "1953Q2",
+   "n_obs": 247,
+   "n_pos": 41,
+   "basisrate_fit": 0.166,
+   "basisrate_wf_poolet": 0.1404,
+   "w": [
+    -2.3319,
+    -1.675
+   ],
+   "beta_pr_pp": -1.4053,
+   "alpha": -0.3835,
+   "P_bro": 0.1503,
+   "P_live": 0.124,
+   "baand_bro": [
+    0.1083,
+    0.2105
+   ],
+   "dom_bro": "ikke skelnelig",
+   "baand_live": [
+    0.086,
+    0.1736
+   ],
+   "dom_live": "ikke skelnelig",
+   "parret_skelnelig_bro": false,
+   "parret_skelnelig_live": true,
+   "wf_n": 178,
+   "wf_improvement": 30.28,
+   "wf_brier": 25.97,
+   "wf_samme_origins_improvement": 21.45,
+   "oracle_fri_improvement": 21.0,
+   "gate_fuldmodel_wf": -0.73,
+   "gate_forskel_pp": -31.01,
+   "gate_mde_gate_pp": 56.09,
+   "gate_raadsbeslutning": false
+  },
+  {
+   "start": "1960Q1",
+   "n_obs": 226,
+   "n_pos": 33,
+   "basisrate_fit": 0.146,
+   "basisrate_wf_poolet": 0.1266,
+   "w": [
+    -2.5832,
+    -1.7153
+   ],
+   "beta_pr_pp": -1.3952,
+   "alpha": -0.5941,
+   "P_bro": 0.1264,
+   "P_live": 0.104,
+   "baand_bro": [
+    0.0891,
+    0.1861
+   ],
+   "dom_bro": "ikke skelnelig",
+   "baand_live": [
+    0.0698,
+    0.1511
+   ],
+   "dom_live": "ikke skelnelig",
+   "parret_skelnelig_bro": false,
+   "parret_skelnelig_live": true,
+   "wf_n": 158,
+   "wf_improvement": 21.89,
+   "wf_brier": 12.24,
+   "wf_samme_origins_improvement": 21.89,
+   "oracle_fri_improvement": 22.58,
+   "gate_fuldmodel_wf": 3.71,
+   "gate_forskel_pp": -18.18,
+   "gate_mde_gate_pp": 24.44,
+   "gate_raadsbeslutning": false
+  }
+ ],
+ "noter": [
+  "Fit-basisraten er den frosne kalibreringsparameter i dommen (V501 §3.6); walk-forward-skillen maales mod den poolede rate over de scorede origins (C.metrics). Begge rapporteres pr. start, plus skill mod fit-raten og mod expanding intercept.",
+  "Walk-forwardens scorede origin-saet afhaenger af starten (60 raekker/6 positive i traening), saa 'samme origins' = faellesmaengden; hver starts egen skill staar ved siden af.",
+  "Baand og dom foelger motor.py's regler (10-90 %-baand af P over 1000 episode-blok-bootstrap-vaegte; parret Delta-regel §4.3). Coverage not established — som i drift.",
+  "Universets start er en protokolkonstant (V501 §2). Intet her aendrer P, vaegte, gate eller dom i drift."
+ ]
+}

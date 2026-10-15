@@ -1,0 +1,24 @@
+### 1. Secretary's Framing & Near-Settled Items (N1–N3)
+
+The secretary’s framing of my Round 2 positions is accurate.
+
+* **N1 (Headline / Q1):** **CONFIRM.** I accept the secretary's draft: oracle-free fixed-$\lambda$ (+20.37 %) leads, followed by oracle-censored fixed-$\lambda$ (+27.05 %) and nested-$\lambda$ (+18.32 %) in the same sentence, with the inline power clause ($\approx 150$ years; $P(\text{3 blocks in 20 y}) = 0.25$; 36–53 % naive false-rejection).
+* **N2 (Gate Threshold / Q2):** **CONFIRM.** Dropping the borrowed 4.42 pp tier and using the one-sided critical value $\Delta = \text{skill}(F5) - \text{skill}(\text{curve}) > 1.96 \cdot \text{SD}_{\text{block}}(\Delta)$ (renamed from MDE, today 21.06 pp) as a mandatory council agenda trigger only, printed alongside the 80 %-power MDE ($\approx 2.8 \cdot \text{SD} \approx 30\text{ pp}$), largest-block-dropped $\Delta$, and 1953Q2/1960Q1 start sensitivities, is exact. **VETO** on retaining the 4.42 pp frequency-ablation number anywhere in the feature gate; I would change my mind only if shown that 4.42 pp was derived from the F5-vs-curve difference distribution rather than the monthly-vs-quarterly curve-only distribution.
+* **N3 ($L_R$ / Q9):** **CHANGED-MY-MIND — CONFIRM.** Claude Opus 5.5 and GPT-6.1 Sol Pro’s arithmetic is exact: because an origin $q$ matures at $q + 12\text{ (horizon)} + L_R = q + 30\text{ months}$, a post-trough origin’s censoring status flips after maturity only if $\text{lag}_{\text{trough}} > 12 + L_R = 30\text{ months}$, whereas the historical maximum is 21 (1991). Furthermore, E5’s +4.54 pp gap is a scoring-censoring artifact, not an `eligible_fit` maturation error. I drop $L_R = 21$ and endorse combining **Opus’s formula and Kimi’s eligibility condition**: $L_R = \max(18, \max \text{lag}_{\text{peak}}, \max \text{lag}_{\text{trough}} - 12) = 18$, paired with the explicit code rule that an origin enters `eligible_fit` iff $\text{age} \ge L_R$ AND its censoring status is resolved under announcement dates available at $R$.
+
+---
+
+### 2. Open Disputes (O1–O3)
+
+#### **O1 — Fit Frequency (Q3)**
+* **Final Position:** Keep the quarterly fit ($N = 267$, $\beta = -1.29$). Blueprint §2’s literal gate compares unpaired grids with different pooled base rates, and as Sol Pro proved, switching to $N = 800$ monthly rows under a summed loss alters the effective $\lambda = 1$ regularisation per observation unless we invent a post-hoc penalty rescaling factor after already knowing the monthly $\beta$ ($-1.41$).
+* **Compromise I can live with:** **Option (b).** Retain the quarterly operational fit; state explicitly in the council minutes that the literal §2 prose gate passed (+29.24 % vs 26.05 %) and the council overrode it due to unpaired base-rate incommensurability, MA(11) overlap ($591/12 \approx 49.25$ vs $198/4 = 49.50$ effective units), and unsealed penalty scaling; log the monthly-fit $P$ as an unscored column in every ledger row from 2027-09; and adopt "spec governs code" prospectively.
+* **VETO:** **I VETO switching the operational model to the monthly fit (Option a).** Moving from quarterly to monthly post hoc steepens $\beta$ from $-1.29$ to $-1.41$ and requires inventing an unpreregistered loss/penalty normalisation rule. *Evidence that would change my mind:* A commit timestamped prior to 2026-10-15 that explicitly specified per-observation (averaged) loss normalisation for the monthly fit AND scored the monthly and quarterly models on an identical, common-base-rate origin set clearing the 2.99 pp block critical value.
+
+#### **O2 — Content Trigger (Q6)**
+* **Final Position:** Adopt the content trigger for new positive labels or relabels in `eligible_fit` (excluding negative maturation), paired with Sol Pro and DeepSeek’s sealed configuration-specific replay supplement. Removing an arbitrary 0–9 month NBER calendar alignment lag is sound mechanical hygiene.
+* **Compromise I can live with:** I accept **either** the full positive/relabel content trigger (~18 extra refits in 49 years) **or** Claude Opus 5.5’s **one-refit-per-new-onset** compromise (~6 extra refits in 49 years, firing only when the first positive origin of a new recession matures), provided a configuration-specific replay is published in the E5 supplement. If Fable and Grok maintain an absolute veto, I can even live with keeping September + hash, as mean $|\Delta P|$ is 0.13 pp. No veto.
+
+#### **O3 — EBP (Q8)**
+* **Final Position:** Permanently close the historical test for EBP because the 8 historical onsets (including the 1990/2001 vs 1980/2008/2020 split) have already been inspected.
+* **Compromise I can live with:** **The secretary’s candidate text is accepted verbatim:** the historical sealed test is closed permanently; EBP remains a context line; a future council may specify a prospective-only evaluation, sealed before any onset it would be judged on, with zero use of pre-2027 data as evidence. No veto.

@@ -1,0 +1,2565 @@
+{
+ "protocol_version": "analyse-demotion-G1.4",
+ "created_utc": "2026-10-15T16:41:39+00:00",
+ "review_fund": "G1.4",
+ "snapshot": "2026-09-19",
+ "snapshot_sha256": "c8c2ffa5261c480de8d9aeb7ccca6f7f88de2044d15e6fdc018535c514f0bbca",
+ "aendrer_driften": false,
+ "seed": 42,
+ "mde_trin3_pp": 4.42,
+ "regler": {
+  "udfordrer_bar_trin4": "A1: dLL>=2 & dBrier>=2; A2: >=80% folds paa niveau & alle folds dLL>0; A3: fortegn >=80% LOEO-refits; persistens<60% flagges",
+  "asymmetrisk_publiceret": "demoter iff dLL(drop)>=1 & dBrier(drop)>=1 & dLL(drop)>0 i >=80% folds (ablation4_features.py:21-23, :299)",
+  "symmetrisk": "behold iff incumbenten som udfordrer mod de oevrige klarer A1 & A2 & A3 (fortegn = stabilitet af fuld-fit-fortegnet, ingen praeregistreret retning)",
+  "neutral_LL": "reviewerens hypotetiske regel: demoter iff dLL(drop)>0 & dLL(drop)>0 i >=80% folds",
+  "sekventiel": "baglaens eliminering til fikspunkt: laveste dLL_add blandt de fejlende fjernes foerst, alle retestes mod det nye saet"
+ },
+ "paneler": {
+  "trin4": {
+   "n_raekker": 305,
+   "univers": "1947Q2-2023Q2",
+   "n_scorede_F5": 195,
+   "n_scorede_curve_only": 195,
+   "scorede_origins": "1967Q4-2023Q2",
+   "incumbents_mod_F5": {
+    "curve": {
+     "saet": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "baseline": [
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "n_parret": 195,
+     "imp_med": 33.23,
+     "imp_uden": -11.33,
+     "brier_med": 33.6,
+     "brier_uden": -14.73,
+     "dLL_add": 44.56,
+     "dBrier_add": 48.33,
+     "dLL_ved_drop": -44.56,
+     "dBrier_ved_drop": -48.33,
+     "folds": 8,
+     "folds_niveau_pct": 100.0,
+     "folds_add_pos_pct": 100.0,
+     "folds_drop_pos_pct": 0.0,
+     "alle_folds_positive": true,
+     "persistens_pct": 98.2,
+     "mde_pp": 34.1,
+     "persistens_flag": false,
+     "fortegn_fuldfit": -1,
+     "fortegn_stab_pct": 100.0,
+     "fortegn_folds": 12,
+     "fortegn_v4": -1,
+     "fortegn_som_v4": true,
+     "A1": true,
+     "A2": true,
+     "A3": true,
+     "sym_BESTAAR": true,
+     "sym_BESTAAR_inkl_persistens": true,
+     "asym_DEMOTERET": false,
+     "neutral_LL_DEMOTERET": false
+    },
+    "realrate": {
+     "saet": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "baseline": [
+      "curve",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "n_parret": 195,
+     "imp_med": 33.23,
+     "imp_uden": 34.18,
+     "brier_med": 33.6,
+     "brier_uden": 33.93,
+     "dLL_add": -0.95,
+     "dBrier_add": -0.33,
+     "dLL_ved_drop": 0.95,
+     "dBrier_ved_drop": 0.33,
+     "folds": 8,
+     "folds_niveau_pct": 0.0,
+     "folds_add_pos_pct": 0.0,
+     "folds_drop_pos_pct": 100.0,
+     "alle_folds_positive": false,
+     "persistens_pct": 40.4,
+     "mde_pp": 5.53,
+     "persistens_flag": true,
+     "fortegn_fuldfit": -1,
+     "fortegn_stab_pct": 92.0,
+     "fortegn_folds": 12,
+     "fortegn_v4": -1,
+     "fortegn_som_v4": true,
+     "A1": false,
+     "A2": false,
+     "A3": true,
+     "sym_BESTAAR": false,
+     "sym_BESTAAR_inkl_persistens": false,
+     "asym_DEMOTERET": false,
+     "neutral_LL_DEMOTERET": true
+    },
+    "dd": {
+     "saet": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "baseline": [
+      "curve",
+      "realrate",
+      "d_infl",
+      "cape_pct"
+     ],
+     "n_parret": 195,
+     "imp_med": 33.23,
+     "imp_uden": 34.35,
+     "brier_med": 33.6,
+     "brier_uden": 34.14,
+     "dLL_add": -1.12,
+     "dBrier_add": -0.54,
+     "dLL_ved_drop": 1.12,
+     "dBrier_ved_drop": 0.54,
+     "folds": 8,
+     "folds_niveau_pct": 0.0,
+     "folds_add_pos_pct": 0.0,
+     "folds_drop_pos_pct": 100.0,
+     "alle_folds_positive": false,
+     "persistens_pct": 23.1,
+     "mde_pp": 3.31,
+     "persistens_flag": true,
+     "fortegn_fuldfit": -1,
+     "fortegn_stab_pct": 100.0,
+     "fortegn_folds": 12,
+     "fortegn_v4": -1,
+     "fortegn_som_v4": true,
+     "A1": false,
+     "A2": false,
+     "A3": true,
+     "sym_BESTAAR": false,
+     "sym_BESTAAR_inkl_persistens": false,
+     "asym_DEMOTERET": false,
+     "neutral_LL_DEMOTERET": true
+    },
+    "d_infl": {
+     "saet": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "baseline": [
+      "curve",
+      "realrate",
+      "dd",
+      "cape_pct"
+     ],
+     "n_parret": 195,
+     "imp_med": 33.23,
+     "imp_uden": 34.68,
+     "brier_med": 33.6,
+     "brier_uden": 32.23,
+     "dLL_add": -1.45,
+     "dBrier_add": 1.36,
+     "dLL_ved_drop": 1.45,
+     "dBrier_ved_drop": -1.36,
+     "folds": 8,
+     "folds_niveau_pct": 0.0,
+     "folds_add_pos_pct": 0.0,
+     "folds_drop_pos_pct": 100.0,
+     "alle_folds_positive": false,
+     "persistens_pct": 43.6,
+     "mde_pp": 11.94,
+     "persistens_flag": true,
+     "fortegn_fuldfit": -1,
+     "fortegn_stab_pct": 92.0,
+     "fortegn_folds": 12,
+     "fortegn_v4": -1,
+     "fortegn_som_v4": true,
+     "A1": false,
+     "A2": false,
+     "A3": true,
+     "sym_BESTAAR": false,
+     "sym_BESTAAR_inkl_persistens": false,
+     "asym_DEMOTERET": false,
+     "neutral_LL_DEMOTERET": true
+    },
+    "cape_pct": {
+     "saet": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "baseline": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl"
+     ],
+     "n_parret": 195,
+     "imp_med": 33.23,
+     "imp_uden": 30.04,
+     "brier_med": 33.6,
+     "brier_uden": 31.47,
+     "dLL_add": 3.19,
+     "dBrier_add": 2.13,
+     "dLL_ved_drop": -3.19,
+     "dBrier_ved_drop": -2.13,
+     "folds": 8,
+     "folds_niveau_pct": 50.0,
+     "folds_add_pos_pct": 100.0,
+     "folds_drop_pos_pct": 0.0,
+     "alle_folds_positive": true,
+     "persistens_pct": 75.3,
+     "mde_pp": 9.83,
+     "persistens_flag": false,
+     "fortegn_fuldfit": -1,
+     "fortegn_stab_pct": 100.0,
+     "fortegn_folds": 12,
+     "fortegn_v4": -1,
+     "fortegn_som_v4": true,
+     "A1": true,
+     "A2": false,
+     "A3": true,
+     "sym_BESTAAR": false,
+     "sym_BESTAAR_inkl_persistens": false,
+     "asym_DEMOTERET": false,
+     "neutral_LL_DEMOTERET": false
+    }
+   },
+   "simultan": {
+    "asymmetrisk_publiceret": {
+     "demoteret": [],
+     "slutsaet": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ]
+    },
+    "symmetrisk": {
+     "demoteret": [
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "slutsaet": [
+      "curve"
+     ]
+    },
+    "neutral_LL": {
+     "demoteret": [
+      "realrate",
+      "dd",
+      "d_infl"
+     ],
+     "slutsaet": [
+      "curve",
+      "cape_pct"
+     ]
+    }
+   },
+   "sekventiel": {
+    "asymmetrisk_publiceret": {
+     "slutsaet": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "n_runder": 1,
+     "sti": [
+      {
+       "runde": 1,
+       "saet": [
+        "curve",
+        "realrate",
+        "dd",
+        "d_infl",
+        "cape_pct"
+       ],
+       "tests": {
+        "curve": {
+         "dLL_add": 44.56,
+         "dBrier_add": 48.33,
+         "folds_niveau_pct": 100.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 98.2,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": true,
+         "A3": true,
+         "sym_BESTAAR": true,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        },
+        "realrate": {
+         "dLL_add": -0.95,
+         "dBrier_add": -0.33,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 40.4,
+         "fortegn_stab_pct": 92.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "dd": {
+         "dLL_add": -1.12,
+         "dBrier_add": -0.54,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 23.1,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "d_infl": {
+         "dLL_add": -1.45,
+         "dBrier_add": 1.36,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 43.6,
+         "fortegn_stab_pct": 92.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "cape_pct": {
+         "dLL_add": 3.19,
+         "dBrier_add": 2.13,
+         "folds_niveau_pct": 50.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 75.3,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        }
+       },
+       "fejler": [],
+       "fjernet": null
+      }
+     ]
+    },
+    "symmetrisk": {
+     "slutsaet": [
+      "curve"
+     ],
+     "n_runder": 5,
+     "sti": [
+      {
+       "runde": 1,
+       "saet": [
+        "curve",
+        "realrate",
+        "dd",
+        "d_infl",
+        "cape_pct"
+       ],
+       "tests": {
+        "curve": {
+         "dLL_add": 44.56,
+         "dBrier_add": 48.33,
+         "folds_niveau_pct": 100.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 98.2,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": true,
+         "A3": true,
+         "sym_BESTAAR": true,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        },
+        "realrate": {
+         "dLL_add": -0.95,
+         "dBrier_add": -0.33,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 40.4,
+         "fortegn_stab_pct": 92.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "dd": {
+         "dLL_add": -1.12,
+         "dBrier_add": -0.54,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 23.1,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "d_infl": {
+         "dLL_add": -1.45,
+         "dBrier_add": 1.36,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 43.6,
+         "fortegn_stab_pct": 92.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "cape_pct": {
+         "dLL_add": 3.19,
+         "dBrier_add": 2.13,
+         "folds_niveau_pct": 50.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 75.3,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        }
+       },
+       "fejler": [
+        "realrate",
+        "dd",
+        "d_infl",
+        "cape_pct"
+       ],
+       "fjernet": "d_infl"
+      },
+      {
+       "runde": 2,
+       "saet": [
+        "curve",
+        "realrate",
+        "dd",
+        "cape_pct"
+       ],
+       "tests": {
+        "curve": {
+         "dLL_add": 43.67,
+         "dBrier_add": 45.29,
+         "folds_niveau_pct": 100.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 99.6,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": true,
+         "A3": true,
+         "sym_BESTAAR": true,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        },
+        "realrate": {
+         "dLL_add": -1.16,
+         "dBrier_add": -0.98,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 25.1,
+         "fortegn_stab_pct": 92.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "dd": {
+         "dLL_add": -1.21,
+         "dBrier_add": -1.38,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 18.3,
+         "fortegn_stab_pct": 92.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": true,
+         "neutral_LL_DEMOTERET": true
+        },
+        "cape_pct": {
+         "dLL_add": 1.93,
+         "dBrier_add": 0.79,
+         "folds_niveau_pct": 38.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 60.4,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        }
+       },
+       "fejler": [
+        "realrate",
+        "dd",
+        "cape_pct"
+       ],
+       "fjernet": "dd"
+      },
+      {
+       "runde": 3,
+       "saet": [
+        "curve",
+        "realrate",
+        "cape_pct"
+       ],
+       "tests": {
+        "curve": {
+         "dLL_add": 41.73,
+         "dBrier_add": 41.74,
+         "folds_niveau_pct": 100.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 99.6,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": true,
+         "A3": true,
+         "sym_BESTAAR": true,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        },
+        "realrate": {
+         "dLL_add": -0.92,
+         "dBrier_add": -0.7,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 35.5,
+         "fortegn_stab_pct": 92.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "cape_pct": {
+         "dLL_add": 2.16,
+         "dBrier_add": 1.61,
+         "folds_niveau_pct": 38.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 62.3,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        }
+       },
+       "fejler": [
+        "realrate",
+        "cape_pct"
+       ],
+       "fjernet": "realrate"
+      },
+      {
+       "runde": 4,
+       "saet": [
+        "curve",
+        "cape_pct"
+       ],
+       "tests": {
+        "curve": {
+         "dLL_add": 43.08,
+         "dBrier_add": 43.21,
+         "folds_niveau_pct": 100.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 99.4,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": true,
+         "A3": true,
+         "sym_BESTAAR": true,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        },
+        "cape_pct": {
+         "dLL_add": 2.49,
+         "dBrier_add": 1.47,
+         "folds_niveau_pct": 50.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 65.6,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        }
+       },
+       "fejler": [
+        "cape_pct"
+       ],
+       "fjernet": "cape_pct"
+      },
+      {
+       "runde": 5,
+       "saet": [
+        "curve"
+       ],
+       "tests": {},
+       "fejler": [],
+       "fjernet": null,
+       "note": "sidste feature testes ikke mod den tomme model"
+      }
+     ]
+    },
+    "neutral_LL": {
+     "slutsaet": [
+      "curve",
+      "cape_pct"
+     ],
+     "n_runder": 4,
+     "sti": [
+      {
+       "runde": 1,
+       "saet": [
+        "curve",
+        "realrate",
+        "dd",
+        "d_infl",
+        "cape_pct"
+       ],
+       "tests": {
+        "curve": {
+         "dLL_add": 44.56,
+         "dBrier_add": 48.33,
+         "folds_niveau_pct": 100.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 98.2,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": true,
+         "A3": true,
+         "sym_BESTAAR": true,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        },
+        "realrate": {
+         "dLL_add": -0.95,
+         "dBrier_add": -0.33,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 40.4,
+         "fortegn_stab_pct": 92.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "dd": {
+         "dLL_add": -1.12,
+         "dBrier_add": -0.54,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 23.1,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "d_infl": {
+         "dLL_add": -1.45,
+         "dBrier_add": 1.36,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 43.6,
+         "fortegn_stab_pct": 92.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "cape_pct": {
+         "dLL_add": 3.19,
+         "dBrier_add": 2.13,
+         "folds_niveau_pct": 50.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 75.3,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        }
+       },
+       "fejler": [
+        "realrate",
+        "dd",
+        "d_infl"
+       ],
+       "fjernet": "d_infl"
+      },
+      {
+       "runde": 2,
+       "saet": [
+        "curve",
+        "realrate",
+        "dd",
+        "cape_pct"
+       ],
+       "tests": {
+        "curve": {
+         "dLL_add": 43.67,
+         "dBrier_add": 45.29,
+         "folds_niveau_pct": 100.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 99.6,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": true,
+         "A3": true,
+         "sym_BESTAAR": true,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        },
+        "realrate": {
+         "dLL_add": -1.16,
+         "dBrier_add": -0.98,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 25.1,
+         "fortegn_stab_pct": 92.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "dd": {
+         "dLL_add": -1.21,
+         "dBrier_add": -1.38,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 18.3,
+         "fortegn_stab_pct": 92.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": true,
+         "neutral_LL_DEMOTERET": true
+        },
+        "cape_pct": {
+         "dLL_add": 1.93,
+         "dBrier_add": 0.79,
+         "folds_niveau_pct": 38.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 60.4,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        }
+       },
+       "fejler": [
+        "realrate",
+        "dd"
+       ],
+       "fjernet": "dd"
+      },
+      {
+       "runde": 3,
+       "saet": [
+        "curve",
+        "realrate",
+        "cape_pct"
+       ],
+       "tests": {
+        "curve": {
+         "dLL_add": 41.73,
+         "dBrier_add": 41.74,
+         "folds_niveau_pct": 100.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 99.6,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": true,
+         "A3": true,
+         "sym_BESTAAR": true,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        },
+        "realrate": {
+         "dLL_add": -0.92,
+         "dBrier_add": -0.7,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 35.5,
+         "fortegn_stab_pct": 92.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "cape_pct": {
+         "dLL_add": 2.16,
+         "dBrier_add": 1.61,
+         "folds_niveau_pct": 38.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 62.3,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        }
+       },
+       "fejler": [
+        "realrate"
+       ],
+       "fjernet": "realrate"
+      },
+      {
+       "runde": 4,
+       "saet": [
+        "curve",
+        "cape_pct"
+       ],
+       "tests": {
+        "curve": {
+         "dLL_add": 43.08,
+         "dBrier_add": 43.21,
+         "folds_niveau_pct": 100.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 99.4,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": true,
+         "A3": true,
+         "sym_BESTAAR": true,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        },
+        "cape_pct": {
+         "dLL_add": 2.49,
+         "dBrier_add": 1.47,
+         "folds_niveau_pct": 50.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 65.6,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        }
+       },
+       "fejler": [],
+       "fjernet": null
+      }
+     ]
+    }
+   },
+   "slutmodel_mod_curve_only": {
+    "F5_publiceret": {
+     "features": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "n_parret": 195,
+     "wf_improvement": 33.23,
+     "wf_brier": 33.6,
+     "curve_only_wf": 34.32,
+     "curve_only_brier": 32.85,
+     "identisk_med_curve_only": false,
+     "dLL": -1.09,
+     "dBrier": 0.75,
+     "folds": 8,
+     "folds_niveau_pct": 0.0,
+     "alle_folds_positive": false,
+     "persistens_pct": 46.1,
+     "mde_persistens_pp": 15.59,
+     "aera_pre1990_dLL": 4.75,
+     "aera_post1990_dLL": -6.63,
+     "n_pre": 73,
+     "n_post": 122,
+     "gate_v50_trin6_kun_LL": {
+      "regel": "imp > 0 og imp > curve-only (git 3e71be9)",
+      "slaar": false
+     },
+     "gate_v501": {
+      "regel": "forskel_pp mod trin 3-MDE; gaten kan ikke flytte den operationelle model (V501 section 6)",
+      "forskel_pp": -1.09,
+      "mde_trin3_pp": 4.42,
+      "mde_gate_pp": 15.45,
+      "slaar": false,
+      "raadsbeslutning_paakraevet": false
+     },
+     "gate_v51_ablation7": {
+      "G2_dLL2_dBrier2": false,
+      "G3_LOEO": false,
+      "G5_aera_split": false,
+      "G6_persistens60": false,
+      "alle": false
+     }
+    },
+    "simultan/asymmetrisk_publiceret": {
+     "features": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "n_parret": 195,
+     "wf_improvement": 33.23,
+     "wf_brier": 33.6,
+     "curve_only_wf": 34.32,
+     "curve_only_brier": 32.85,
+     "identisk_med_curve_only": false,
+     "dLL": -1.09,
+     "dBrier": 0.75,
+     "folds": 8,
+     "folds_niveau_pct": 0.0,
+     "alle_folds_positive": false,
+     "persistens_pct": 46.1,
+     "mde_persistens_pp": 15.59,
+     "aera_pre1990_dLL": 4.75,
+     "aera_post1990_dLL": -6.63,
+     "n_pre": 73,
+     "n_post": 122,
+     "gate_v50_trin6_kun_LL": {
+      "regel": "imp > 0 og imp > curve-only (git 3e71be9)",
+      "slaar": false
+     },
+     "gate_v501": {
+      "regel": "forskel_pp mod trin 3-MDE; gaten kan ikke flytte den operationelle model (V501 section 6)",
+      "forskel_pp": -1.09,
+      "mde_trin3_pp": 4.42,
+      "mde_gate_pp": 15.45,
+      "slaar": false,
+      "raadsbeslutning_paakraevet": false
+     },
+     "gate_v51_ablation7": {
+      "G2_dLL2_dBrier2": false,
+      "G3_LOEO": false,
+      "G5_aera_split": false,
+      "G6_persistens60": false,
+      "alle": false
+     }
+    },
+    "sekventiel/asymmetrisk_publiceret": {
+     "features": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "n_parret": 195,
+     "wf_improvement": 33.23,
+     "wf_brier": 33.6,
+     "curve_only_wf": 34.32,
+     "curve_only_brier": 32.85,
+     "identisk_med_curve_only": false,
+     "dLL": -1.09,
+     "dBrier": 0.75,
+     "folds": 8,
+     "folds_niveau_pct": 0.0,
+     "alle_folds_positive": false,
+     "persistens_pct": 46.1,
+     "mde_persistens_pp": 15.59,
+     "aera_pre1990_dLL": 4.75,
+     "aera_post1990_dLL": -6.63,
+     "n_pre": 73,
+     "n_post": 122,
+     "gate_v50_trin6_kun_LL": {
+      "regel": "imp > 0 og imp > curve-only (git 3e71be9)",
+      "slaar": false
+     },
+     "gate_v501": {
+      "regel": "forskel_pp mod trin 3-MDE; gaten kan ikke flytte den operationelle model (V501 section 6)",
+      "forskel_pp": -1.09,
+      "mde_trin3_pp": 4.42,
+      "mde_gate_pp": 15.45,
+      "slaar": false,
+      "raadsbeslutning_paakraevet": false
+     },
+     "gate_v51_ablation7": {
+      "G2_dLL2_dBrier2": false,
+      "G3_LOEO": false,
+      "G5_aera_split": false,
+      "G6_persistens60": false,
+      "alle": false
+     }
+    },
+    "simultan/symmetrisk": {
+     "features": [
+      "curve"
+     ],
+     "n_parret": 195,
+     "wf_improvement": 34.32,
+     "wf_brier": 32.85,
+     "curve_only_wf": 34.32,
+     "curve_only_brier": 32.85,
+     "identisk_med_curve_only": true
+    },
+    "sekventiel/symmetrisk": {
+     "features": [
+      "curve"
+     ],
+     "n_parret": 195,
+     "wf_improvement": 34.32,
+     "wf_brier": 32.85,
+     "curve_only_wf": 34.32,
+     "curve_only_brier": 32.85,
+     "identisk_med_curve_only": true
+    },
+    "simultan/neutral_LL": {
+     "features": [
+      "curve",
+      "cape_pct"
+     ],
+     "n_parret": 195,
+     "wf_improvement": 36.81,
+     "wf_brier": 34.32,
+     "curve_only_wf": 34.32,
+     "curve_only_brier": 32.85,
+     "identisk_med_curve_only": false,
+     "dLL": 2.49,
+     "dBrier": 1.47,
+     "folds": 8,
+     "folds_niveau_pct": 50.0,
+     "alle_folds_positive": true,
+     "persistens_pct": 65.6,
+     "mde_persistens_pp": 12.26,
+     "aera_pre1990_dLL": -0.34,
+     "aera_post1990_dLL": 5.31,
+     "n_pre": 73,
+     "n_post": 122,
+     "gate_v50_trin6_kun_LL": {
+      "regel": "imp > 0 og imp > curve-only (git 3e71be9)",
+      "slaar": true
+     },
+     "gate_v501": {
+      "regel": "forskel_pp mod trin 3-MDE; gaten kan ikke flytte den operationelle model (V501 section 6)",
+      "forskel_pp": 2.49,
+      "mde_trin3_pp": 4.42,
+      "mde_gate_pp": 13.1,
+      "slaar": true,
+      "raadsbeslutning_paakraevet": false
+     },
+     "gate_v51_ablation7": {
+      "G2_dLL2_dBrier2": false,
+      "G3_LOEO": false,
+      "G5_aera_split": false,
+      "G6_persistens60": true,
+      "alle": false
+     }
+    },
+    "sekventiel/neutral_LL": {
+     "features": [
+      "curve",
+      "cape_pct"
+     ],
+     "n_parret": 195,
+     "wf_improvement": 36.81,
+     "wf_brier": 34.32,
+     "curve_only_wf": 34.32,
+     "curve_only_brier": 32.85,
+     "identisk_med_curve_only": false,
+     "dLL": 2.49,
+     "dBrier": 1.47,
+     "folds": 8,
+     "folds_niveau_pct": 50.0,
+     "alle_folds_positive": true,
+     "persistens_pct": 65.6,
+     "mde_persistens_pp": 12.26,
+     "aera_pre1990_dLL": -0.34,
+     "aera_post1990_dLL": 5.31,
+     "n_pre": 73,
+     "n_post": 122,
+     "gate_v50_trin6_kun_LL": {
+      "regel": "imp > 0 og imp > curve-only (git 3e71be9)",
+      "slaar": true
+     },
+     "gate_v501": {
+      "regel": "forskel_pp mod trin 3-MDE; gaten kan ikke flytte den operationelle model (V501 section 6)",
+      "forskel_pp": 2.49,
+      "mde_trin3_pp": 4.42,
+      "mde_gate_pp": 13.1,
+      "slaar": true,
+      "raadsbeslutning_paakraevet": false
+     },
+     "gate_v51_ablation7": {
+      "G2_dLL2_dBrier2": false,
+      "G3_LOEO": false,
+      "G5_aera_split": false,
+      "G6_persistens60": true,
+      "alle": false
+     }
+    }
+   },
+   "reproduktion": {
+    "trin4_incumbents_publiceret_genfundet": true,
+    "detaljer": {
+     "curve": {
+      "publiceret": [
+       -44.56,
+       -48.33,
+       0.0
+      ],
+      "her": [
+       -44.56,
+       -48.33,
+       0.0
+      ],
+      "match": true
+     },
+     "realrate": {
+      "publiceret": [
+       0.95,
+       0.33,
+       100.0
+      ],
+      "her": [
+       0.95,
+       0.33,
+       100.0
+      ],
+      "match": true
+     },
+     "dd": {
+      "publiceret": [
+       1.12,
+       0.54,
+       100.0
+      ],
+      "her": [
+       1.12,
+       0.54,
+       100.0
+      ],
+      "match": true
+     },
+     "d_infl": {
+      "publiceret": [
+       1.45,
+       -1.36,
+       100.0
+      ],
+      "her": [
+       1.45,
+       -1.36,
+       100.0
+      ],
+      "match": true
+     },
+     "cape_pct": {
+      "publiceret": [
+       -3.19,
+       -2.13,
+       0.0
+      ],
+      "her": [
+       -3.19,
+       -2.13,
+       0.0
+      ],
+      "match": true
+     }
+    },
+    "ablation7_reference": {
+     "curve_only": [
+      34.32,
+      32.85
+     ],
+     "curvecape": [
+      36.81,
+      34.32
+     ],
+     "dLL": 2.49,
+     "dBrier": 1.47,
+     "n": 195,
+     "publiceret": {
+      "curve_only": [
+       34.32,
+       32.85
+      ],
+      "curvecape": [
+       36.81,
+       34.32
+      ],
+      "dLL": 2.49,
+      "dBrier": 1.47,
+      "n": 195
+     },
+     "match": true
+    },
+    "F5_wf": [
+     33.23,
+     33.6
+    ],
+    "snapshot_trin4_publiceret_sha256": "3cd0063f68ac3398b6797e60f157419aaabd6c10acae7b17590f1b6534331d76",
+    "mappe_2026_08_09_sha256_nu": "16850e47e71bad616ce941771800037cfc087a76e85f3889cd5c36877ae35b2c",
+    "mappe_2026_08_09_genfinder_trin4": true
+   },
+   "definition": {
+    "snapshot": "2026-09-19",
+    "rygrad": "shiller_yale_2023-09.csv",
+    "build": "ablation4_features.build (BASE10-maske)",
+    "walk_forward": "ablation4_features.wf (alle origins scores, ingen R_score)",
+    "R_score": null
+   }
+  },
+  "v501": {
+   "n_raekker": 316,
+   "univers": "1947Q2-2026Q1",
+   "n_scorede_F5": 198,
+   "n_scorede_curve_only": 198,
+   "scorede_origins": "1967Q4-2024Q1",
+   "incumbents_mod_F5": {
+    "curve": {
+     "saet": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "baseline": [
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "n_parret": 198,
+     "imp_med": 23.16,
+     "imp_uden": -11.45,
+     "brier_med": 23.69,
+     "brier_uden": -14.88,
+     "dLL_add": 34.61,
+     "dBrier_add": 38.57,
+     "dLL_ved_drop": -34.61,
+     "dBrier_ved_drop": -38.57,
+     "folds": 8,
+     "folds_niveau_pct": 100.0,
+     "folds_add_pos_pct": 100.0,
+     "folds_drop_pos_pct": 0.0,
+     "alle_folds_positive": true,
+     "persistens_pct": 88.7,
+     "mde_pp": 54.85,
+     "persistens_flag": false,
+     "fortegn_fuldfit": -1,
+     "fortegn_stab_pct": 100.0,
+     "fortegn_folds": 12,
+     "fortegn_v4": -1,
+     "fortegn_som_v4": true,
+     "A1": true,
+     "A2": true,
+     "A3": true,
+     "sym_BESTAAR": true,
+     "sym_BESTAAR_inkl_persistens": true,
+     "asym_DEMOTERET": false,
+     "neutral_LL_DEMOTERET": false
+    },
+    "realrate": {
+     "saet": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "baseline": [
+      "curve",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "n_parret": 198,
+     "imp_med": 23.16,
+     "imp_uden": 24.61,
+     "brier_med": 23.69,
+     "brier_uden": 24.18,
+     "dLL_add": -1.45,
+     "dBrier_add": -0.5,
+     "dLL_ved_drop": 1.45,
+     "dBrier_ved_drop": 0.5,
+     "folds": 8,
+     "folds_niveau_pct": 0.0,
+     "folds_add_pos_pct": 0.0,
+     "folds_drop_pos_pct": 100.0,
+     "alle_folds_positive": false,
+     "persistens_pct": 37.3,
+     "mde_pp": 6.6,
+     "persistens_flag": true,
+     "fortegn_fuldfit": -1,
+     "fortegn_stab_pct": 92.0,
+     "fortegn_folds": 12,
+     "fortegn_v4": -1,
+     "fortegn_som_v4": true,
+     "A1": false,
+     "A2": false,
+     "A3": true,
+     "sym_BESTAAR": false,
+     "sym_BESTAAR_inkl_persistens": false,
+     "asym_DEMOTERET": false,
+     "neutral_LL_DEMOTERET": true
+    },
+    "dd": {
+     "saet": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "baseline": [
+      "curve",
+      "realrate",
+      "d_infl",
+      "cape_pct"
+     ],
+     "n_parret": 198,
+     "imp_med": 23.16,
+     "imp_uden": 23.76,
+     "brier_med": 23.69,
+     "brier_uden": 24.08,
+     "dLL_add": -0.6,
+     "dBrier_add": -0.39,
+     "dLL_ved_drop": 0.6,
+     "dBrier_ved_drop": 0.39,
+     "folds": 8,
+     "folds_niveau_pct": 0.0,
+     "folds_add_pos_pct": 0.0,
+     "folds_drop_pos_pct": 100.0,
+     "alle_folds_positive": false,
+     "persistens_pct": 30.3,
+     "mde_pp": 2.62,
+     "persistens_flag": true,
+     "fortegn_fuldfit": -1,
+     "fortegn_stab_pct": 100.0,
+     "fortegn_folds": 12,
+     "fortegn_v4": -1,
+     "fortegn_som_v4": true,
+     "A1": false,
+     "A2": false,
+     "A3": true,
+     "sym_BESTAAR": false,
+     "sym_BESTAAR_inkl_persistens": false,
+     "asym_DEMOTERET": false,
+     "neutral_LL_DEMOTERET": true
+    },
+    "d_infl": {
+     "saet": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "baseline": [
+      "curve",
+      "realrate",
+      "dd",
+      "cape_pct"
+     ],
+     "n_parret": 198,
+     "imp_med": 23.16,
+     "imp_uden": 27.59,
+     "brier_med": 23.69,
+     "brier_uden": 23.65,
+     "dLL_add": -4.43,
+     "dBrier_add": 0.03,
+     "dLL_ved_drop": 4.43,
+     "dBrier_ved_drop": -0.03,
+     "folds": 8,
+     "folds_niveau_pct": 0.0,
+     "folds_add_pos_pct": 0.0,
+     "folds_drop_pos_pct": 100.0,
+     "alle_folds_positive": false,
+     "persistens_pct": 34.2,
+     "mde_pp": 18.14,
+     "persistens_flag": true,
+     "fortegn_fuldfit": -1,
+     "fortegn_stab_pct": 92.0,
+     "fortegn_folds": 12,
+     "fortegn_v4": -1,
+     "fortegn_som_v4": true,
+     "A1": false,
+     "A2": false,
+     "A3": true,
+     "sym_BESTAAR": false,
+     "sym_BESTAAR_inkl_persistens": false,
+     "asym_DEMOTERET": false,
+     "neutral_LL_DEMOTERET": true
+    },
+    "cape_pct": {
+     "saet": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "baseline": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl"
+     ],
+     "n_parret": 198,
+     "imp_med": 23.16,
+     "imp_uden": 19.05,
+     "brier_med": 23.69,
+     "brier_uden": 21.32,
+     "dLL_add": 4.11,
+     "dBrier_add": 2.37,
+     "dLL_ved_drop": -4.11,
+     "dBrier_ved_drop": -2.37,
+     "folds": 8,
+     "folds_niveau_pct": 62.0,
+     "folds_add_pos_pct": 100.0,
+     "folds_drop_pos_pct": 0.0,
+     "alle_folds_positive": true,
+     "persistens_pct": 77.8,
+     "mde_pp": 11.43,
+     "persistens_flag": false,
+     "fortegn_fuldfit": -1,
+     "fortegn_stab_pct": 100.0,
+     "fortegn_folds": 12,
+     "fortegn_v4": -1,
+     "fortegn_som_v4": true,
+     "A1": true,
+     "A2": false,
+     "A3": true,
+     "sym_BESTAAR": false,
+     "sym_BESTAAR_inkl_persistens": false,
+     "asym_DEMOTERET": false,
+     "neutral_LL_DEMOTERET": false
+    }
+   },
+   "simultan": {
+    "asymmetrisk_publiceret": {
+     "demoteret": [],
+     "slutsaet": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ]
+    },
+    "symmetrisk": {
+     "demoteret": [
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "slutsaet": [
+      "curve"
+     ]
+    },
+    "neutral_LL": {
+     "demoteret": [
+      "realrate",
+      "dd",
+      "d_infl"
+     ],
+     "slutsaet": [
+      "curve",
+      "cape_pct"
+     ]
+    }
+   },
+   "sekventiel": {
+    "asymmetrisk_publiceret": {
+     "slutsaet": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "n_runder": 1,
+     "sti": [
+      {
+       "runde": 1,
+       "saet": [
+        "curve",
+        "realrate",
+        "dd",
+        "d_infl",
+        "cape_pct"
+       ],
+       "tests": {
+        "curve": {
+         "dLL_add": 34.61,
+         "dBrier_add": 38.57,
+         "folds_niveau_pct": 100.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 88.7,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": true,
+         "A3": true,
+         "sym_BESTAAR": true,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        },
+        "realrate": {
+         "dLL_add": -1.45,
+         "dBrier_add": -0.5,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 37.3,
+         "fortegn_stab_pct": 92.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "dd": {
+         "dLL_add": -0.6,
+         "dBrier_add": -0.39,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 30.3,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "d_infl": {
+         "dLL_add": -4.43,
+         "dBrier_add": 0.03,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 34.2,
+         "fortegn_stab_pct": 92.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "cape_pct": {
+         "dLL_add": 4.11,
+         "dBrier_add": 2.37,
+         "folds_niveau_pct": 62.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 77.8,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        }
+       },
+       "fejler": [],
+       "fjernet": null
+      }
+     ]
+    },
+    "symmetrisk": {
+     "slutsaet": [
+      "curve"
+     ],
+     "n_runder": 5,
+     "sti": [
+      {
+       "runde": 1,
+       "saet": [
+        "curve",
+        "realrate",
+        "dd",
+        "d_infl",
+        "cape_pct"
+       ],
+       "tests": {
+        "curve": {
+         "dLL_add": 34.61,
+         "dBrier_add": 38.57,
+         "folds_niveau_pct": 100.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 88.7,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": true,
+         "A3": true,
+         "sym_BESTAAR": true,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        },
+        "realrate": {
+         "dLL_add": -1.45,
+         "dBrier_add": -0.5,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 37.3,
+         "fortegn_stab_pct": 92.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "dd": {
+         "dLL_add": -0.6,
+         "dBrier_add": -0.39,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 30.3,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "d_infl": {
+         "dLL_add": -4.43,
+         "dBrier_add": 0.03,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 34.2,
+         "fortegn_stab_pct": 92.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "cape_pct": {
+         "dLL_add": 4.11,
+         "dBrier_add": 2.37,
+         "folds_niveau_pct": 62.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 77.8,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        }
+       },
+       "fejler": [
+        "realrate",
+        "dd",
+        "d_infl",
+        "cape_pct"
+       ],
+       "fjernet": "d_infl"
+      },
+      {
+       "runde": 2,
+       "saet": [
+        "curve",
+        "realrate",
+        "dd",
+        "cape_pct"
+       ],
+       "tests": {
+        "curve": {
+         "dLL_add": 36.5,
+         "dBrier_add": 36.65,
+         "folds_niveau_pct": 100.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 93.9,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": true,
+         "A3": true,
+         "sym_BESTAAR": true,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        },
+        "realrate": {
+         "dLL_add": -1.58,
+         "dBrier_add": -1.27,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 24.7,
+         "fortegn_stab_pct": 83.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": true,
+         "neutral_LL_DEMOTERET": true
+        },
+        "dd": {
+         "dLL_add": -0.79,
+         "dBrier_add": -1.13,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 26.3,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "cape_pct": {
+         "dLL_add": 2.42,
+         "dBrier_add": 1.1,
+         "folds_niveau_pct": 38.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 62.2,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        }
+       },
+       "fejler": [
+        "realrate",
+        "dd",
+        "cape_pct"
+       ],
+       "fjernet": "realrate"
+      },
+      {
+       "runde": 3,
+       "saet": [
+        "curve",
+        "dd",
+        "cape_pct"
+       ],
+       "tests": {
+        "curve": {
+         "dLL_add": 37.29,
+         "dBrier_add": 36.93,
+         "folds_niveau_pct": 100.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 94.0,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": true,
+         "A3": true,
+         "sym_BESTAAR": true,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        },
+        "dd": {
+         "dLL_add": -0.53,
+         "dBrier_add": -0.82,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 30.4,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "cape_pct": {
+         "dLL_add": 2.81,
+         "dBrier_add": 1.43,
+         "folds_niveau_pct": 50.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 67.9,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        }
+       },
+       "fejler": [
+        "dd",
+        "cape_pct"
+       ],
+       "fjernet": "dd"
+      },
+      {
+       "runde": 4,
+       "saet": [
+        "curve",
+        "cape_pct"
+       ],
+       "tests": {
+        "curve": {
+         "dLL_add": 35.83,
+         "dBrier_add": 34.52,
+         "folds_niveau_pct": 100.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 94.5,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": true,
+         "A3": true,
+         "sym_BESTAAR": true,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        },
+        "cape_pct": {
+         "dLL_add": 2.64,
+         "dBrier_add": 1.58,
+         "folds_niveau_pct": 50.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 66.0,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        }
+       },
+       "fejler": [
+        "cape_pct"
+       ],
+       "fjernet": "cape_pct"
+      },
+      {
+       "runde": 5,
+       "saet": [
+        "curve"
+       ],
+       "tests": {},
+       "fejler": [],
+       "fjernet": null,
+       "note": "sidste feature testes ikke mod den tomme model"
+      }
+     ]
+    },
+    "neutral_LL": {
+     "slutsaet": [
+      "curve",
+      "cape_pct"
+     ],
+     "n_runder": 4,
+     "sti": [
+      {
+       "runde": 1,
+       "saet": [
+        "curve",
+        "realrate",
+        "dd",
+        "d_infl",
+        "cape_pct"
+       ],
+       "tests": {
+        "curve": {
+         "dLL_add": 34.61,
+         "dBrier_add": 38.57,
+         "folds_niveau_pct": 100.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 88.7,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": true,
+         "A3": true,
+         "sym_BESTAAR": true,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        },
+        "realrate": {
+         "dLL_add": -1.45,
+         "dBrier_add": -0.5,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 37.3,
+         "fortegn_stab_pct": 92.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "dd": {
+         "dLL_add": -0.6,
+         "dBrier_add": -0.39,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 30.3,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "d_infl": {
+         "dLL_add": -4.43,
+         "dBrier_add": 0.03,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 34.2,
+         "fortegn_stab_pct": 92.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "cape_pct": {
+         "dLL_add": 4.11,
+         "dBrier_add": 2.37,
+         "folds_niveau_pct": 62.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 77.8,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        }
+       },
+       "fejler": [
+        "realrate",
+        "dd",
+        "d_infl"
+       ],
+       "fjernet": "d_infl"
+      },
+      {
+       "runde": 2,
+       "saet": [
+        "curve",
+        "realrate",
+        "dd",
+        "cape_pct"
+       ],
+       "tests": {
+        "curve": {
+         "dLL_add": 36.5,
+         "dBrier_add": 36.65,
+         "folds_niveau_pct": 100.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 93.9,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": true,
+         "A3": true,
+         "sym_BESTAAR": true,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        },
+        "realrate": {
+         "dLL_add": -1.58,
+         "dBrier_add": -1.27,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 24.7,
+         "fortegn_stab_pct": 83.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": true,
+         "neutral_LL_DEMOTERET": true
+        },
+        "dd": {
+         "dLL_add": -0.79,
+         "dBrier_add": -1.13,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 26.3,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "cape_pct": {
+         "dLL_add": 2.42,
+         "dBrier_add": 1.1,
+         "folds_niveau_pct": 38.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 62.2,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        }
+       },
+       "fejler": [
+        "realrate",
+        "dd"
+       ],
+       "fjernet": "realrate"
+      },
+      {
+       "runde": 3,
+       "saet": [
+        "curve",
+        "dd",
+        "cape_pct"
+       ],
+       "tests": {
+        "curve": {
+         "dLL_add": 37.29,
+         "dBrier_add": 36.93,
+         "folds_niveau_pct": 100.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 94.0,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": true,
+         "A3": true,
+         "sym_BESTAAR": true,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        },
+        "dd": {
+         "dLL_add": -0.53,
+         "dBrier_add": -0.82,
+         "folds_niveau_pct": 0.0,
+         "alle_folds_positive": false,
+         "persistens_pct": 30.4,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": true
+        },
+        "cape_pct": {
+         "dLL_add": 2.81,
+         "dBrier_add": 1.43,
+         "folds_niveau_pct": 50.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 67.9,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        }
+       },
+       "fejler": [
+        "dd"
+       ],
+       "fjernet": "dd"
+      },
+      {
+       "runde": 4,
+       "saet": [
+        "curve",
+        "cape_pct"
+       ],
+       "tests": {
+        "curve": {
+         "dLL_add": 35.83,
+         "dBrier_add": 34.52,
+         "folds_niveau_pct": 100.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 94.5,
+         "fortegn_stab_pct": 100.0,
+         "A1": true,
+         "A2": true,
+         "A3": true,
+         "sym_BESTAAR": true,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        },
+        "cape_pct": {
+         "dLL_add": 2.64,
+         "dBrier_add": 1.58,
+         "folds_niveau_pct": 50.0,
+         "alle_folds_positive": true,
+         "persistens_pct": 66.0,
+         "fortegn_stab_pct": 100.0,
+         "A1": false,
+         "A2": false,
+         "A3": true,
+         "sym_BESTAAR": false,
+         "asym_DEMOTERET": false,
+         "neutral_LL_DEMOTERET": false
+        }
+       },
+       "fejler": [],
+       "fjernet": null
+      }
+     ]
+    }
+   },
+   "slutmodel_mod_curve_only": {
+    "F5_publiceret": {
+     "features": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "n_parret": 198,
+     "wf_improvement": 23.16,
+     "wf_brier": 23.69,
+     "curve_only_wf": 27.05,
+     "curve_only_brier": 24.15,
+     "identisk_med_curve_only": false,
+     "dLL": -3.89,
+     "dBrier": -0.47,
+     "folds": 8,
+     "folds_niveau_pct": 0.0,
+     "alle_folds_positive": false,
+     "persistens_pct": 36.4,
+     "mde_persistens_pp": 21.14,
+     "aera_pre1990_dLL": 4.75,
+     "aera_post1990_dLL": -12.19,
+     "n_pre": 73,
+     "n_post": 125,
+     "gate_v50_trin6_kun_LL": {
+      "regel": "imp > 0 og imp > curve-only (git 3e71be9)",
+      "slaar": false
+     },
+     "gate_v501": {
+      "regel": "forskel_pp mod trin 3-MDE; gaten kan ikke flytte den operationelle model (V501 section 6)",
+      "forskel_pp": -3.89,
+      "mde_trin3_pp": 4.42,
+      "mde_gate_pp": 21.06,
+      "slaar": false,
+      "raadsbeslutning_paakraevet": false
+     },
+     "gate_v51_ablation7": {
+      "G2_dLL2_dBrier2": false,
+      "G3_LOEO": false,
+      "G5_aera_split": false,
+      "G6_persistens60": false,
+      "alle": false
+     }
+    },
+    "simultan/asymmetrisk_publiceret": {
+     "features": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "n_parret": 198,
+     "wf_improvement": 23.16,
+     "wf_brier": 23.69,
+     "curve_only_wf": 27.05,
+     "curve_only_brier": 24.15,
+     "identisk_med_curve_only": false,
+     "dLL": -3.89,
+     "dBrier": -0.47,
+     "folds": 8,
+     "folds_niveau_pct": 0.0,
+     "alle_folds_positive": false,
+     "persistens_pct": 36.4,
+     "mde_persistens_pp": 21.14,
+     "aera_pre1990_dLL": 4.75,
+     "aera_post1990_dLL": -12.19,
+     "n_pre": 73,
+     "n_post": 125,
+     "gate_v50_trin6_kun_LL": {
+      "regel": "imp > 0 og imp > curve-only (git 3e71be9)",
+      "slaar": false
+     },
+     "gate_v501": {
+      "regel": "forskel_pp mod trin 3-MDE; gaten kan ikke flytte den operationelle model (V501 section 6)",
+      "forskel_pp": -3.89,
+      "mde_trin3_pp": 4.42,
+      "mde_gate_pp": 21.06,
+      "slaar": false,
+      "raadsbeslutning_paakraevet": false
+     },
+     "gate_v51_ablation7": {
+      "G2_dLL2_dBrier2": false,
+      "G3_LOEO": false,
+      "G5_aera_split": false,
+      "G6_persistens60": false,
+      "alle": false
+     }
+    },
+    "sekventiel/asymmetrisk_publiceret": {
+     "features": [
+      "curve",
+      "realrate",
+      "dd",
+      "d_infl",
+      "cape_pct"
+     ],
+     "n_parret": 198,
+     "wf_improvement": 23.16,
+     "wf_brier": 23.69,
+     "curve_only_wf": 27.05,
+     "curve_only_brier": 24.15,
+     "identisk_med_curve_only": false,
+     "dLL": -3.89,
+     "dBrier": -0.47,
+     "folds": 8,
+     "folds_niveau_pct": 0.0,
+     "alle_folds_positive": false,
+     "persistens_pct": 36.4,
+     "mde_persistens_pp": 21.14,
+     "aera_pre1990_dLL": 4.75,
+     "aera_post1990_dLL": -12.19,
+     "n_pre": 73,
+     "n_post": 125,
+     "gate_v50_trin6_kun_LL": {
+      "regel": "imp > 0 og imp > curve-only (git 3e71be9)",
+      "slaar": false
+     },
+     "gate_v501": {
+      "regel": "forskel_pp mod trin 3-MDE; gaten kan ikke flytte den operationelle model (V501 section 6)",
+      "forskel_pp": -3.89,
+      "mde_trin3_pp": 4.42,
+      "mde_gate_pp": 21.06,
+      "slaar": false,
+      "raadsbeslutning_paakraevet": false
+     },
+     "gate_v51_ablation7": {
+      "G2_dLL2_dBrier2": false,
+      "G3_LOEO": false,
+      "G5_aera_split": false,
+      "G6_persistens60": false,
+      "alle": false
+     }
+    },
+    "simultan/symmetrisk": {
+     "features": [
+      "curve"
+     ],
+     "n_parret": 198,
+     "wf_improvement": 27.05,
+     "wf_brier": 24.15,
+     "curve_only_wf": 27.05,
+     "curve_only_brier": 24.15,
+     "identisk_med_curve_only": true
+    },
+    "sekventiel/symmetrisk": {
+     "features": [
+      "curve"
+     ],
+     "n_parret": 198,
+     "wf_improvement": 27.05,
+     "wf_brier": 24.15,
+     "curve_only_wf": 27.05,
+     "curve_only_brier": 24.15,
+     "identisk_med_curve_only": true
+    },
+    "simultan/neutral_LL": {
+     "features": [
+      "curve",
+      "cape_pct"
+     ],
+     "n_parret": 198,
+     "wf_improvement": 29.69,
+     "wf_brier": 25.74,
+     "curve_only_wf": 27.05,
+     "curve_only_brier": 24.15,
+     "identisk_med_curve_only": false,
+     "dLL": 2.64,
+     "dBrier": 1.58,
+     "folds": 8,
+     "folds_niveau_pct": 50.0,
+     "alle_folds_positive": true,
+     "persistens_pct": 66.0,
+     "mde_persistens_pp": 12.23,
+     "aera_pre1990_dLL": -0.34,
+     "aera_post1990_dLL": 5.6,
+     "n_pre": 73,
+     "n_post": 125,
+     "gate_v50_trin6_kun_LL": {
+      "regel": "imp > 0 og imp > curve-only (git 3e71be9)",
+      "slaar": true
+     },
+     "gate_v501": {
+      "regel": "forskel_pp mod trin 3-MDE; gaten kan ikke flytte den operationelle model (V501 section 6)",
+      "forskel_pp": 2.64,
+      "mde_trin3_pp": 4.42,
+      "mde_gate_pp": 13.07,
+      "slaar": true,
+      "raadsbeslutning_paakraevet": false
+     },
+     "gate_v51_ablation7": {
+      "G2_dLL2_dBrier2": false,
+      "G3_LOEO": false,
+      "G5_aera_split": false,
+      "G6_persistens60": true,
+      "alle": false
+     }
+    },
+    "sekventiel/neutral_LL": {
+     "features": [
+      "curve",
+      "cape_pct"
+     ],
+     "n_parret": 198,
+     "wf_improvement": 29.69,
+     "wf_brier": 25.74,
+     "curve_only_wf": 27.05,
+     "curve_only_brier": 24.15,
+     "identisk_med_curve_only": false,
+     "dLL": 2.64,
+     "dBrier": 1.58,
+     "folds": 8,
+     "folds_niveau_pct": 50.0,
+     "alle_folds_positive": true,
+     "persistens_pct": 66.0,
+     "mde_persistens_pp": 12.23,
+     "aera_pre1990_dLL": -0.34,
+     "aera_post1990_dLL": 5.6,
+     "n_pre": 73,
+     "n_post": 125,
+     "gate_v50_trin6_kun_LL": {
+      "regel": "imp > 0 og imp > curve-only (git 3e71be9)",
+      "slaar": true
+     },
+     "gate_v501": {
+      "regel": "forskel_pp mod trin 3-MDE; gaten kan ikke flytte den operationelle model (V501 section 6)",
+      "forskel_pp": 2.64,
+      "mde_trin3_pp": 4.42,
+      "mde_gate_pp": 13.07,
+      "slaar": true,
+      "raadsbeslutning_paakraevet": false
+     },
+     "gate_v51_ablation7": {
+      "G2_dLL2_dBrier2": false,
+      "G3_LOEO": false,
+      "G5_aera_split": false,
+      "G6_persistens60": true,
+      "alle": false
+     }
+    }
+   },
+   "reproduktion": {
+    "identiske_origins": true,
+    "curve_only": [
+     27.05,
+     24.15,
+     198
+    ],
+    "fuldmodel": [
+     23.16,
+     23.69,
+     198
+    ],
+    "manifest_72c3371d": {
+     "curve_only": [
+      27.05,
+      24.15
+     ],
+     "fuldmodel": [
+      23.16,
+      23.69
+     ],
+     "forskel_pp": -3.89,
+     "mde_pp": 4.42,
+     "refit_maaned": "2026-09"
+    },
+    "match": true
+   },
+   "definition": {
+    "snapshot": "2026-09-19",
+    "rygrad": "spine.csv",
+    "build": "ablation2_nber.build_dataset(F5) (V501 section 2)",
+    "walk_forward": "ablation2_nber.wf_nber med R_score",
+    "R_score": "2026-09",
+    "R_score_midx": 24320
+   }
+  }
+ },
+ "udfald_vs_publiceret": {
+  "trin4": {
+   "publiceret": "feature-saettet UAENDRET: de 5 incumbents bestaar (asymmetrisk regel)",
+   "asymmetrisk_genkoert": [
+    "curve",
+    "realrate",
+    "dd",
+    "d_infl",
+    "cape_pct"
+   ],
+   "symmetrisk_simultan": [
+    "curve"
+   ],
+   "symmetrisk_sekventiel": [
+    "curve"
+   ],
+   "neutral_LL_simultan": [
+    "curve",
+    "cape_pct"
+   ],
+   "neutral_LL_sekventiel": [
+    "curve",
+    "cape_pct"
+   ],
+   "feature_saet_ville_aendres_under_symmetri": true,
+   "demoteret_under_symmetri_simultan": [
+    "realrate",
+    "dd",
+    "d_infl",
+    "cape_pct"
+   ],
+   "operationel_model_beroert": "nej: v5.0.1 section 6 laaser curve-only; fuldmodellen er kun benchmark"
+  },
+  "v501": {
+   "publiceret": "feature-saettet UAENDRET: de 5 incumbents bestaar (asymmetrisk regel)",
+   "asymmetrisk_genkoert": [
+    "curve",
+    "realrate",
+    "dd",
+    "d_infl",
+    "cape_pct"
+   ],
+   "symmetrisk_simultan": [
+    "curve"
+   ],
+   "symmetrisk_sekventiel": [
+    "curve"
+   ],
+   "neutral_LL_simultan": [
+    "curve",
+    "cape_pct"
+   ],
+   "neutral_LL_sekventiel": [
+    "curve",
+    "cape_pct"
+   ],
+   "feature_saet_ville_aendres_under_symmetri": true,
+   "demoteret_under_symmetri_simultan": [
+    "realrate",
+    "dd",
+    "d_infl",
+    "cape_pct"
+   ],
+   "operationel_model_beroert": "nej: v5.0.1 section 6 laaser curve-only; fuldmodellen er kun benchmark"
+  }
+ },
+ "reference_udfordrere_publiceret_erratum": {
+  "sahm_t": {
+   "dLL": -1.71,
+   "dBrier": -3.49,
+   "n_parret": 189,
+   "folds_niveau_pct": 0.0,
+   "alle_folds_positive": false,
+   "persistens_pct": 28.7,
+   "fortegn_stab_pct": 0.0,
+   "A1": false,
+   "A2": false,
+   "A3": false,
+   "OPTAGET": false
+  },
+  "claims_mom": {
+   "dLL": -72.79,
+   "dBrier": -13.79,
+   "n_parret": 125,
+   "folds_niveau_pct": 0.0,
+   "alle_folds_positive": false,
+   "persistens_pct": 21.3,
+   "fortegn_stab_pct": 75.0,
+   "A1": false,
+   "A2": false,
+   "A3": false,
+   "OPTAGET": false
+  },
+  "permits_yoy": {
+   "dLL": -14.53,
+   "dBrier": -17.07,
+   "n_parret": 155,
+   "folds_niveau_pct": 0.0,
+   "alle_folds_positive": false,
+   "persistens_pct": 10.4,
+   "fortegn_stab_pct": 100.0,
+   "A1": false,
+   "A2": false,
+   "A3": true,
+   "OPTAGET": false
+  }
+ },
+ "indholds_hash": "f7c781d08c79c5ad"
+}
