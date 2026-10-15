@@ -15,6 +15,8 @@ R >= IKRAFT (2027-09). En kalibrering med R < IKRAFT (fx reproduktionen af 72c33
                             §6        een refit pr. ny onset + enhver omlabeling; replayen ligger i replay2027.py
   spec2027/4_maanedligt_fit_uscorede.md
                             §3.3/§4/§10.4  maanedligt fit (lambda_m = N_m/N_q), parret diagnostik, uscorede felter
+  spec2027/5_live_censurering.md
+                            §10.4     live-censureringens regeltekst, byte-identisk med noeglens §1 (d)
 
 Kun stdlib + numpy.
 """
@@ -36,6 +38,7 @@ SPECS = {
     "2_L_R_audit.md": "017f1f3152b32e367e4f67d77be696bf5944a93691ca37dd8462bebb66c0a2e3",
     "3_indholdstrigger_replay.md": "c63471d399768e81b57c39c3c5dc8ea458a2105dfe8456c12caa747f4d76ed3f",
     "4_maanedligt_fit_uscorede.md": "c2c988c97b4c5f516b31fb2d8ebf4d8deccc09f21ab7de9ef5666fa428fa0e33",
+    "5_live_censurering.md": "95cbe669709ca2c868c741d6280f2e81add84c665e115a063b3c253929c67f17",
 }
 
 Z_975, Z_80 = 1.959964, 0.841621   # spec 1 §4.1: 80 %-MDE = (z_0,975 + z_0,80) x SD_block (normalteori)
@@ -608,3 +611,35 @@ def udfald_tjek(log_rows, udfald_rows, kolonner):
         if (r.get("uscoret_censureret") or "").strip() != forv:
             fejl.append(f"{k}: uscoret_censureret = {r.get('uscoret_censureret')!r}, forventet {forv!r} (dom {dom[k]!r})")
     return fejl
+
+
+# ------------------------------------------------------------------ protokoltekst 5: live-censureringens regel (§10.4)
+REGEL_START, REGEL_SLUT = "<!-- REGEL START -->\n", "\n<!-- REGEL SLUT -->"
+
+
+def _lf(f):
+    return Path(f).read_bytes().replace(bytes([13, 10]), bytes([10])).decode("utf-8")
+
+
+def regeltekst():
+    """Regelteksten mellem markeringerne i spec2027/5_live_censurering.md (LF)."""
+    t = _lf(SPEC_DIR / "5_live_censurering.md")
+    a = t.index(REGEL_START) + len(REGEL_START)
+    return t[a:t.index(REGEL_SLUT, a)]
+
+
+def noeglens_regel(noegle):
+    """BEDOEMMELSESNOEGLE.md §1 (d) — afsnittet fra '**(d) Realtidscensurering.**' til den foerste tomme linje (LF)."""
+    t = _lf(noegle)
+    a = t.index("**(d) Realtidscensurering.**")
+    return t[a:t.index("\n\n", a)]
+
+
+def kraev_regel_identisk(noegle):
+    """RAADETS_2027 §10.4 (1): live-reglen i protokollen skal vaere byte-identisk med noeglens regel — ellers stop."""
+    kraev_forseglet("5_live_censurering.md")
+    if regeltekst().encode("utf-8") != noeglens_regel(noegle).encode("utf-8"):
+        raise SystemExit("FEJL (RAADETS_2027 §10.4): live-censureringens regeltekst (spec2027/5_live_censurering.md) er ikke "
+                         "byte-identisk med BEDOEMMELSESNOEGLE.md §1 (d). Noeglen aendres kun efter sin egen procedure og "
+                         "med en raadsbeslutning; --log stopper.")
+    return True

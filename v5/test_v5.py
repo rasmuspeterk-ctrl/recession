@@ -2498,6 +2498,7 @@ class TestRaad2027IndholdstriggerKaede(unittest.TestCase):
     def _motor_2027(self, origins_filter, manifest=True, ikraft=A2.midx(2020, 1)):
         with tempfile.TemporaryDirectory() as t:
             here = Path(t) / "v5"; shutil.copytree(self.here, here)
+            shutil.copy(HERE.parent / "BEDOEMMELSESNOEGLE.md", Path(t) / "BEDOEMMELSESNOEGLE.md")   # §10.4-tjekket
             W = json.loads((here / "weights.json").read_text(encoding="utf-8"))
             W["manifest_hash"] = "test0002"
             (here / "weights.json").write_text(json.dumps(W), encoding="utf-8")
@@ -2743,6 +2744,66 @@ class TestRaad2027UscoredeHovedbog(unittest.TestCase):
         self.assertEqual(P27.udfald_tjek(M.laes_hovedbog(HERE.parent / "LOG.md"), rk, kol), [])
         hoved = [ln for ln in (HERE.parent / "LOG.md").read_text(encoding="utf-8").splitlines() if ln.startswith("| logget")][0]
         self.assertTrue(hoved.rstrip().endswith("| P_maanedlig | P_maanedligt_fit | P_1953Q2 | P_1960Q1 |"))
+
+
+
+class TestRaad2027LiveCensurering(unittest.TestCase):
+    """RAADETS_2027 §10.4 (spec2027/5_live_censurering.md): live-reglen er byte-identisk med noeglens §1 (d), og
+    motorens aabne-episode-regel opfoerer sig som teksten siger."""
+
+    NOEGLE = HERE.parent / "BEDOEMMELSESNOEGLE.md"
+
+    @classmethod
+    def setUpClass(cls):
+        TestMotor.setUpClass.__func__(cls)
+
+    @classmethod
+    def tearDownClass(cls):
+        TestMotor.tearDownClass.__func__(cls)
+
+    _motor = TestMotor._motor
+
+    def test_regelteksten_er_byte_identisk_med_noeglen(self):
+        self.assertEqual(P27.regeltekst().encode("utf-8"), P27.noeglens_regel(self.NOEGLE).encode("utf-8"))
+        self.assertTrue(P27.regeltekst().startswith("**(d) Realtidscensurering.**"))
+        self.assertTrue(P27.regeltekst().endswith("og de to tolkes i tandem."))
+        self.assertTrue(P27.kraev_regel_identisk(self.NOEGLE))
+
+    def test_afvigelse_stopper(self):
+        with tempfile.TemporaryDirectory() as t:
+            k = Path(t) / "BEDOEMMELSESNOEGLE.md"
+            k.write_bytes(self.NOEGLE.read_bytes().replace("scores ikke, fordi".encode("utf-8"), "scores ikke, da".encode("utf-8")))
+            with self.assertRaisesRegex(SystemExit, "ikke byte-identisk"):
+                P27.kraev_regel_identisk(k)
+            k.write_bytes(self.NOEGLE.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))   # CRLF er ingen afvigelse
+            self.assertTrue(P27.kraev_regel_identisk(k))
+
+    def test_aaben_episode_reglen(self):
+        """'Logget inde i en annonceret recession': top annonceret senest i maaneden, og episoden daekker maaneden —
+        til og med bunden, eller uden slut saa laenge USREC's seneste maaned er 1."""
+        m = A2.midx
+        u = {i: 0 for i in range(m(2000, 1), m(2027, 1))}
+        for i in range(m(2026, 7), m(2027, 1)):
+            u[i] = 1                                                              # aaben episode fra 2026-07
+        for i in range(m(2008, 1), m(2009, 7)):
+            u[i] = 1                                                              # afsluttet episode 2008-01..2009-06
+        eps = A2.episodes_from_usrec(u)
+        avail = {m(2008, 1): m(2008, 12), m(2026, 7): m(2026, 11)}
+        self.assertIsNone(A2.i_annonceret_recession(u, eps, avail, m(2026, 10)))      # inde, men ikke annonceret: scores
+        self.assertIsNotNone(A2.i_annonceret_recession(u, eps, avail, m(2026, 11)))   # annonceret: censureret
+        self.assertIsNotNone(A2.i_annonceret_recession(u, eps, avail, m(2027, 3)))    # aaben: efter seneste USREC-maaned
+        self.assertIsNotNone(A2.i_annonceret_recession(u, eps, avail, m(2009, 6)))    # til og med bunden
+        self.assertIsNone(A2.i_annonceret_recession(u, eps, avail, m(2009, 7)))       # efter bunden: scores
+        self.assertIsNone(A2.i_annonceret_recession(u, eps, avail, m(2008, 11)))      # foer annonceringen: scores
+
+    def test_motor_stopper_under_2027_kalibrering_hvis_reglen_afviger(self):
+        with tempfile.TemporaryDirectory() as t:
+            here = Path(t) / "v5"; shutil.copytree(self.here, here)
+            (Path(t) / "BEDOEMMELSESNOEGLE.md").write_bytes(
+                self.NOEGLE.read_bytes().replace("scores ikke, fordi".encode("utf-8"), "scores ikke, da".encode("utf-8")))
+            with mock.patch.object(P27, "IKRAFT", A2.midx(2020, 1)), self.assertRaisesRegex(SystemExit, "ikke byte-identisk"):
+                self._motor(["--allow-stale"], here=here)
+            self._motor(["--allow-stale"], here=here)                 # foer ikrafttraeden: ingen kontrol
 
 
 if __name__ == "__main__":

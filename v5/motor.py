@@ -18,7 +18,8 @@ snapshottet vises som [?] utilgaengelig og vaelter aldrig laesningen (F18).
 
 Hovedbogen (LOG.md + hovedbog.jsonl): --log kun i logvinduet (foerste hverdag fra den 10. + 3 dage),
 kun naar vaegte, diagnostik og annonceringstabel er i synk; manglende maaneder skrives som
-'ikke logget'-raekker; en laesning inde i en annonceret recession faar dom 'censureret' (F14).
+'ikke logget'-raekker; en laesning inde i en annonceret recession faar dom 'censureret' (F14) — reglen er
+noeglens §1 (d), skrevet byte-identisk i protokollen (spec2027/5_live_censurering.md, RAADETS_2027 §10.4).
 
 Koer:  python motor.py [--allow-stale] [--log] [--log-uden-for-vindue "<begrundelse>"] [--json [sti]]
                       [--snapshot data/raw/YYYY-MM-DD]
@@ -418,6 +419,9 @@ def main():
     avail = A2.load_announcements(eps, f=ann_f) if ann_f.exists() and not synk else {}
     # RAADETS_2027 §6 (spec2027/3_indholdstrigger_replay.md §2): NBER-indholdstriggeren, naar kalibreringen i drift er
     # fra september-refitten 2027 eller senere (foer: evalueres ikke; laesning og dashboard.json uaendrede)
+    if P27.i_kraft_maaned(W.get("refit_maaned")):
+        # RAADETS_2027 §10.4 (spec2027/5_live_censurering.md): live-reglen = noeglens §1 (d), byte for byte — ellers stop
+        P27.kraev_regel_identisk(HERE.parent / "BEDOEMMELSESNOEGLE.md")
     if P27.i_kraft_maaned(W.get("refit_maaned")) and avail:
         P27.kraev_forseglet("3_indholdstrigger_replay.md")
         mf_ = HERE / "kalibreringer" / f"manifest_{W.get('manifest_hash')}.json"
