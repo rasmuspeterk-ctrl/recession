@@ -415,6 +415,28 @@ def main():
     for s_ in synk:
         print(f"ANNONCERINGSTABEL UDE AF SYNK MED USREC: {s_}")
     avail = A2.load_announcements(eps, f=ann_f) if ann_f.exists() and not synk else {}
+    # RAADETS_2027 §6 (spec2027/3_indholdstrigger_replay.md §2): NBER-indholdstriggeren, naar kalibreringen i drift er
+    # fra september-refitten 2027 eller senere (foer: evalueres ikke; laesning og dashboard.json uaendrede)
+    if P27.i_kraft_maaned(W.get("refit_maaned")) and avail:
+        P27.kraev_forseglet("3_indholdstrigger_replay.md")
+        mf_ = HERE / "kalibreringer" / f"manifest_{W.get('manifest_hash')}.json"
+        if not mf_.exists():
+            r_ = (f"manifestet for kalibreringen i drift ({W.get('manifest_hash')}) mangler — NBER-indholdstriggeren "
+                  "(RAADETS_2027 §6) kan ikke evalueres (fail-closed)")
+        else:
+            mm_ = json.loads(mf_.read_text(encoding="utf-8"))
+            it_ = P27.indholdstrigger(A2.build_dataset(snap, ["curve"]), eps, avail, usrec, A2.midx(D_las.year, D_las.month),
+                                      mm_["origins"], A2.midx(int(W["refit_maaned"][:4]), int(W["refit_maaned"][5:7])))
+            r_ = None
+            if it_["udloest"]:
+                r_ = ("NBER-indholdstrigger (RAADETS_2027 §6): " + "; ".join(
+                    [f"ny onset {o} ({', '.join(v)})" for o, v in sorted(it_["nye_onsets"].items())]
+                    + [f"omlabeling {x}" for x in it_["omlabelinger"]]) + " — refit ved denne koersel")
+        if r_:
+            rekal_paakraevet.append(r_)
+            rekal_json.append(r_)
+            print(f"REKALIBRERING PAAKRAEVET: {r_} — bump VERSION i finalize6.py (§3.3), koer finalize6.py && diagnostik.py "
+                  "foer --log.")
 
     manual_f = snap / "manual.json"
     if not manual_f.exists():

@@ -23,6 +23,8 @@ det en raadsbeslutning om en v5.1-protokol, aldrig et automatisk skift.
 RAADETS_2027 (refit-maaned >= 2027-09; protokol2027.py, forseglede specs i spec2027/): §2.3 gaten er ensidet mod
     sin egen kritiske vaerdi 1,96 x SD_block og udloeser kun et obligatorisk dagsordenspunkt (den laante 4,42 er ude);
     §9 L_R-auditten (max(18, top-lag, bund-lag - 12); eligibility med info ved R; finalitet) stopper refitten ved brud.
+    §6 NBER-indholdstriggeren (een refit pr. ny onset + omlabelinger) er en deterministisk trigger, naar kalibreringen
+    i drift er fra 2027-refitten; trigger-maaneden skrives i manifestet. Replayen ligger i replay2027.py.
 §7  Bro ved fast inputvektor: (i) legacy-rygrad, (ii) korrigerede kilder paa samme origins,
     (iii) udvidet panel. Raa koefficienter (beta = w1/s, alpha = w0 - w1*mu/s) ved siden af.
 
@@ -153,7 +155,7 @@ def live_x(snap):
 
 HASH_UDELUKKET = ("created_utc", "code_commit", "kaldt_som", "hash",
                   "delta_vs_forrige", "trigger", "miljoe", "reparation", "nber_effekt",
-                  "L_R_audit", "announcement_table_kanonisk")   # proveniens om aendringen/koerslen, ikke
+                  "L_R_audit", "announcement_table_kanonisk", "indholdstrigger")   # proveniens om aendringen/koerslen, ikke
 # kalibreringsindhold (den kanoniske tabelhash er afledt af samme fil som announcement_table_sha256)
 
 def manifest_hash(m):
@@ -192,6 +194,18 @@ def ann_fil():
     """Annonceringstabellen ved siden af koden (HERE; tests patcher HERE — falder da tilbage til A2's)."""
     f = HERE / "nber_announcements.csv"
     return f if f.exists() else A2.HERE / "nber_announcements.csv"
+
+
+def indholdstrigger_ved(snap, forrige):
+    """RAADETS_2027 §6 (spec2027/3_indholdstrigger_replay.md §2): den foerste maaned i (forrige refit, snapshottets
+    maaned], hvor NBER-indholdstriggeren er udloest mod manifestet i drift -> manifestets felt, eller None."""
+    usrec = A2.load_usrec(snap)
+    eps = A2.episodes_from_usrec(usrec)
+    avail = A2.load_announcements(eps, f=ann_fil(), usrec=usrec)
+    D = A2.build_dataset(snap, ["curve"])
+    R = A2.midx(int(snap.name[:4]), int(snap.name[5:7]))
+    R_M = A2.midx(int(forrige["refit_maaned"][:4]), int(forrige["refit_maaned"][5:7]))
+    return P27.foerste_trigger(D, eps, avail, usrec, R, forrige["origins"], R_M)
 
 
 def miljoe():
@@ -403,8 +417,11 @@ def bestem_trigger(m_ny, m_gl, ref=None):
         return "manuel/reparation (foerste kalibrering efter v5.0)"
     ref = ref or m_gl              # tabeltilstanden en genbrugende NBER-koersel allerede har registreret (weights.json)
     k_gl, k_ny = A2.kanonisk_af(ref), A2.kanonisk_af(m_ny) or A2.tabel_hash(ann_fil())
+    it = m_ny.get("indholdstrigger")                  # RAADETS_2027 §6 (spec 3 §2): efter hash-triggeren, foer september
     if (k_gl != k_ny) if k_gl else (ref.get("announcement_table_sha256") != m_ny["announcement_table_sha256"]):
-        return "nber-datering (annonceringstabellen aendret)"
+        return "nber-datering (annonceringstabellen aendret)" + (f" + {P27.trigger_tekst(it)}" if it else "")
+    if it:
+        return P27.trigger_tekst(it)
     if int(m_ny["refit_maaned"][5:7]) == 9:
         return "september (aarlig)"
     return "manuel/reparation"
@@ -505,6 +522,7 @@ def main():
         if not reparation.strip():
             sys.exit('FEJL: --reparation kraever en begrundelse: --reparation "<hvad og hvorfor>"')
     ref = None
+    indhold_gaelder, indhold = False, None
     if forrige and forrige.get("version") not in (None, LEGACY_VERSION):
         sep = int(snap.name[5:7]) == 9
         W_ = {}
@@ -515,12 +533,17 @@ def main():
                 W_ = {}
         ref = W_ if W_.get("manifest_hash") == forrige.get("hash") and W_.get("announcement_table_sha256") else forrige
         ny_tabel = A2.tabel_aendret(ref.get("announcement_table_sha256"), A2.kanonisk_af(ref), f=ann_fil())
+        # RAADETS_2027 §6: indholdstriggeren gaelder, naar kalibreringen i drift er fra 2027-refitten eller senere
+        indhold_gaelder = P27.i_kraft_maaned(forrige.get("refit_maaned"))
+        indhold = indholdstrigger_ved(snap, forrige) if indhold_gaelder else None
         # en ren reproduktion paa kalibreringens EGET snapshot er tilladt (gendanner driftsvaegtene bit-identisk;
         # kraev_ny_version stopper den, hvis den mod forventning giver en anden kalibrering)
-        if not sep and not ny_tabel and reparation is None and snap.name != forrige.get("snapshot"):
+        if not sep and not ny_tabel and not indhold and reparation is None and snap.name != forrige.get("snapshot"):
             sys.exit(f"FEJL (§3.2, F4): ingen deterministisk trigger — snapshot {snap.name} er ikke et september-snapshot, "
                      "og annonceringstabellen er uaendret siden manifest "
-                     f"{forrige.get('hash')}. Vaegtene er frosne. En reparation kraever "
+                     f"{forrige.get('hash')}"
+                     + (" (og NBER-indholdstriggeren, RAADETS_2027 §6, er ikke udloest)" if indhold_gaelder else "")
+                     + ". Vaegtene er frosne. En reparation kraever "
                      '--reparation "<begrundelse>" (skrives i manifestet).')
     lr = None
     if not P27.i_kraft(A2.midx(int(snap.name[:4]), int(snap.name[5:7]))):
@@ -536,6 +559,11 @@ def main():
             print(ln)
         P27.stop_ved_brud(lr)
     m["L_R_audit"] = lr
+    if indhold_gaelder:
+        m["indholdstrigger"] = indhold               # spec 3 §2: trigger-maaneden i manifestet (null: ikke udloest)
+        if indhold:
+            print(f"NBER-indholdstrigger (RAADETS_2027 §6): trigger-maaned {indhold['trigger_maaned']}; nye onsets "
+                  f"{indhold['nye_onsets'] or '-'}; omlabelinger {indhold['omlabelinger'] or '-'}")
     if reparation is not None:
         m["reparation"] = reparation
     g = m["gate"]

@@ -11,6 +11,8 @@ R >= IKRAFT (2027-09). En kalibrering med R < IKRAFT (fx reproduktionen af 72c33
 
   spec2027/1_gate.md        §2.1-2.3  ensidet benchmark-gate mod kritisk vaerdi -> obligatorisk dagsordenspunkt
   spec2027/2_L_R_audit.md   §9        L_R = max(18, top-lag, bund-lag - 12); eligibility med info ved R; stop ved brud
+  spec2027/3_indholdstrigger_replay.md
+                            §6        een refit pr. ny onset + enhver omlabeling; replayen ligger i replay2027.py
 
 Kun stdlib + numpy.
 """
@@ -30,6 +32,7 @@ IKRAFT = A2.midx(2027, 9)          # september-refitten 2027 (RAADETS_2027 §0)
 SPECS = {
     "1_gate.md": "127f46beb9212a3ede057f17c8fccdd364b1175f5e09f79b3d2c1a0cdcb4620c",
     "2_L_R_audit.md": "017f1f3152b32e367e4f67d77be696bf5944a93691ca37dd8462bebb66c0a2e3",
+    "3_indholdstrigger_replay.md": "c63471d399768e81b57c39c3c5dc8ea458a2105dfe8456c12caa747f4d76ed3f",
 }
 
 Z_975, Z_80 = 1.959964, 0.841621   # spec 1 §4.1: 80 %-MDE = (z_0,975 + z_0,80) x SD_block (normalteori)
@@ -341,3 +344,57 @@ def stop_ved_brud(a):
     if grunde:
         raise SystemExit("FEJL (RAADETS_2027 §9.3): L_R-auditten er brudt — " + "; ".join(grunde)
                          + ". Refitten stopper; intet er skrevet. Raadet skal tage stilling.")
+
+
+# ------------------------------------------------------------------ spec 3: indholdstriggeren (§6.1)
+def ym(i):
+    return f"{i // 12}-{i % 12 + 1:02d}"
+
+
+def manifest_onsets(origins, eps, avail, R_M):
+    """Spec 3 §2: onsets med mindst eet positivt origin i manifestet (origins = [[aar, kvt, label]], refit R_M)."""
+    ud = set()
+    for y, q, l in origins:
+        if int(l) != 1:
+            continue
+        qe = A2.qend_idx(int(y), int(q))
+        ud |= {o for o, _ in eps if qe + 1 <= o <= qe + 12 and avail.get(o, INF) <= R_M}
+    return ud
+
+
+def indholdstrigger(D, eps, avail, usrec, R, origins, R_M):
+    """Spec 3 §2 (§6.1): udloest ved R mod manifestet (origins, R_M) i drift? Een gang pr. ny onset (et berettiget
+    positivt label for en onset, manifestet ikke har) + enhver omlabeling; aldrig nymodnede negative. Triggeren
+    aendrer intet ved fittet. -> dict(udloest, nye_onsets {onset: [origins]}, omlabelinger [..])."""
+    elig, yR = A2.eligible_fit(D, eps, avail, usrec, R)
+    _, win, _ = A2.nber_labels(D, eps, usrec)
+    kendt = manifest_onsets(origins, eps, avail, R_M)
+    man = {(int(y), int(q)): int(l) for y, q, l in origins}
+    nye, omlab = {}, []
+    for j in np.where(elig)[0]:
+        k = (int(D["qk"][j][0]), int(D["qk"][j][1]))
+        if yR[j] == 1:
+            for o in win[j]:
+                if avail[o] <= R and o not in kendt:
+                    nye.setdefault(ym(o), []).append(f"{k[0]}Q{k[1]}")
+        if k in man and man[k] != int(yR[j]):
+            omlab.append(f"{k[0]}Q{k[1]} {man[k]}->{int(yR[j])}")
+    return dict(udloest=bool(nye or omlab), nye_onsets=nye, omlabelinger=omlab)
+
+
+def foerste_trigger(D, eps, avail, usrec, R, origins, R_M):
+    """Spec 3 §2: den foerste maaned R' i (R_M, R] hvor indholdstriggeren er udloest -> manifestets felt, eller None."""
+    h = kraev_forseglet("3_indholdstrigger_replay.md")
+    for Rp in range(R_M + 1, R + 1):
+        t = indholdstrigger(D, eps, avail, usrec, Rp, origins, R_M)
+        if t["udloest"]:
+            return dict(protokol="RAADETS_2027 §6", spec_sha256=h, trigger_maaned=ym(Rp), evalueret_ved=ym(R),
+                        nye_onsets=t["nye_onsets"], omlabelinger=t["omlabelinger"])
+    return None
+
+
+def trigger_tekst(it):
+    """Den korte begrundelse i manifestets/weights.json's trigger-tekst."""
+    dele = [f"ny onset {o} ({', '.join(v)})" for o, v in sorted(it["nye_onsets"].items())] + \
+           [f"omlabeling {x}" for x in it["omlabelinger"]]
+    return f"nber-indhold (RAADETS_2027 §6): trigger-maaned {it['trigger_maaned']}; " + "; ".join(dele)

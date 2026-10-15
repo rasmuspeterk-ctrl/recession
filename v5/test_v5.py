@@ -2380,5 +2380,184 @@ class TestRaad2027LR(unittest.TestCase):
         self.assertNotIn("protokol", m0["L_R_audit"])
 
 
+
+import replay2027 as RP
+
+
+class TestRaad2027Indholdstrigger(unittest.TestCase):
+    """RAADETS_2027 §6.1 (spec2027/3_indholdstrigger_replay.md §2): een refit pr. ny onset + enhver omlabeling."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.snap = C.RAW / "2026-09-19"
+        cls.usrec = A2.load_usrec(cls.snap)
+        cls.eps = A2.episodes_from_usrec(cls.usrec)
+        cls.avail = A2.load_announcements(cls.eps, usrec=cls.usrec)
+        cls.D = A2.build_dataset(cls.snap, ["curve"])
+
+    def _manifest(self, R):
+        return F6.fit_model(self.D, self.eps, self.avail, self.usrec, R)["_origins"]
+
+    def _it(self, R, origins, R_M):
+        return P27.indholdstrigger(self.D, self.eps, self.avail, self.usrec, R, origins, R_M)
+
+    def test_ny_onset_udloeser_een_gang_ved_foerste_modne_positive(self):
+        m = A2.midx
+        ft = P27.foerste_trigger(self.D, self.eps, self.avail, self.usrec, m(2003, 12), self._manifest(m(2001, 9)), m(2001, 9))
+        self.assertEqual(ft["trigger_maaned"], "2002-12")             # 2000Q2 modner 2002-12 (top annonceret 2001-11)
+        self.assertEqual(ft["nye_onsets"], {"2001-04": ["2000Q2"]})
+        self.assertEqual(ft["omlabelinger"], [])
+        self.assertEqual((ft["protokol"], ft["spec_sha256"]), ("RAADETS_2027 §6", P27.SPECS["3_indholdstrigger_replay.md"]))
+        efter = self._manifest(m(2002, 12))                           # refitten ved trigger-maaneden
+        t2 = self._it(m(2003, 3), efter, m(2002, 12))                 # 2000Q3: naeste positive for SAMME onset
+        self.assertIn([2000, 3, 1], self._manifest(m(2003, 3)))
+        self.assertFalse(t2["udloest"])                               # venter paa september
+
+    def test_nymodnede_negative_udloeser_aldrig(self):
+        m = A2.midx
+        man = self._manifest(m(2005, 9))
+        for R in range(m(2005, 10), m(2006, 9)):
+            self.assertFalse(self._it(R, man, m(2005, 9))["udloest"], R)
+        self.assertGreater(len(self._manifest(m(2006, 8))), len(man))      # der ER modnet nye (negative) origins
+
+    def test_omlabeling_udloeser(self):
+        m = A2.midx
+        man = [list(o) for o in self._manifest(m(2010, 9))]
+        k = next(i for i, o in enumerate(man) if o[2] == 1)
+        man[k][2] = 0
+        t_ = self._it(m(2010, 10), man, m(2010, 9))
+        self.assertTrue(t_["udloest"])
+        self.assertEqual(t_["omlabelinger"], [f"{man[k][0]}Q{man[k][1]} 0->1"])
+
+    def test_triggeren_aendrer_intet_ved_fittet(self):
+        m = A2.midx
+        man = self._manifest(m(2001, 9))
+        foer = A2.eligible_fit(self.D, self.eps, self.avail, self.usrec, m(2002, 12))
+        self._it(m(2002, 12), man, m(2001, 9))
+        efter = A2.eligible_fit(self.D, self.eps, self.avail, self.usrec, m(2002, 12))
+        self.assertTrue(np.array_equal(foer[0], efter[0]) and np.array_equal(foer[1], efter[1]))
+
+
+class TestRaad2027IndholdstriggerKaede(unittest.TestCase):
+    """finalize6 og motor under en 2027-kalibrering (ikrafttraeden flyttet frem i testen)."""
+
+    @classmethod
+    def setUpClass(cls):
+        TestMotor.setUpClass.__func__(cls)
+
+    @classmethod
+    def tearDownClass(cls):
+        TestMotor.tearDownClass.__func__(cls)
+
+    _motor = TestMotor._motor
+
+    def _forrige(self, here, R_M):
+        """En 'kalibrering i drift' fittet ved R_M paa 2026-09-19 (version != VERSION), med weights.json der peger paa den."""
+        with mock.patch.object(F6, "HERE", here), quiet():
+            mf, _ = F6.rekalibrer(C.RAW / "2026-09-19", R=R_M, version="5.0.1-test")
+        mf.update(hash="test0001", audit={}, gate={})
+        (here / "kalibreringer").mkdir(exist_ok=True)
+        (here / "kalibreringer" / "manifest_test0001.json").write_text(json.dumps(mf), encoding="utf-8")
+        ann = here / "nber_announcements.csv"
+        shutil.copy(HERE / "nber_announcements.csv", ann)
+        (here / "weights.json").write_text(json.dumps(dict(protocol_version="5.0-final", manifest_hash="test0001",
+                                                           announcement_table_sha256=C.ann_sha256(ann),
+                                                           announcement_table_kanonisk=A2.tabel_hash(ann))), encoding="utf-8")
+
+    def _finalize(self, R_M, snapshot):
+        with tempfile.TemporaryDirectory() as t:
+            here = Path(t)
+            for fn in ("ablation7_resultat.json", "ablation8_resultat.json"):
+                shutil.copy(HERE / fn, here / fn)
+            with mock.patch.object(P27, "IKRAFT", A2.midx(2020, 1)):
+                self._forrige(here, R_M)
+                out = io.StringIO()
+                with mock.patch.object(F6, "HERE", here), contextlib.redirect_stdout(out), \
+                     mock.patch.object(sys, "argv", ["finalize6.py", "--snapshot", str(C.RAW / snapshot)]):
+                    F6.main()
+            W = json.loads((here / "weights.json").read_text(encoding="utf-8"))
+            m = json.loads((here / "kalibreringer" / f"manifest_{W['manifest_hash']}.json").read_text(encoding="utf-8"))
+            return W, m, out.getvalue()
+
+    def test_finalize6_indholdstrigger_er_en_gyldig_trigger(self):
+        W, m, ud = self._finalize(A2.midx(2021, 8), "2026-10-15")     # 2019Q1 (onset 2020-03) modner 2021-09
+        it = m["indholdstrigger"]
+        self.assertEqual(it["trigger_maaned"], "2021-09")
+        self.assertEqual(it["nye_onsets"], {"2020-03": ["2019Q1"]})
+        self.assertEqual(it["evalueret_ved"], "2026-10")
+        self.assertTrue(m["trigger"].startswith("nber-indhold (RAADETS_2027 §6): trigger-maaned 2021-09"))
+        self.assertEqual(W["trigger"], m["trigger"])
+        self.assertIn("NBER-indholdstrigger (RAADETS_2027 §6): trigger-maaned 2021-09", ud)
+        self.assertEqual(F6.manifest_hash(m), m["hash"])                # feltet er proveniens (uden for hashen)
+        self.assertTrue(m["audit"]["forklaret_ok"])
+
+    def test_finalize6_uden_trigger_stopper_som_foer(self):
+        with self.assertRaisesRegex(SystemExit, "indholdstriggeren, RAADETS_2027 §6, er ikke udloest"):
+            self._finalize(A2.midx(2026, 9), "2026-10-15")
+
+    def _motor_2027(self, origins_filter, manifest=True, ikraft=A2.midx(2020, 1)):
+        with tempfile.TemporaryDirectory() as t:
+            here = Path(t) / "v5"; shutil.copytree(self.here, here)
+            W = json.loads((here / "weights.json").read_text(encoding="utf-8"))
+            W["manifest_hash"] = "test0002"
+            (here / "weights.json").write_text(json.dumps(W), encoding="utf-8")
+            if manifest:
+                mm = json.loads((HERE / "kalibreringer" / "manifest_72c3371d.json").read_text(encoding="utf-8"))
+                mm["origins"] = [o for o in mm["origins"] if origins_filter(o)]
+                (here / "kalibreringer" / "manifest_test0002.json").write_text(json.dumps(mm), encoding="utf-8")
+            with mock.patch.object(P27, "IKRAFT", ikraft):
+                return self._motor(["--allow-stale", "--log", "--json", str(Path(t) / "d.json")], here=here), \
+                    json.loads((Path(t) / "d.json").read_text(encoding="utf-8"))
+
+    def test_motor_blokerer_log_ved_udloest_trigger(self):
+        uden_2020 = lambda o: not (o[2] == 1 and (o[0], o[1]) >= (2019, 1))       # manifestet mangler onset 2020-03
+        ud, d = self._motor_2027(uden_2020)
+        self.assertIn("REKALIBRERING PAAKRAEVET: NBER-indholdstrigger (RAADETS_2027 §6): ny onset 2020-03", ud)
+        self.assertIn("--log AFVIST: rekalibrering paakraevet", ud)
+        self.assertTrue(any("NBER-indholdstrigger" in r for r in d["rekalibrering_paakraevet"]))
+        ud, d = self._motor_2027(lambda o: True)                                    # manifestet har alt: ingen trigger
+        self.assertNotIn("NBER-indholdstrigger", ud)
+        ud, _ = self._motor_2027(uden_2020, manifest=False)                         # fail-closed
+        self.assertIn("kan ikke evalueres", ud)
+        ud, d = self._motor_2027(uden_2020, ikraft=P27.IKRAFT)                      # foer ikrafttraeden: evalueres ikke
+        self.assertNotIn("indholdstrigger", ud.lower())
+
+
+class TestRaad2027Replay(unittest.TestCase):
+    """RAADETS_2027 §6.2 (spec 3 §3): den konfigurationsspecifikke replay."""
+
+    def test_september_alene_reproducerer_E5_eksakt(self):
+        r = RP.replay(C.RAW / "2026-09-19", A2.midx(2026, 9), regel=("september",))
+        self.assertEqual([(v["navn"], v["n"], v["skill_LL"], v["skill_brier"]) for v in r["varianter"]],
+                         [("realtid_aaben_episode", 561, 24.41, 22.22), ("realtid_uden_vintage", 644, 28.95, 26.89),
+                          ("orakel", 583, 33.28, 32.46)])
+        self.assertEqual((r["n_raekker"], r["foerste_logget"], r["n_refits"]), (668, "1968-09", 59))
+
+    def test_regimet_tre_varianter_i_raekkefoelge_og_indholdsrefits(self):
+        r = RP.replay(C.RAW / "2026-09-19", A2.midx(2026, 9))
+        self.assertEqual([v["navn"] for v in r["varianter"]], ["realtid_aaben_episode", "realtid_uden_vintage", "orakel"])
+        self.assertEqual(r["overskrift"], RP.OVERSKRIFT)
+        self.assertEqual(r["regel"], ["september", "hash", "indhold"])
+        self.assertIn(dict(R="2002-12", grund="indhold: ny onset 2001-04 (2000Q2)"), r["indholdsudloeste_refits"])
+        self.assertTrue(any(g.startswith("hash: peak_2001") for x in r["refits"] if x["R"] == "2001-12" for g in x["grunde"]))
+        tekst = chr(10).join(RP.linjer(r))
+        self.assertLess(tekst.index("realtid (motorens"), tekst.index("realtid uden USREC"))
+        self.assertLess(tekst.index("realtid uden USREC"), tekst.index("orakel (endelig"))
+        for e5 in ("24.41", "24,41", "28.95", "28,95", "33.28", "33,28"):
+            self.assertNotIn(e5, tekst)
+        self.assertIn("ikke dette regimes skill", tekst)
+
+    def test_hash_maaneden_er_E5s(self):
+        """En annoncering senest paa logdagen rammer samme maaned, ellers naeste (2020-06-08 -> juni; 1991-04-25 -> maj)."""
+        r = RP.replay(C.RAW / "2026-09-19", A2.midx(2026, 9), regel=("september", "hash"))
+        hash_R = {x["R"] for x in r["refits"] if any(g.startswith("hash") for g in x["grunde"])}
+        self.assertTrue({"2020-06", "1991-05", "2008-12", "2010-10", "1981-07"} <= hash_R)
+        self.assertNotIn("1991-04", hash_R)
+
+    def test_main_koerer_kun_ved_refitten(self):
+        with mock.patch.object(sys, "argv", ["replay2027.py"]), self.assertRaisesRegex(SystemExit, "koeres ved september-refitten 2027"):
+            RP.main()
+
+
 if __name__ == "__main__":
     unittest.main()
