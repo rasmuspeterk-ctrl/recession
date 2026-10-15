@@ -44,7 +44,9 @@ flagskibsmodeller afgjorde de ti spørgsmål, kode-reviewet sendte til "rådet f
 - EBP's historiske test lukkes.
 
 Intet ændrer P før september-refitten 2027. Se [RAADETS_2027.md](RAADETS_2027.md) og
-[v5/analyser/](v5/analyser/README.md).
+[v5/analyser/](v5/analyser/README.md). Beslutningerne er implementeret (2026-10-15) efter seks forseglede specs i
+[v5/spec2027/](v5/spec2027/), hver pushet før koden ([v5/protokol2027.py](v5/protokol2027.py),
+[v5/replay2027.py](v5/replay2027.py)); de virker kun for kalibreringer fra refitten 2027-09 og frem.
 
 **Kode-review 2026-10-15:** 85 verificerede fund er rettet, uden at P eller historiske rækker er
 ændret. Ændringerne omfatter seks tidskritiske fejl før november-læsningen, licensbegrænsede filer
@@ -57,7 +59,7 @@ ud af repoet, sværm-tripwires ud af hovedbogens antændings-kolonne (rådets R3
 | Fil | Indhold |
 |---|---|
 | [v5/README.md](v5/README.md) | Ritualer, filoversigt, afvigelser fra blueprintet, byggelog |
-| [v5/](v5/) | Koden: fetch → (finalize6 → diagnostik ved rekalibrering) → motor (calibrate.py er trin-1-reproduktionen og overskriver ikke driftsvægtene). 156 tests. |
+| [v5/](v5/) | Koden: fetch → (finalize6 → diagnostik ved rekalibrering) → motor (calibrate.py er trin-1-reproduktionen og overskriver ikke driftsvægtene). 203 tests. |
 | [LOG.md](LOG.md) | Hovedbogen — én række pr. måned, logført før udfaldet kendes. Redigeres aldrig. |
 | [BEDOEMMELSESNOEGLE.md](BEDOEMMELSESNOEGLE.md) | Hvordan hovedbogen scores — præregistreret før række 4, med styrketabel |
 | [UDFALD.csv](UDFALD.csv) / [hovedbog.jsonl](hovedbog.jsonl) | Append-only udfald pr. række / fuld record pr. række |
@@ -88,7 +90,7 @@ python fetch.py                        # snapshot (FRED + Fed Board EBP), hashet
 # opdatér manual/manual.json: S&P vs 12-mdr-høj, CAPE, marginlån y/y — med deres datoer
 python fetch.py                        # igen, så snapshottet bærer de nye manuelle tal
 python motor.py --log --json           # læsning, hovedbogsrække (kun i logvinduet), dashboard.json
-python -m unittest test_v5             # 154 tests
+python -m unittest test_v5             # 203 tests
 ```
 
 Vægtene er frosne mellem rekalibreringer (hver september, eller når NBER daterer en ny top/bund):

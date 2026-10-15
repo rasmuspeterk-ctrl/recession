@@ -18,12 +18,14 @@ blev til, ikke hvordan den koeres i dag.
 | `calibrate.py` | Hjaelpefunktioner for hele kaeden (read_fred, live_kurve, fit ...). Som script HISTORISK (trin 1): skriver `calibrate_resultat.json`; `weights.json` kun med `--overskriv` (bevidst) |
 | `ablation2_nber.py` | NBER-labelen, annonceringstabellen, USREC-krydstjekket, eligibility og den forklarede origin-audit. Som script (`--promote`) HISTORISK — koer ikke i drift |
 | `ablation3/4/7/8_*.py`, `audit5_alfred.py` | Historiske, afsluttede tests (frekvens, features, curve+cape, AWHMAN, ALFRED) — koer ikke i drift |
-| `test_v5.py` | 154 tests, stdlib unittest, ingen netvaerk (~80 s) |
+| `test_v5.py` | 203 tests, stdlib unittest, ingen netvaerk (~4 min) |
 | `nber_announcements.csv` | NBER's annonceringsdatoer (top/bund) — se *NBER-vedligehold* nedenfor |
 | `manual/` | `manual.json` (S&P vs 52u-top, live-CAPE, marginlaan y/y + deres datoer), `shiller_yale_2023-09.csv` (uforanderlig Yale-kopi), `seam_check_2023.json`, evt. `outliers_accepteret.json` |
 | `kalibreringer/` | Kalibreringsmanifester (v5.0.1 §3.3): et pr. kalibrering, index.json, legacy_mapping.json |
 | `weights.json`, `diagnostik.json` | Den kalibrering der er i drift og dens diagnostik (skrives kun af finalize6/diagnostik) |
 | `ablation9_nested.py` | PRAEREGISTRERET nested lambda-/modelselektion (G1.1/G1.2): koerer kun naar filen er committet og pushet; publiceres ved siden af, aendrer intet |
+| `protokol2027.py`, `spec2027/` | RAADETS_2027's regler fra september-refitten 2027, hver efter en forseglet spec (sha256 laast i koden): gate, L_R-audit, indholdstrigger, maanedligt fit + uscorede felter, live-censureringens regeltekst, skill-saetningen ved refitten. Virker kun for kalibreringer med refit-maaned >= 2027-09 |
+| `replay2027.py` | Den konfigurationsspecifikke hovedbogs-replay (september + hash + indholdstrigger) og den re-afledte styrkeklausul — koeres ved refitten 2027 |
 
 ## Maanedligt ritual (~5 min) — logdag: foerste hverdag fra den 10. (+ 3 dage)
 
@@ -32,7 +34,7 @@ python fetch.py                  # hent + rygrad + guards + diff-tjek med oejnen
 # opdater manual/manual.json: spx_vs_hi + spx_dato, cape + cape_dato, margin_yoy + margin_periode
 python fetch.py                  # igen, saa snapshottet baerer de manuelle tal
 python motor.py --log --json     # aflaesning, prospektiv raekke i ../LOG.md + ../hovedbog.jsonl, dashboard.json
-python -m unittest test_v5       # 154 tests
+python -m unittest test_v5       # 203 tests
 ```
 Hovedbogen (`../LOG.md`) er den eneste fuldt prospektive test: een raekke pr. maaned, skrevet FOER
 udfaldet kendes; historiske raekker roeres aldrig. Den beskytter mod look-ahead, men er statistisk
@@ -59,6 +61,13 @@ python finalize6.py      # gulv + forklaret audit mod forrige manifest + bro + m
 python diagnostik.py     # §4-diagnostik -> diagnostik.json (~95 s)
 python motor.py --json   # verificer; naeste --log-raekke faar automatisk bro-noten
 ```
+**Fra september-refitten 2027 (RAADETS_2027; refit-maaned >= 2027-09)** koerer finalize6 desuden den ensidede gate
+(§2.3), L_R-auditten (§9; stopper refitten ved brud) og de uscorede fit (§3.3/§4); diagnostik.py den parrede
+maanedlige diagnostik (§3.3; identiteterne fejler hoejlydt) og nested lambda oracle-fri (§1.2); og efter
+diagnostik.py koeres `python replay2027.py` (§6.2 + den re-afledte styrkeklausul, §1.2). Derefter er
+NBER-indholdstriggeren (§6.1) en tredje deterministisk trigger: motor blokerer `--log` med "REKALIBRERING
+PAAKRAEVET: NBER-indholdstrigger", og finalize6 skriver trigger-maaneden i manifestet. Se afsnittet *Raadet 2027*
+nederst.
 Vaegte, standardisering og basisrate er frosne mellem rekalibreringer. finalize6 naegter at koere uden
 deterministisk trigger (en reparation kraever `--reparation "<begrundelse>"`, som skrives i manifestet),
 paa et snapshot hvis rygrad ikke er refit-klar (multpl/SP500-udfald eller stale rygrad), og naar
@@ -67,7 +76,7 @@ en uaendret genbruger manifestet og registrerer koerslen i `weights.json.koersel
 operationelle model kraever `kalibreringer/raadsbeslutning.json` (§6). Legacy-replay til enhver tid:
 `python finalize6.py --legacy` (skal give w=[-2.1755,-1.6907], n_obs 264; CI koerer den ved hvert push).
 
-Test (stdlib unittest, ingen netvaerk, ~80 s): `cd v5 && python -m unittest -v test_v5`. Koer den
+Test (stdlib unittest, ingen netvaerk, ~4 min): `cd v5 && python -m unittest -v test_v5`. Koer den
 efter enhver kodeaendring, foer maanedsritualet.
 
 # Byggelog (historik)
@@ -778,14 +787,22 @@ med GPT-6.1 Sol Pro, Gemini 4 Argon, Claude Fable 5.1, Grok 4.7, Kimi K3, DeepSe
   +28,95 / orakel +33,28 %; logget basisrate 22,8 % mod realiseret 15,3 %).
 - §10: F29 er ratificeret ex post.
 
-**Skal implementeres foer september-refitten 2027.** Hver forseglet spec committes og pushes, foer den bruges:
+**Skal implementeres foer september-refitten 2027 — GENNEMFOERT 2026-10-15.** Hver forseglet spec er committet og
+pushet i sin egen commit FOER koden, der bruger den (§12 trin 3); koden (`protokol2027.py`) laaser hver spec's sha256 og
+stopper hoejlydt, hvis en spec aendres efter forseglingen. Alt virker kun for kalibreringer med refit-maaned >= 2027-09:
+P, baand, vaegte (manifest 72c3371d), hovedbogens raekker og dashboard.json er uaendrede.
 
-| § | Hvad | Status |
-|---|---|---|
-| 2.3 | Gaten: ensidet Δ = skill(F5) - skill(curve) paa faelles origins mod 1,96·SD_block; agenda-punkt, aldrig "evidens"; print 80 %-MDE, Δ uden stoerste blok, Δ ved 1953Q2/1960Q1; 4,42 ud | aaben |
-| 9 | L_R-audit: L_R = max(18, max peak-lag, max trough-lag - 12); eligibility R >= q + 12 + L_R OG censurstatus afgjort med info ved R; stop ved brud; datostemplede tests (1991, 2001; Kimi: ogsaa 1980-81; Fable: graensetests R-1/R) | aaben |
-| 6 | Indholdstrigger: een refit pr. ny onset (foerste modne positive label) + enhver omlabeling; aldrig negative modninger; trigger-maaned i manifestet; konfigurationsspecifik replay forseglet foer brug (alle tre censurvarianter) | aaben |
-| 3.3 | Maanedligt fit (uscoret kolonne): spec inkl. fastlaast λ-normalisering (Sol/Argon/Grok/Kimi: λ_m = λ_q·N_m/N_q under summeret tab, eller middel-tab), plus den parrede samme-origins-diagnostik med identitetstjek i kode | aaben |
-| 4, 10.4 | Uscorede felter: P ved 1953Q2/1960Q1 i hver raekke; P og udfald for censurerede maaneder (UDFALD.csv) | aaben |
-| 10.4 | Live-censureringens regeltekst byte-identisk med noeglens aabne-episode-regel, skrevet i protokollen | aaben |
-| 1.2 | Ved refitten: beregn nested λ oracle-fri; re-afled styrkeklausulen fra den konfigurationsspecifikke replay | aaben |
+| § | Hvad | Forseglet spec (commit) | Kode (commit) | Status |
+|---|---|---|---|---|
+| 2.3 | Gaten: ensidet Δ = skill(F5) - skill(curve) paa parrede origins mod kritisk vaerdi 1,96·SD_block -> obligatorisk dagsordenspunkt, aldrig "evidens"; 80 %-MDE (normalteori), Δ uden stoerst bidragende blok, Δ ved 1953Q2/1960Q1; 4,42 ude | [spec2027/1_gate.md](spec2027/1_gate.md) (abfce91) | ff5591b | gennemfoert |
+| 9 | L_R-audit: L_R = max(18, max top-lag, max bund-lag - 12) = 18; begge led stopper refitten ved brud (top-leddet alene); eligibility R >= q + 12 + L_R OG censurstatus afgjort med info ved R; overensstemmelse med eligible_fit og finalitet 1979-01..R; datostemplede tests 1990-91, 2001, 1980-81 med graensetests R-1/R | [spec2027/2_L_R_audit.md](spec2027/2_L_R_audit.md) (436941f) | 7a2fff2 | gennemfoert |
+| 6 | Indholdstrigger: een refit pr. ny onset (foerste berettigede positive label) + enhver omlabeling; aldrig negative modninger; trigger-maaned i manifestet; motor blokerer `--log`. Konfigurationsspecifik replay (`replay2027.py`) med alle tre censurvarianter, realtid foerst | [spec2027/3_indholdstrigger_replay.md](spec2027/3_indholdstrigger_replay.md) (7c8e701) | 8ae4130 | gennemfoert (replayen koeres ved refitten) |
+| 3.3 | Maanedligt fit (uscoret kolonne `P_maanedligt_fit`) med fastlaast λ_m = λ_q·N_m/N_q under summeret tab (800/267 = 3,0 paa v5.0.1-panelet), plus den parrede samme-origins-diagnostik i to straf-varianter med origin-, label- og basisrate-identitet asserteret i kode (variant B reproducerer §3.2(b): 198 origins, Δ -1,02, SD 2,58) | [spec2027/4_maanedligt_fit_uscorede.md](spec2027/4_maanedligt_fit_uscorede.md) (f93e8c8) | 55d2380 | gennemfoert |
+| 4, 10.4 | Uscorede felter: `P_1953Q2`/`P_1960Q1` i hver raekke; censurerede maaneder faar `uscoret_censur` i hovedbog.jsonl, og UDFALD.csv har kolonnen `uscoret_censureret` (CI tjekker den mod LOG.md) | samme spec 4 | 55d2380 | gennemfoert (fra refitten 2027) |
+| 10.4 | Live-censureringens regeltekst, byte-identisk med noeglens §1 (d), skrevet i protokollen; motor stopper under en 2027-kalibrering, hvis de afviger | [spec2027/5_live_censurering.md](spec2027/5_live_censurering.md) (ab18a24) | 1affc5c | gennemfoert |
+| 1.2 | Ved refitten: nested λ oracle-fri (diagnostik.py; selvtjek: fast oracle-fri 20,37/219 og orakel-nested 18,32/198 reproduceres uden at beregne det nye tal) og styrkeklausulen re-afledt af den konfigurationsspecifikke replay (`replay2027.py`), maerket stoerrelsesorden; skill-saetningen skifter kun, naar tallene findes for kalibreringen i drift | [spec2027/6_skill_saetning_refit.md](spec2027/6_skill_saetning_refit.md) (d142b7b) | 1389d74 | gennemfoert (beregnes ved refitten) |
+
+**Ritualet ved september-refitten 2027** (efter NBER-vedligehold og maanedsritualets fetch): bump VERSION i finalize6.py;
+`python finalize6.py` (gate, L_R-audit, uscorede fit); `python diagnostik.py` (parret maanedlig diagnostik, nested λ
+oracle-fri); `python replay2027.py` (replay + styrkeklausul); `python motor.py --log --json` i logvinduet; commit og push.
+Den parrede diagnostik og replayen publiceres uanset udfald, og F35-forudsigelsen ovenfor sammenlignes.
