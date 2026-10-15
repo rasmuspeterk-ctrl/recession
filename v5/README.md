@@ -585,8 +585,8 @@ afvigelser var tavse indtil nu og erklaeres her. Ingen af dem aendrer P i dag.
 
 | # | Blueprintet siger | Koden goer | Konsekvens / status |
 |---|---|---|---|
-| G1.1 | §3/§6: L2-straffen vaelges INDE i hvert traeningsvindue | Fast λ = 1 overalt (arvet fra v4/curve.py) | v5.0's modelvalg vendte allerede ved λ = 2 (legacy-panel). Ved nested λ falder curve-onlys wf-skill til 17-23 %, men curve-only vinder i alle varianter. +27,1 % maerkes "fast λ=1, ikke nested". Et nested design praeregistreres separat foer koersel |
-| G1.2 | §4/§6: nested selektion; kun den sti kaldes wf-skill | +27,1 % (og +34,3 %) er en max over to modeller paa den fulde sti | Maerket "fuld-sti-valg mellem to modeller (ikke nested)" i motor og dashboard. Med al moden historik vaelger en nested selektor i dag curve-only |
+| G1.1 | §3/§6: L2-straffen vaelges INDE i hvert traeningsvindue | Fast λ = 1 overalt (arvet fra v4/curve.py) | v5.0's modelvalg vendte allerede ved λ = 2 (legacy-panel). Praeregistreret nested λ (ablation9): curve-only **+18,3 %** (mod +27,1 % ved fast λ = 1), fuldmodellen +7,3 %; CV-valgt λ paa hele panelet = 3 (P ved +1,11: 15,8 % mod 15,1 % i drift). +27,1 % maerkes "fast λ=1, ikke nested" |
+| G1.2 | §4/§6: nested selektion; kun den sti kaldes wf-skill | +27,1 % (og +34,3 %) er en max over to modeller paa den fulde sti | Maerket "fuld-sti-valg mellem to modeller (ikke nested)" i motor og dashboard. Den praeregistrerede nested sti (ablation9, nedenfor) vaelger FULDMODELLEN i alle origins fra 2000 og scorer kun +8,5 % — saa en blueprint-tro selektor ville have givet en daarligere model. Til raadet |
 | G1.3 | §2: frekvensgaten | Rollerne er byttet: den bogstavelige gate ville have gjort den maanedlige model primaer | Forelaegges raadet ved september-refit 2027 med begge udfald publiceret. Intet skiftes automatisk |
 | G1.4 | §4: "ingen arvefred" for incumbents | Demotionsreglen var asymmetrisk; realrate, dd og d_infl ville vaere faldet under udfordrernes bar | "5 incumbents bestaar" laeses som "beholdt under asymmetrisk demotionsregel". Fuldmodellen er ikke operationel, og soegningen er lukket |
 | G1.5 | Praeregistrering foer koersel | Gates for trin 2-4, 6 og v5.1 ligger i filer, der er committet sammen med resultatet | Kun blueprintets og RAADETS_REVIEW's gates er verificerbare udefra. Fremtidige praeregistreringer pushes i en separat commit foer koersel (som V501 §8) |
@@ -623,6 +623,31 @@ afvigelser var tavse indtil nu og erklaeres her. Ingen af dem aendrer P i dag.
 | v5.0.1 (§1-§3 foer §4-§7) | RAADETS_V501.md + §8-raekkefoelgen i separate commits | ja |
 | Trin 2 (G2/G3), trin 3 (metrikvalg), trin 4 (demotion, alle-folds), v5.1 (G1-G6) | i scripternes header, committet SAMMEN med resultatet | nej — fastlagt i samme session |
 | Bedoemmelsesnoeglen, F35-forudsigelsen, ablation9 (nested lambda) | egne filer, pushet foer brug/koersel (ablation9 haandhaever det selv) | ja (fra 2026-10-15) |
+
+### RESULTAT: praeregistreret nested lambda- og modelselektion (ablation9, G1.1/G1.2) — koert 2026-10-15
+
+Designet blev committet og pushet foer koersel (9037720; scriptet naegter at koere ellers). Panel: v5.0.1
+(snapshot 2026-09-19, R = 2026-09), 198 origins, grid λ ∈ {0,1 … 100}, indre leave-one-episode-blok-out.
+`ablation9_resultat.json`.
+
+| Sti | log-loss-forbedring | Brier |
+|---|---|---|
+| curve-only, fast λ = 1 (publiceret) | +27,05 % (reproduceret) | +24,15 % |
+| fuldmodel, fast λ = 1 | +23,16 % | +23,69 % |
+| **curve-only, nested λ** | **+18,32 %** | +14,32 % |
+| fuldmodel, nested λ | +7,34 % | +5,89 % |
+| **nested modelselektion** (curve vs F5 pr. origin) | **+8,52 %** | +8,80 % |
+
+Forudsigelserne (skrevet foer koersel): (1) nested curve-only mellem +17 og +25 % — **holdt** (+18,3 %);
+(2) selektionsstien hoejst lig nested curve-only — **holdt** (+8,5 %); (3) curve-only vaelges i flertallet af
+origins fra 2000 — **falsificeret**: den indre CV vaelger fuldmodellen i 100 % af origins fra 2000 (40 % samlet).
+
+Tolkning (aendrer intet i driften): den indre krydsvalidering foretraekker fuldmodellen, som derefter klarer
+sig markant daarligere ude af sample. En bogstavelig, nested selektion efter blueprintet ville altsaa have
+valgt den daarligere model — curve-only-valget bestaar paa den ydre walk-forward (+18,3 mod +7,3 %), men
+IKKE paa blueprintets egen selektionsregel. +27,1 % er den faste-λ-sti; det aerlige nested tal for den
+operationelle model er +18,3 %. Den CV-valgte λ = 3 ville flytte P fra 15,1 til 15,8 % ved dagens kurve.
+Alt dette forelaegges raadet foer september-refitten 2027; hverken λ, modelvalg eller P aendres uden mandat.
 
 ### Driftsaendringer uden raadsmandat (F29) — forelaegges til ratifikation ved september-refit 2027
 

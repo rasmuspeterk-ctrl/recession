@@ -14,7 +14,9 @@ fuldmodellens +33,2 % log-loss-forbedring over basisraten). Efter v5.0.1-rekalib
 +27,1 % mod +23,2 % (forskel 3,9pp, under den ratificerede MDE på 4,42pp, som er lånt fra
 frekvenstesten; gatens egen MDE er ca. 21pp). Modellen er låst til curve-only, indtil rådet
 beslutter andet (§6). Begge tal er fuld-sti-valg mellem to modeller med fast L2-straf (λ = 1,
-arvet fra v4) og ikke nested selektion; det er en erklæret afvigelse fra blueprintet (se
+arvet fra v4) og ikke nested selektion; det er en erklæret afvigelse fra blueprintet. Den
+præregistrerede nested sti (2026-10-15) giver curve-only +18,3 % — og en nested modelselektion ville have
+valgt fuldmodellen og scoret +8,5 % (se
 [v5/README.md](v5/README.md#afvigelser-fra-blueprintet-erklaeret-2026-10-15)). Syv
 feature-kandidater er testet, publiceret og afvist; søgningen er lukket.
 
