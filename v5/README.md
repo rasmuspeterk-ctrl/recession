@@ -510,7 +510,7 @@ hentes og hashes lokalt; meta.json beholder sha256/sidste vaerdi, og motor falde
 `spine.csv`'s afledte S&P-maanedssnit beholdes, fordi kalibreringen kraever dem. Se rod-README'ens
 "Datakilder og vilkaar". **Ikke gjort (Rasmus' beslutning):** filerne ligger stadig i git-historikken
 siden 2026-08-09; en omskrivning (filter-repo + force-push) giver alle commits nye SHA'er og svaekker
-hovedbogens proveniens. Repoet har endnu ingen LICENSE.
+hovedbogens proveniens (anbefalingen er at vente; se "Historik og licensbegraensede filer"). LICENSE (MIT) og NOTICE.md tilfoejet 2026-10-15.
 
 **Seriernes roller (F18):** EEN tabel (`spine.SERIER`), som VETO/RESERVE/KRAEVEDE afledes af. Kun
 GS10, TB3MS, DGS10, DTB3, USREC, A191RL1Q225SBEA og CPIAUCNS nedlaegger veto. En manglende
@@ -713,6 +713,31 @@ pris, renset for default-risiko, leder realoekonomien. Den er derfor noteret som
 kommer kun i P via: raadsmandat; forseglet spec (niveau, lag, forventet fortegn +) committet og pushet
 foer koersel; G5-aera-split; og en deklaration af, at EBP's vaerdier op til onsets er SET i dette review
 (kontamineringsrisiko). Indtil da er EBP kun en kontekstlinje.
+
+### Historik og licensbegraensede filer (F1/F12/F55) — besluttet 2026-10-15
+
+ICE BofA HY OAS, S&P 500 og multpl-siden laa i offentlige commits fra 2026-08-09 til 2026-10-15. Siden da
+committes de ikke (`.gitignore`), og licensen er afklaret (LICENSE + NOTICE.md). **Historikken omskrives ikke nu**
+(reviewets anbefaling): en omskrivning giver alle commits nye SHA'er, de pushede tidsstempel-ankre
+`ledger-2026-08/09/10` ville pege paa commits, der ikke laengere findes i main, og hovedbogens proveniens svaekkes.
+Hovedbogen er desuden forankret uden for git (archive.org-kopier af LOG.md og BEDOEMMELSESNOEGLE.md, 2026-10-15).
+
+Hvis en rettighedshaver (ICE, S&P DJI, multpl) anmoder om fjernelse, er fremgangsmaaden — i en frisk klon:
+
+```
+pip install git-filter-repo
+git filter-repo --invert-paths \
+  --path-glob 'v5/data/raw/*/BAMLH0A0HYM2.csv' --path-glob 'v5/data/raw/*/SP500.csv' \
+  --path-glob 'v5/data/raw/*/BAA10Y.csv' --path-glob 'v5/data/raw/*/multpl_cape.html' \
+  --path-glob 'v5/data/raw/*/cape_multpl.csv' --path '.claude/settings.local.json'
+# ledger-tags flyttes til de nye SHA'er (samme commit-besked/dato), og en mapping gammel->ny SHA
+# committes i v5/kalibreringer/historik_omskrivning.json, saa hovedbogens raekker stadig kan spores
+git push --force origin main && git push --force origin --tags
+```
+
+Bagefter: bed GitHub Support om at fjerne cachede views af de gamle commits, og noter omskrivningen
+(dato, aarsag, mapping) i LOG.md-headeren. Snapshot-hashene i meta.json aendres ikke — de dokumenterer stadig,
+hvilke bytes der blev brugt.
 
 ### Snapshot-arkivet og FRED's vilkaar (F20)
 

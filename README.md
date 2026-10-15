@@ -111,8 +111,12 @@ Federal Reserve Bank of St. Louis; https://fred.stlouisfed.org/series/[ID]*. Lic
 fra FRED's seriesider 2026-10-15 og står pr. serie i `v5/spine.py` (`SERIER`) og i hvert snapshots
 `meta.json`.
 
-Licensbegrænsede filer fra før 2026-10-15 findes stadig i git-historikken. En omskrivning af
-historikken er ikke foretaget, fordi den ændrer alle commit-SHA'er og svækker hovedbogens proveniens.
-Repoet har endnu ingen LICENSE-fil.
+Licensbegrænsede filer fra før 2026-10-15 findes stadig i git-historikken. Anbefalingen (kode-review F1, udført
+2026-10-15) er IKKE at omskrive historikken nu: det giver alle commits nye SHA'er og svækker hovedbogens
+proveniens (de pushede `ledger-*`-tags peger på de oprindelige commits). Historikken renses kun, hvis en
+rettighedshaver anmoder om det — fremgangsmåden står klar i v5/README.md ("Historik og licensbegrænsede filer").
+
+Koden er MIT-licenseret, egen tekst CC BY 4.0; tredjepartsdata og modelgenereret tekst er undtaget — se
+[LICENSE](LICENSE) og [NOTICE.md](NOTICE.md).
 
 Modellen er ikke et handelssignal og ikke investeringsrådgivning.
