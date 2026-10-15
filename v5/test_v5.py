@@ -2806,5 +2806,90 @@ class TestRaad2027LiveCensurering(unittest.TestCase):
             self._motor(["--allow-stale"], here=here)                 # foer ikrafttraeden: ingen kontrol
 
 
+
+class TestRaad2027SkillVedRefit(unittest.TestCase):
+    """RAADETS_2027 §1.2 (spec2027/6_skill_saetning_refit.md): nested lambda oracle-fri og den re-afledte styrkeklausul
+    beregnes foerst ved refitten; selvtjekkene koerer uden at beregne det nye tal."""
+
+    @classmethod
+    def setUpClass(cls):
+        TestMotor.setUpClass.__func__(cls)
+        cls.snap = C.RAW / "2026-09-19"
+        cls.usrec = A2.load_usrec(cls.snap)
+        cls.eps = A2.episodes_from_usrec(cls.usrec)
+        cls.avail = A2.load_announcements(cls.eps, usrec=cls.usrec)
+
+    @classmethod
+    def tearDownClass(cls):
+        TestMotor.tearDownClass.__func__(cls)
+
+    _motor = TestMotor._motor
+
+    def test_selvtjek_uden_at_beregne_oracle_fri_nested(self):
+        rk = P27.nested_wf(self.snap, self.eps, self.avail, self.usrec, A2.midx(2026, 9), oracle_fri_nested=False)
+        self.assertEqual(P27._skill_af(rk, "fast", "realtid_cens"), dict(improvement=20.37, brier=16.19, n=219))   # diagnostik 4.5
+        nest = P27._skill_af(rk, "nested", "orakel_cens")
+        self.assertEqual((nest["improvement"], nest["n"]), (18.32, 198))                                         # ablation9
+        self.assertFalse(any("nested" in r for r in rk if r["orakel_cens"] and not r["realtid_cens"]))             # ikke beregnet
+        self.assertEqual(sum(1 for r in rk if r["orakel_cens"] and not r["realtid_cens"]), 21)                     # de 21 ekstra
+
+    def test_definition_2_paa_styrkesimulationens_pulje(self):
+        sys.path.insert(0, str(HERE / "analyser"))
+        import styrke_simulation as SS
+        usrec, eps, avail, Dc, _ = SS.byg_panel()
+        rows, onsets, troughs, _ = SS.maanedlig_hovedbog(usrec, eps, avail, Dc)
+        blokke = SS.byg_blokke(rows, onsets, troughs)[0]
+        self.assertAlmostEqual(P27.p_hele_komplette(20, blokke), 0.25, delta=0.005)     # verifikatorens tal
+
+    def test_styrke_fra_replayen_struktur(self):
+        r = RP.replay(self.snap, A2.midx(2026, 9), regel=("september",), med_styrke=True, nsim=20, nboot=10)
+        st = r["styrke"]
+        self.assertEqual(st["n_scorede"], r["varianter"][0]["n"])                     # realtidsraekkerne (variant 1)
+        kal = sum(b["kal_mdr"] for b in st["blokke"])
+        self.assertEqual(kal, A2.midx(int(r["sidste_logget"][:4]), int(r["sidste_logget"][5:])) - A2.midx(int(r["foerste_logget"][:4]), int(r["foerste_logget"][5:])) + 1)
+        self.assertEqual(sum(b["komplet"] for b in st["blokke"]), st["n_komplette"])
+        self.assertRegex(st["klausul"], r"^80 % styrke kraever stoerrelsesordenen (\d+|over 200) kalenderaars hovedbog; "
+                                        r"P\(3 komplette cyklusblokke inden for 20 aar\) = \d,\d\d; naive tests forkaster en sand "
+                                        r"nulhypotese \d+-\d+ % af gangene ved 5-20 aar \(stoerrelsesorden; re-afledt")
+        self.assertEqual(st["spec_sha256"], P27.SPECS["6_skill_saetning_refit.md"])
+        self.assertEqual(st["n_sim"], 20)
+
+    def test_censurerede_maaneder_er_tomme_pladser(self):
+        rs = [dict(m=A2.midx(2000, 1) + k, p_logget=0.2, b=0.18, Y=0.0, realtid_aaben_episode=(k == 3)) for k in range(6)]
+        eps = [(A2.midx(1990, 8), A2.midx(1991, 3)), (A2.midx(2001, 4), A2.midx(2001, 11))]
+        bl = RP.blokke_fra_replay(rs, eps)
+        self.assertEqual(len(bl), 1)
+        self.assertEqual((bl[0]["kal"], bl[0]["n"]), (6, 5))
+        self.assertIsNone(bl[0]["pm"][3])
+
+    def test_skill_saetningen_efter_refitten(self):
+        op = dict(wf_improvement=26.0)
+        diag = {"oracle_fri": {"alle_live_publicerbare": {"improvement": 19.5, "n": 230}},
+                "nested_oracle_fri": {"improvement": 15.2, "n": 230, "nested_orakel": {"improvement": 17.0}}}
+        a9 = {"skill": {"curve_nested": {"improvement": 18.32}}}
+        rp = {"styrke": {"klausul": P27.klausul(140.0, 0.27, 44, 51)}}
+        s = M.skill_saetning(op, diag, a9, rp)
+        self.assertLess(s.index("oracle-fri, fast"), s.index("orakel-censureret, fast"))
+        self.assertLess(s.index("orakel-censureret, fast"), s.index("nested lambda, oracle-fri: +15.2% (230 origins"))
+        self.assertNotIn("ikke beregnet", s)
+        self.assertNotIn(M.STYRKEKLAUSUL, s)
+        self.assertIn("stoerrelsesordenen 140 kalenderaars", s)
+        s0 = M.skill_saetning(op, {"oracle_fri": diag["oracle_fri"]}, a9, None)     # foer refitten: som i dag
+        self.assertIn("oracle-fri udgave ikke beregnet", s0)
+        self.assertIn(M.STYRKEKLAUSUL, s0)
+
+    def test_motor_bruger_kun_replayen_for_kalibreringen_i_drift(self):
+        with tempfile.TemporaryDirectory() as t:
+            here = Path(t) / "v5"; shutil.copytree(self.here, here)
+            W = json.loads((here / "weights.json").read_text(encoding="utf-8"))
+            kl = P27.klausul(140.0, 0.27, 44, 51)
+            for mh, forv in (("andet0001", M.STYRKEKLAUSUL), (W["manifest_hash"], kl)):
+                (here / "replay2027_resultat.json").write_text(json.dumps(dict(manifest_hash=mh, styrke=dict(klausul=kl))),
+                                                               encoding="utf-8")
+                d = Path(t) / "d.json"
+                self._motor(["--allow-stale", "--json", str(d)], here=here)
+                self.assertIn(forv, json.loads(d.read_text(encoding="utf-8"))["skill_saetning"])
+
+
 if __name__ == "__main__":
     unittest.main()

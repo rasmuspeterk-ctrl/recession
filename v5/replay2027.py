@@ -19,7 +19,8 @@ regimes skill og printes ikke. Koeres ved september-refitten 2027 efter finalize
 
   python replay2027.py [--snapshot data/raw/YYYY-MM-DD]     (default: kalibreringens snapshot og refit-maaned)
 
-Skriver replay2027_resultat.json. Kun stdlib + numpy.
+Ved refitten re-afleder den ogsaa styrkeklausulen (RAADETS_2027 §1.2, spec2027/6_skill_saetning_refit.md §3) af
+realtidsraekkerne med analyser/styrke_simulation.py's maskineri. Skriver replay2027_resultat.json. Kun stdlib + numpy.
 """
 import json, sys
 from datetime import date, datetime, timedelta, timezone
@@ -178,7 +179,57 @@ def score(rs):
                 skill_brier=round(float((1 - ((p - y) ** 2).mean() / ((b - y) ** 2).mean()) * 100), 2))
 
 
-def replay(snap, R_score, regel=REGIME, ann=None):
+def blokke_fra_replay(rs, eps):
+    """Spec 6 §3: bund-til-bund-blokke i kalendermaaneder over replayens origin-maaneder; scorede raekker (censurvariant
+    1, realtid) giver (L0, Lm) med L0 mod den LOGGEDE basisrate; censurerede maaneder er tomme pladser (None)."""
+    md = {}
+    for r in rs:
+        if r["realtid_aaben_episode"]:
+            continue
+        p = min(max(r["p_logget"], CLIP), 1 - CLIP)
+        b = min(max(r["b"], CLIP), 1 - CLIP)
+        y = r["Y"]
+        md[r["m"]] = (float(-(y * np.log(b) + (1 - y) * np.log(1 - b))), float(-(y * np.log(p) + (1 - y) * np.log(1 - p))), y)
+    start, slut = min(r["m"] for r in rs), max(r["m"] for r in rs)
+    gr = [start - 1] + [t for _, t in sorted(eps, key=lambda e: e[1]) if start <= t <= slut] + [slut]
+    ud = []
+    for a, b in zip(gr[:-1], gr[1:]):
+        ons = [o - (a + 1) for o, _ in sorted(eps) if a < o <= b]
+        pm = [md[mm][:2] if mm in md else None for mm in range(a + 1, b + 1)]
+        v = [x for x in pm if x is not None]
+        ud.append(dict(fra=a + 1, til=b, kal=b - a, n=len(v), ons=ons[0] if ons else None, pm=pm,
+                       s0=float(sum(x[0] for x in v)), s1=float(sum(x[1] for x in v)),
+                       sum_d=float(sum(x[0] - x[1] for x in v)), pos=int(sum(md[mm][2] for mm in range(a + 1, b + 1) if mm in md))))
+    return ud
+
+
+def styrke(rs, eps, nsim=None, nboot=None, seed=None):
+    """Spec 6 §3: styrkeklausulen re-afledt af replayens realtidsraekker med styrkesimulationens maskineri (uaendret)."""
+    sys.path.insert(0, str(HERE / "analyser"))
+    import styrke_simulation as SS
+    nsim, nboot, seed = nsim or SS.NSIM, nboot or SS.NBOOT, seed or SS.SEED
+    pulje = blokke_fra_replay(rs, eps)
+    n = sum(b["n"] for b in pulje)
+    middel_d = sum(b["sum_d"] for b in pulje) / n
+    tabel = []
+    for T in SS.T_GRID:
+        h1 = SS.koer(T, pulje, 0.0, nsim=nsim, nboot=nboot, seed=seed)
+        h0 = SS.koer(T, pulje, middel_d, nsim=nsim, nboot=nboot, seed=seed)
+        tabel.append(SS.opsummer(T, h1, h0))
+    aar = SS.aar_til_80(tabel, "styrke")
+    p3 = P27.p_hele_komplette(20, pulje, nsim=nsim, seed=seed)
+    fp = [r["falsk_positiv_H0"][k] for r in tabel if r["T_aar"] in (5, 10, 20) for k in ("naiv", "boot44")]
+    lo, hi = int(round(min(fp) * 100)), int(round(max(fp) * 100))
+    return dict(protokol="RAADETS_2027 §1.2", spec_sha256=P27.kraev_forseglet("6_skill_saetning_refit.md"),
+                n_blokke=len(pulje), n_komplette=sum(b["ons"] is not None for b in pulje), n_scorede=n,
+                middel_d=round(middel_d, 4), n_sim=nsim, n_boot=nboot, seed=seed,
+                blokke=[dict(fra=ym(b["fra"]), til=ym(b["til"]), kal_mdr=b["kal"], scorede=b["n"], positive=b["pos"],
+                             komplet=b["ons"] is not None, sum_d=round(b["sum_d"], 4)) for b in pulje],
+                aar_til_80=aar, p_3_komplette_20_aar=round(p3, 4), naive_falsk_positiv_5_20_aar=[lo, hi],
+                tabel=tabel, klausul=P27.klausul(aar["interpoleret_aar"], p3, lo, hi))
+
+
+def replay(snap, R_score, regel=REGIME, ann=None, med_styrke=False, **styrke_kw):
     """Hele replayen for et snapshot og en scoringsmaaned. -> resultat-dict (varianterne i spec'ens raekkefoelge)."""
     h = P27.kraev_forseglet("3_indholdstrigger_replay.md")
     rows = A2.laes_annonceringer(ann)
@@ -196,7 +247,8 @@ def replay(snap, R_score, regel=REGIME, ann=None):
         for g in r["grunde"]:
             typer[g.split(":")[0].split(" (")[0]] = typer.get(g.split(":")[0].split(" (")[0], 0) + 1
     indhold = [dict(R=r["R"], grund=g) for r in refits for g in r["grunde"] if g.startswith("indhold")]
-    return dict(overskrift=OVERSKRIFT, protokol="RAADETS_2027 §6.2", spec_sha256=h, regel=list(regel),
+    ekstra = dict(styrke=styrke(rs, eps, **styrke_kw)) if med_styrke else {}
+    return ekstra | dict(overskrift=OVERSKRIFT, protokol="RAADETS_2027 §6.2", spec_sha256=h, regel=list(regel),
                 snapshot=snap.name, R_score=ym(R_score), L_embargo=L,
                 varianter=[dict(navn=n, beskrivelse=b, **score([r for r in rs if not r[n]])) for n, b in VARIANTER],
                 n_raekker=len(rs), foerste_logget=rs[0]["logget"] if rs else None, sidste_logget=rs[-1]["logget"] if rs else None,
@@ -213,6 +265,8 @@ def linjer(res):
     for r in res["indholdsudloeste_refits"]:
         ud.append(f"   indholdsudloest refit {r['R']}: {r['grund']}")
     ud.append(f"   {res['note']}")
+    if res.get("styrke"):
+        ud.append(f"   Styrkeklausul (RAADETS_2027 §1.2): {res['styrke']['klausul']}")
     return ud
 
 
@@ -223,7 +277,7 @@ def main():
                  f"kalibreringen i drift er fra {W.get('refit_maaned')}. Intet beregnet.")
     snap = C.find_snapshot(sys.argv) if "--snapshot" in sys.argv else C.RAW / W["snapshot"]
     R = A2.midx(int(W["refit_maaned"][:4]), int(W["refit_maaned"][5:7]))
-    res = replay(snap, R)
+    res = replay(snap, R, med_styrke=True)
     res.update(manifest_hash=W.get("manifest_hash"), created_utc=datetime.now(timezone.utc).isoformat(timespec="seconds"))
     for ln in linjer(res):
         print(ln)

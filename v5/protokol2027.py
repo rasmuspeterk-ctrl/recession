@@ -17,6 +17,8 @@ R >= IKRAFT (2027-09). En kalibrering med R < IKRAFT (fx reproduktionen af 72c33
                             §3.3/§4/§10.4  maanedligt fit (lambda_m = N_m/N_q), parret diagnostik, uscorede felter
   spec2027/5_live_censurering.md
                             §10.4     live-censureringens regeltekst, byte-identisk med noeglens §1 (d)
+  spec2027/6_skill_saetning_refit.md
+                            §1.2      ved refitten: nested lambda oracle-fri; styrkeklausul re-afledt af replayen
 
 Kun stdlib + numpy.
 """
@@ -39,6 +41,7 @@ SPECS = {
     "3_indholdstrigger_replay.md": "c63471d399768e81b57c39c3c5dc8ea458a2105dfe8456c12caa747f4d76ed3f",
     "4_maanedligt_fit_uscorede.md": "c2c988c97b4c5f516b31fb2d8ebf4d8deccc09f21ab7de9ef5666fa428fa0e33",
     "5_live_censurering.md": "95cbe669709ca2c868c741d6280f2e81add84c665e115a063b3c253929c67f17",
+    "6_skill_saetning_refit.md": "42b5f63e1144b5de49f32ed61de6fbb554b6639405f3733fc3983ede4f00c1c0",
 }
 
 Z_975, Z_80 = 1.959964, 0.841621   # spec 1 §4.1: 80 %-MDE = (z_0,975 + z_0,80) x SD_block (normalteori)
@@ -643,3 +646,91 @@ def kraev_regel_identisk(noegle):
                          "byte-identisk med BEDOEMMELSESNOEGLE.md §1 (d). Noeglen aendres kun efter sin egen procedure og "
                          "med en raadsbeslutning; --log stopper.")
     return True
+
+
+# ------------------------------------------------------------------ spec 6: skill-saetningen ved refitten (§1.2)
+def nested_wf(snap, eps, avail, usrec, R, oracle_fri_nested=True):
+    """Spec 6 §2: kvartalsvis curve-only walk-forward (wf_nber's regler) med fast lambda = 1 og nested lambda (ablation9's
+    forseglede design) pr. origin. Nested-P for de ekstra live-publicerbare origins (i recession efter den endelige
+    kronologi, men ikke annonceret ved origin) beregnes kun med oracle_fri_nested=True — dvs. ved refitten."""
+    import ablation9_nested as A9               # sen import: kun ved refitten / i selvtjekket
+    D = A2.build_dataset(snap, ["curve"])
+    Y, win, inr = A2.nber_labels(D, eps, usrec)
+    rk = []
+    for i in range(len(D["qend"])):
+        if D["year"][i] < 1960 or D["qend"][i] + 12 + A2.L_EMBARGO > R:
+            continue
+        Ri = int(D["qend"][i])
+        tr = []
+        for j in range(i):
+            ep = A2.episode_of(int(D["qend"][j]), eps)
+            if D["qend"][j] + 12 + A2.L_EMBARGO <= Ri and not (ep and avail[ep[0]] <= Ri):
+                tr.append(j)
+        if len(tr) < 60:
+            continue
+        yR = np.array([1.0 if any(avail[o] <= Ri for o in win[j]) else 0.0 for j in tr])
+        if yR.sum() < 6:
+            continue
+        X = D["F"][tr]
+        mu, sd = X.mean(0), X.std(0, ddof=1)
+        sd[sd == 0] = 1
+        Z, x = (X - mu) / sd, (D["F"][[i]] - mu) / sd
+        ep_i = A2.episode_of(Ri, eps)
+        rec = dict(y=int(D["year"][i]), q=int(D["qk"][i][1]), Y=float(Y[i]), orakel_cens=bool(inr[i]),
+                   realtid_cens=bool(ep_i and avail[ep_i[0]] <= Ri), fast=float(C.predict(C.fit(Z, yR, l2=1.0), x)[0]))
+        if not inr[i] or (oracle_fri_nested and not rec["realtid_cens"]):
+            lam, _ = A9.vaelg_lambda(Z, yR, A9.blokke(D["qend"][tr], eps))
+            rec["nested"], rec["lambda"] = float(C.predict(C.fit(Z, yR, l2=lam), x)[0]), lam
+        rk.append(rec)
+    return rk
+
+
+def _skill_af(rk, noegle, censur):
+    rows = [(r["y"], r["q"], r[noegle], r["Y"]) for r in rk if not r[censur]]
+    _, _, imp, br = C.metrics(rows)
+    return dict(improvement=round(float(imp), 2), brier=round(float(br), 2), n=len(rows))
+
+
+def nested_oracle_fri(snap, eps, avail, usrec, R):
+    """Spec 6 §2 (§1.2): nested lambda scoret oracle-frit efter diagnostik 4.5's regel, med kontroltallene fra samme
+    koersel. Koeres af diagnostik.py ved refits med R >= 2027-09."""
+    h = kraev_forseglet("6_skill_saetning_refit.md")
+    rk = nested_wf(snap, eps, avail, usrec, R, oracle_fri_nested=True)
+    nof = _skill_af(rk, "nested", "realtid_cens")
+    lam = {}
+    for r in rk:
+        if not r["realtid_cens"]:
+            lam[str(r["lambda"])] = lam.get(str(r["lambda"]), 0) + 1
+    return dict(protokol="RAADETS_2027 §1.2", spec_sha256=h, **nof, lambda_fordeling=lam,
+                fast_oracle_fri=_skill_af(rk, "fast", "realtid_cens"), nested_orakel=_skill_af(rk, "nested", "orakel_cens"),
+                note="oracle-fri = diagnostik 4.5's regel (alle live-publicerbare); nested = ablation9's forseglede design")
+
+
+def p_hele_komplette(T, pulje, nsim=3000, seed=11):
+    """Spec 6 §3 definition 2: andel simulerede T-aars-hovedboeger (styrkesimulationens traekningsskema) med mindst 3
+    HELE blokke, der indeholder en onset."""
+    rng = np.random.default_rng(seed)
+    lw = np.array([b["kal"] for b in pulje], float)
+    n3 = 0
+    for _ in range(nsim):
+        b = pulje[rng.choice(len(pulje), p=lw / lw.sum())]
+        off = int(rng.integers(b["kal"]))
+        tot, hele = 0, 0
+        while tot < T * 12:
+            take = min(b["kal"] - off, T * 12 - tot)
+            if off == 0 and take == b["kal"] and b["ons"] is not None:
+                hele += 1
+            tot += take
+            off = 0
+            b = pulje[rng.integers(len(pulje))]
+        n3 += hele >= 3
+    return n3 / nsim
+
+
+def klausul(aar, p3, naiv_lo, naiv_hi):
+    """Spec 6 §3: den re-afledte styrkeklausul (skabelon)."""
+    aar_txt = "over 200" if aar is None else f"{int(round(aar / 10.0) * 10)}"
+    p3_txt = f"{p3:.2f}".replace(".", ",")
+    return (f"80 % styrke kraever stoerrelsesordenen {aar_txt} kalenderaars hovedbog; P(3 komplette cyklusblokke inden "
+            f"for 20 aar) = {p3_txt}; naive tests forkaster en sand nulhypotese {naiv_lo}-{naiv_hi} % "
+            "af gangene ved 5-20 aar (stoerrelsesorden; re-afledt af den konfigurationsspecifikke replay, RAADETS_2027 §1.2)")

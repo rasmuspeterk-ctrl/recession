@@ -47,18 +47,25 @@ STYRKEKLAUSUL = ("80 % styrke kraever stoerrelsesordenen 150 kalenderaars hovedb
                  "inden for 20 aar) = 0,25; naive tests forkaster en sand nulhypotese 36-53 % af gangene ved 5-20 aar")
 
 
-def skill_saetning(op, diag, a9):
+def skill_saetning(op, diag, a9, replay=None):
     """RAADETS_2027 §1.2: oracle-fri fast-lambda-skill foerst, saa orakel-censureret fast lambda og nested lambda,
-    hver maerket, og styrkeklausulen i samme saetning. +27,05 % staar aldrig alene."""
+    hver maerket, og styrkeklausulen i samme saetning. +27,05 % staar aldrig alene. Ved refitten 2027 (spec2027/
+    6_skill_saetning_refit.md §4): nested lambda oracle-fri fra diagnostik.json og den re-afledte klausul fra
+    replay2027_resultat.json, naar de findes for kalibreringen i drift — ellers den nuvaerende tekst."""
     of = ((diag or {}).get("oracle_fri") or {}).get("alle_live_publicerbare") or {}
     nest = (((a9 or {}).get("skill") or {}).get("curve_nested") or {}).get("improvement")
+    nof = (diag or {}).get("nested_oracle_fri") or {}
     dele = []
     if of.get("improvement") is not None:
         dele.append(f"oracle-fri, fast lambda=1: +{of['improvement']:.1f}% ({of['n']} origins)")
     dele.append(f"orakel-censureret, fast lambda=1: +{op['wf_improvement']:.1f}%")
-    if nest is not None:
+    if nof.get("improvement") is not None:
+        dele.append(f"nested lambda, oracle-fri: +{nof['improvement']:.1f}% ({nof['n']} origins; orakel-censureret nested: "
+                    f"+{nof['nested_orakel']['improvement']:.1f}%)")
+    elif nest is not None:
         dele.append(f"nested lambda (orakel-censureret; oracle-fri udgave ikke beregnet): +{nest:.1f}%")
-    return "Walk-forward-skill: " + "; ".join(dele) + " — og " + STYRKEKLAUSUL + "."
+    kl = ((replay or {}).get("styrke") or {}).get("klausul") or STYRKEKLAUSUL
+    return "Walk-forward-skill: " + "; ".join(dele) + " — og " + kl + "."
 
 
 def idag():
@@ -641,7 +648,16 @@ def main():
             a9 = json.loads(a9f.read_text(encoding="utf-8"))
         except ValueError:
             a9 = None
-    skill_tekst = skill_saetning(op, diag, a9)
+    rp = None
+    rpf = HERE / "replay2027_resultat.json"                 # RAADETS_2027 §1.2: kun naar den hoerer til kalibreringen i drift
+    if rpf.exists():
+        try:
+            rp = json.loads(rpf.read_text(encoding="utf-8"))
+        except ValueError:
+            rp = None
+        if rp and rp.get("manifest_hash") != W.get("manifest_hash"):
+            rp = None
+    skill_tekst = skill_saetning(op, diag, a9, rp)
     print(f"\n1) SANDSYNLIGHED   [{skill_tekst}]")
     print(f"   (orakel-censureret wf: +{op['wf_improvement']:.1f}% log-loss / +{op['wf_brier']:.1f}% Brier — fast lambda=1 "
           "(arvet fra v4), fuld-sti-valg mellem to modeller, ikke nested)")

@@ -406,8 +406,13 @@ def main():
     r6 = kimi_r6(recs, eps, Dc, avail, usrec)
     print(f"Kimi R6: effektivt episodeantal pr. origin median {r6['median_episoder_i_traening']} (min {r6['min_episoder_i_traening']}); "
           f"skill uden nyeste episode +{r6['skill_uden_nyeste_episode']['improvement']}% (med: +{S['improvement']}%)")
-    maanedlig_parret = None
+    maanedlig_parret, nested_of = None, None
     if P27.i_kraft_maaned(W.get("refit_maaned")):
+        # RAADETS_2027 §1.2 (spec2027/6_skill_saetning_refit.md §2): nested lambda scoret oracle-frit (foerste gang ved refitten)
+        nested_of = P27.nested_oracle_fri(snap, eps, avail, usrec, R)
+        print(f"§1.2 nested lambda, oracle-fri: +{nested_of['improvement']}% paa {nested_of['n']} origins "
+              f"(kontrol: fast oracle-fri +{nested_of['fast_oracle_fri']['improvement']}%, orakel-nested "
+              f"+{nested_of['nested_orakel']['improvement']}%)")
         # RAADETS_2027 §3.3 (spec2027/4_maanedligt_fit_uscorede.md §4): §3.2(b) genkoert paa refittens panel; identiteterne
         # (origins, labels, basisrate) asserteres og fejler hoejlydt; publiceres uanset udfald
         maanedlig_parret = P27.maanedlig_parret(snap, eps, avail, usrec, R)
@@ -427,6 +432,7 @@ def main():
               parret_loss_bootstrap=hist, domsregler_backtest=bt, oracle_fri=oracle, skill_73=s73,
               gate_mde=gate_mde, sti=sti, pre_onset_analoger=analoger, start_sensitivitet=start, flips=flips, kimi_r6=r6, styrke=styrke,
               **({"maanedlig_parret": maanedlig_parret} if maanedlig_parret else {}),
+              **({"nested_oracle_fri": nested_of} if nested_of else {}),
               erklaering_36="Publiceret baseline = poolet basisrate over scorede origins (C.metrics). Konsensustekstens 'expanding intercept' var sekretaerens fejl; expanding printes som ekstra kolonne, gaten aendres ikke.")
     (HERE / "diagnostik.json").write_text(json.dumps(ud, indent=1, ensure_ascii=False), encoding="utf-8")
     print(f"diagnostik.json skrevet ({time.time() - t0:.0f} s)")
