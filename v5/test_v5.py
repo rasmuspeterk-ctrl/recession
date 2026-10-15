@@ -2078,5 +2078,28 @@ class Test1015Calibrate(unittest.TestCase):
             self.assertFalse((here / "weights.json").exists())
 
 
+class TestRaad2027SkillSaetning(unittest.TestCase):
+    """RAADETS_2027 §1.2: oracle-fri foerst, tre maerkede tal og styrkeklausulen i samme saetning."""
+
+    def test_raekkefoelge_og_styrkeklausul(self):
+        op = dict(wf_improvement=27.05)
+        diag = {"oracle_fri": {"alle_live_publicerbare": {"improvement": 20.37, "n": 219}}}
+        a9 = {"skill": {"curve_nested": {"improvement": 18.32}}}
+        s = M.skill_saetning(op, diag, a9)
+        i_of, i_or, i_ne = s.index("oracle-fri, fast"), s.index("orakel-censureret, fast"), s.index("nested lambda")
+        self.assertLess(i_of, i_or)
+        self.assertLess(i_or, i_ne)
+        self.assertIn("+20.4%", s)
+        self.assertIn("+27.1%", s)
+        self.assertIn("+18.3%", s)
+        self.assertIn(M.STYRKEKLAUSUL, s)
+        self.assertNotIn("\n", s)
+
+    def test_uden_diagnostik_staar_tallet_stadig_med_styrkeklausul(self):
+        s = M.skill_saetning(dict(wf_improvement=27.05), None, None)
+        self.assertIn("orakel-censureret, fast lambda=1: +27.1%", s)
+        self.assertIn(M.STYRKEKLAUSUL, s)
+
+
 if __name__ == "__main__":
     unittest.main()

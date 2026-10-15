@@ -127,6 +127,7 @@ eksempler, ikke den aktuelle læsning. Feltrækkefølgen er motorens.
   "wf_log_loss": 27.05,
   "wf_brier": 24.15,
   "wf_note": "fast lambda=1 (arvet fra v4); fuld-sti-valg mellem to modeller, ikke nested (G1.1/G1.2)",
+  "skill_saetning": "Walk-forward-skill: oracle-fri, fast lambda=1: +20.4% (219 origins); orakel-censureret, fast lambda=1: +27.1%; nested lambda (orakel-censureret; oracle-fri udgave ikke beregnet): +18.3% — og 80 % styrke kraever stoerrelsesordenen 150 kalenderaars hovedbog; ...",
   "p": 0.149408,
   "baand": [0.102461, 0.212921],
   "basisrate": 0.1798,
@@ -305,8 +306,11 @@ eksempler, ikke den aktuelle læsning. Feltrækkefølgen er motorens.
 
 - `version`, `manifest_hash`, `forrige_manifest`, `kalibreret`, `n_obs`, `n_episoder`:
   hvilken frossen kalibrering læsningen bygger på. `raa` er de rå logit-koefficienter.
-- `wf_log_loss` og `wf_brier`: walk-forward-skill i %. `wf_note` er metodeforbeholdet og
-  skal stå ved tallet.
+- `skill_saetning` (RAADETS_2027 §1.2): DEN måde skill vises på. Gengiv den ordret, som én sætning.
+  Det oracle-fri tal står først, og styrkeklausulen står i samme sætning. `wf_log_loss` (+27,05 %)
+  må aldrig vises alene som modellens træfsikkerhed.
+- `wf_log_loss` og `wf_brier`: den orakel-censurerede walk-forward-skill i %. `wf_note` er
+  metodeforbeholdet og skal stå ved tallet.
 - `gate`: release-gaten mellem fuldmodel og curve-only på identiske origins: `curve_only_wf`,
   `fuldmodel_wf`, `forskel_pp`, `mde_pp` (støjgulv), `fuldmodel_slaar`,
   `raadsbeslutning_paakraevet` og `note`. Gaten er mekanisk og kan ikke flytte den

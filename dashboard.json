@@ -917,6 +917,7 @@
   "wf_log_loss": 27.05,
   "wf_brier": 24.15,
   "wf_note": "fast lambda=1 (arvet fra v4); fuld-sti-valg mellem to modeller, ikke nested (G1.1/G1.2)",
+  "skill_saetning": "Walk-forward-skill: oracle-fri, fast lambda=1: +20.4% (219 origins); orakel-censureret, fast lambda=1: +27.1%; nested lambda (orakel-censureret; oracle-fri udgave ikke beregnet): +18.3% — og 80 % styrke kraever stoerrelsesordenen 150 kalenderaars hovedbog; P(3 komplette cyklusblokke inden for 20 aar) = 0,25; naive tests forkaster en sand nulhypotese 36-53 % af gangene ved 5-20 aar.",
   "p": 0.149408,
   "baand": [
     0.102461,

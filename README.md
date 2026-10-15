@@ -9,28 +9,42 @@ only. Every failed candidate is published next to the one that survived. Documen
 is in Danish.*
 
 Modellen estimerer P(NBER-dateret recession begynder inden for fire kvartaler). Den
-operationelle model er en curve-only-logit. Den blev valgt mekanisk i v5.0 (+34,3 % mod
-fuldmodellens +33,2 % log-loss-forbedring over basisraten). Efter v5.0.1-rekalibreringen står det
-+27,1 % mod +23,2 % (forskel 3,9pp, under den ratificerede MDE på 4,42pp, som er lånt fra
-frekvenstesten; gatens egen MDE er ca. 21pp). Modellen er låst til curve-only, indtil rådet
-beslutter andet (§6). Begge tal er fuld-sti-valg mellem to modeller med fast L2-straf (λ = 1,
-arvet fra v4) og ikke nested selektion; det er en erklæret afvigelse fra blueprintet. Den
-præregistrerede nested sti (2026-10-15) giver curve-only +18,3 % — og en nested modelselektion ville have
-valgt fuldmodellen og scoret +8,5 % (se
-[v5/README.md](v5/README.md#afvigelser-fra-blueprintet-erklaeret-2026-10-15)). Syv
-feature-kandidater er testet, publiceret og afvist; søgningen er lukket.
+operationelle model er en curve-only-logit, låst af rådet (RAADETS_V501 §6); fuldmodellen med fem features
+er kun benchmark. **Walk-forward-skill (log-loss-forbedring over basisraten, RAADETS_2027 §1.2): oracle-fri,
+fast λ = 1 +20,4 % (219 origins; det tal, hovedbogen bedømmes mod); orakel-censureret, fast λ = 1 +27,1 %;
+nested λ (orakel-censureret) +18,3 % — og 80 % styrke kræver størrelsesordenen 150 kalenderårs hovedbog,
+mens naive tests forkaster en sand nulhypotese 36–53 % af gangene ved 5–20 år.** Hovedbogen er derfor et
+ærlighedsinstrument, ikke en test.
+
+λ = 1 er arvet fra v4 og ikke valgt nested; det er en erklæret afvigelse fra blueprintet. En nested
+modelselektion ville have valgt fuldmodellen og scoret +8,5 % (se
+[v5/README.md](v5/README.md#afvigelser-fra-blueprintet-erklaeret-2026-10-15)). Syv feature-kandidater er
+testet, publiceret og afvist; søgningen er lukket.
 
 **Seneste logførte læsning (2026-10-10, v5.0.1, daglig kurve):** P = 15,1 % [10,4–21,6 %] mod basisrate
 18,0 % — ikke skelnelig fra basisraten. Se [LOG.md](LOG.md).
 
 **Rekalibrering v5.0.1 (2026-09-19):** kalibreringsrygraden var frosset ved 2023 (Yales Shiller-fil), så
 tre modne kvartaler manglede i fittet. Rådet ratificerede reparationen 4/4; samme inputs giver nu 17,7 %,
-walk-forward-skill +27,1 % (fra +34,3 %) fordi de tre tilføjede kvartaler er 2023–24-inversionens
+orakel-censureret walk-forward-skill +27,1 % (fra +34,3 %) fordi de tre tilføjede kvartaler er 2023–24-inversionens
 fejlalarmer. *"A lower or higher recalibrated probability is changed estimation, not changed economic
 risk."* Detaljer: [v5/README.md](v5/README.md#v501--foerste-rekalibrering-raadets_v501md-ratificeret-44-2026-09-19).
 
-**Fra 2026-09-28 måles kurven på daglige data** (trailing måned af DGS10 − DTB3 — samme statistik som
-månedstallene, uden op til en måneds forsinkelse). P på de publicerede månedstal står ved siden af.
+**Fra 2026-09-28 måles kurven på daglige data** (trailing måned af DGS10 − DTB3, uden op til en måneds
+forsinkelse). Det er et erklæret instrumentskifte, ikke målemæssigt identisk med GS10 − TB3MS; rådet
+ratificerede det ex post (RAADETS_2027 §10.1). P på de publicerede månedstal står ved siden af i hver række.
+
+**Rådet 2027 (ratificeret 7/7 den 2026-10-15):** syv analyser og fem debatrunder med seks af de nyeste
+flagskibsmodeller afgjorde de ti spørgsmål, kode-reviewet sendte til "rådet før september 2027":
+- λ = 1 og kvartalsfittet bevares — og protokollen siger ligeud, at blueprintets frekvensgate *som skrevet*
+  bestod, og at rådet afviste at anvende den;
+- ingen modelselektor; 1947Q2 bevares;
+- én NBER-indholdstrigger pr. recession;
+- bedømmelsesnøglen ændres ikke;
+- EBP's historiske test lukkes.
+
+Intet ændrer P før september-refitten 2027. Se [RAADETS_2027.md](RAADETS_2027.md) og
+[v5/analyser/](v5/analyser/README.md).
 
 **Kode-review 2026-10-15:** 85 verificerede fund er rettet, uden at P eller historiske rækker er
 ændret. Ændringerne omfatter seks tidskritiske fejl før november-læsningen, licensbegrænsede filer
@@ -43,17 +57,18 @@ ud af repoet, sværm-tripwires ud af hovedbogens antændings-kolonne (rådets R3
 | Fil | Indhold |
 |---|---|
 | [v5/README.md](v5/README.md) | Ritualer, filoversigt, afvigelser fra blueprintet, byggelog |
-| [v5/](v5/) | Koden: fetch → (finalize6 → diagnostik ved rekalibrering) → motor (calibrate.py er trin-1-reproduktionen og overskriver ikke driftsvægtene). 154 tests. |
+| [v5/](v5/) | Koden: fetch → (finalize6 → diagnostik ved rekalibrering) → motor (calibrate.py er trin-1-reproduktionen og overskriver ikke driftsvægtene). 156 tests. |
 | [LOG.md](LOG.md) | Hovedbogen — én række pr. måned, logført før udfaldet kendes. Redigeres aldrig. |
 | [BEDOEMMELSESNOEGLE.md](BEDOEMMELSESNOEGLE.md) | Hvordan hovedbogen scores — præregistreret før række 4, med styrketabel |
 | [UDFALD.csv](UDFALD.csv) / [hovedbog.jsonl](hovedbog.jsonl) | Append-only udfald pr. række / fuld record pr. række |
 | [RAADETS_KONSENSUS.md](RAADETS_KONSENSUS.md) | Blueprintet, ratificeret 7/7 af et råd af sprogmodeller efter seks debatrunder |
 | [RAADETS_REVIEW.md](RAADETS_REVIEW.md) | Grand review med 18 modeller |
 | [RAADETS_V501.md](RAADETS_V501.md) | Rådets konsensus om v5.0.1 — den første rekalibrering (4/4, 19. sept. 2026) |
+| [RAADETS_2027.md](RAADETS_2027.md) | Rådets konsensus om dagsordenen til september-refitten 2027 (7/7, 15. okt. 2026) |
 | [REVIEW-2026-10-15.md](REVIEW-2026-10-15.md) | Kode-reviewet af hele setuppet (85 fund) |
 | [TRIGGER-ATLAS.md](TRIGGER-ATLAS.md) | Sværm-simulerede recessionskanaler og tripwires — narrativ kontekst, ikke input til P |
 | [DASHBOARD-BRIEF.md](DASHBOARD-BRIEF.md) | Designregler for et dashboard der ikke kan oversælge |
-| [debat/](debat/) | Transkripter af rådsdebatterne (blueprint og v5.0.1; grand reviewets runde A+B blev ikke arkiveret — se RAADETS_REVIEW.md) |
+| [debat/](debat/) | Transkripter af rådsdebatterne (blueprint, v5.0.1 og 2027; grand reviewets runde A+B blev ikke arkiveret — se RAADETS_REVIEW.md) |
 | [mirofish-sim/](mirofish-sim/) | Sværm-simulationernes rådata og resuméer |
 | [v4/](v4/) | Forgængeren |
 

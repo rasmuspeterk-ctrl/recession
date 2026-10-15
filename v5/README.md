@@ -554,6 +554,9 @@ og at 350-450bp-zonen er den eneste atlas-taerskel med 3+ kanaler.
   bootstrap af den parrede skill-forskel; i diagnostik.json `gate_mde` og ved gate-noten i motor).
   Beslutningsreglen bruger fortsat den ratificerede trin 3-MDE (4,42pp, laant fra frekvenstesten).
   En taerskel aendres ikke efter at resultatet er set — til raadet foer september 2027.
+  **RAADETS_2027 §2.2:** "MDE"-tallene i repoet (4,42 og 21,06pp) er 1,96·SD_block af en parret forskel,
+  dvs. tosidede KRITISKE VAERDIER og ikke MDE'er ved 80 % styrke (ca. 2,8·SD, i dag ca. 30pp). Navnet
+  aendres i koden, naar 2027-gaten implementeres; tallene er de samme. Fra 2027 udgaar de laante 4,42pp af gaten.
 - diagnostik.py bruger kalibreringens refit-maaned og snapshot. En ufuldstaendig rygrad giver kun en
   advarsel: PR #1 gjorde curve-only uafhaengig af rygraden, og en vagt der stoppede refitten ville
   blokere hovedbogen i hver refit-maaned. `--log` blokeres, naar diagnostik.json ikke passer til vaegtene,
@@ -585,14 +588,14 @@ afvigelser var tavse indtil nu og erklaeres her. Ingen af dem aendrer P i dag.
 
 | # | Blueprintet siger | Koden goer | Konsekvens / status |
 |---|---|---|---|
-| G1.1 | §3/§6: L2-straffen vaelges INDE i hvert traeningsvindue | Fast λ = 1 overalt (arvet fra v4/curve.py) | v5.0's modelvalg vendte allerede ved λ = 2 (legacy-panel). Praeregistreret nested λ (ablation9): curve-only **+18,3 %** (mod +27,1 % ved fast λ = 1), fuldmodellen +7,3 %; CV-valgt λ paa hele panelet = 3 (P ved +1,11: 15,8 % mod 15,1 % i drift). +27,1 % maerkes "fast λ=1, ikke nested" |
-| G1.2 | §4/§6: nested selektion; kun den sti kaldes wf-skill | +27,1 % (og +34,3 %) er en max over to modeller paa den fulde sti | Maerket "fuld-sti-valg mellem to modeller (ikke nested)" i motor og dashboard. Den praeregistrerede nested sti (ablation9, nedenfor) vaelger FULDMODELLEN i alle origins fra 2000 og scorer kun +8,5 % — saa en blueprint-tro selektor ville have givet en daarligere model. Til raadet |
-| G1.3 | §2: frekvensgaten | Rollerne er byttet: den bogstavelige gate ville have gjort den maanedlige model primaer | Forelaegges raadet ved september-refit 2027 med begge udfald publiceret. Intet skiftes automatisk |
-| G1.4 | §4: "ingen arvefred" for incumbents | Demotionsreglen var asymmetrisk; realrate, dd og d_infl ville vaere faldet under udfordrernes bar | "5 incumbents bestaar" laeses som "beholdt under asymmetrisk demotionsregel". Fuldmodellen er ikke operationel, og soegningen er lukket |
+| G1.1 | §3/§6: L2-straffen vaelges INDE i hvert traeningsvindue | Fast λ = 1 overalt (arvet fra v4/curve.py) | v5.0's modelvalg vendte allerede ved λ = 2 (legacy-panel). Praeregistreret nested λ (ablation9): curve-only **+18,3 %** (mod +27,1 % ved fast λ = 1), fuldmodellen +7,3 %; CV-valgt λ paa hele panelet = 3 (P ved +1,11: 15,8 % mod 15,1 % i drift). +27,1 % maerkes "fast λ=1, ikke nested". **Besluttet (RAADETS_2027 §1):** λ = 1 bevares som arvet konstant; skill vises altid oracle-fri foerst sammen med de to andre tal og styrkeklausulen (motorens `skill_saetning`) |
+| G1.2 | §4/§6: nested selektion; kun den sti kaldes wf-skill | +27,1 % (og +34,3 %) er en max over to modeller paa den fulde sti | Maerket "fuld-sti-valg mellem to modeller (ikke nested)" i motor og dashboard. Den praeregistrerede nested sti (ablation9, nedenfor) vaelger FULDMODELLEN i alle origins fra 2000 og scorer kun +8,5 % — saa en blueprint-tro selektor ville have givet en daarligere model. **Besluttet (RAADETS_2027 §2):** §4 aendres — ingen selektor; F5 er frossen benchmark; gaten fra 2027 er ensidet mod sin egen kritiske vaerdi og udloeser kun et dagsordenspunkt |
+| G1.3 | §2: frekvensgaten | Rollerne er byttet: den bogstavelige gate ville have gjort den maanedlige model primaer | **Besluttet (RAADETS_2027 §3):** kvartalsfittet bevares. Protokollen siger ordret, at gaten som skrevet BESTOD, og at raadet afviste at anvende den (uparret sammenligning; parret paa identiske 198 origins -1,02pp; +2,19 < kritisk vaerdi 2,99; λ-normalisering ikke forseglet). Fra 2027 logges et maanedligt fits P uscoret; "skriftlig spec gaar forud for koden" gaelder fremadrettet |
+| G1.4 | §4: "ingen arvefred" for incumbents | Demotionsreglen var asymmetrisk; realrate, dd og d_infl ville vaere faldet under udfordrernes bar | "5 incumbents bestaar" laeses som "beholdt under asymmetrisk demotionsregel". Under incumbent-som-udfordrer-symmetri overlever kun kurven; under drop-symmetri demoteres ingen (analyser/demotion.py). En fremtidig soegning bruger een fastlaast symmetrisk bar (RAADETS_2027 §5). Fuldmodellen er ikke operationel, og soegningen er lukket |
 | G1.5 | Praeregistrering foer koersel | Gates for trin 2-4, 6 og v5.1 ligger i filer, der er committet sammen med resultatet | Kun blueprintets og RAADETS_REVIEW's gates er verificerbare udefra. Fremtidige praeregistreringer pushes i en separat commit foer koersel (som V501 §8) |
 | G1.6 | §9: ALFRED-audit af alle realtidsinputs | Kun CPI og BNP; UNRATE, claims og permits er udeladt | Erklaeret i koden, nu ogsaa her. Immaterielt: de tre er afviste features, og realtids-Sahm er tjekket separat |
-| F8 | Gaten maaler mod stoejgulvet | Gulvet 4,42pp er frekvenstestens MDE; gatens egen er ~21pp | Begge printes. Reglen aendres kun ved raadsbeslutning (erratum-procedure) foer sept. 2027 |
-| F34 | Universstart | 1947Q2 inkl. 24 kvartaler med Shiller-LTR i stedet for 10Y; dommens basisrate (18,0 %) er fit-samplets, ikke walk-forwardens (16,2 %) | Diagnostik: P 17,7/15,0/12,6 % ved start 1947Q2/1953Q2/1960Q1. Universstarten er en protokolkonstant og saettes paa raadets dagsorden foer sept. 2027 med praeregistrering |
+| F8 | Gaten maaler mod stoejgulvet | Gulvet 4,42pp er frekvenstestens MDE; gatens egen er ~21pp | Begge printes. **Besluttet (RAADETS_2027 §2.3):** de laante 4,42pp udgaar af gaten fra 2027; gatens egen kritiske vaerdi (1,96·SD_block, genberegnet ved hver refit) udloeser kun et dagsordenspunkt |
+| F34 | Universstart | 1947Q2 inkl. 24 kvartaler med Shiller-LTR i stedet for 10Y; dommens basisrate (18,0 %) er fit-samplets, ikke walk-forwardens (16,2 %) | Diagnostik: P 17,7/15,0/12,6 % ved start 1947Q2/1953Q2/1960Q1. **Besluttet (RAADETS_2027 §4):** 1947Q2 bevares; P ved 1953Q2/1960Q1 printes permanent (fra 2027 ogsaa som uscoret felt i hver hovedbogsraekke) |
 | F51 | §1: aarlig L_R-audit | Var ikke implementeret | Implementeret i finalize6 (manifestets `L_R_audit`). Korrektionsbroens trin (ii) er nu en test |
 | F52 | §4.1-4.2: 12 onset-raekker / 12 LOEO-blokke | 8 onset-raekker og 7 LOEO-blokke | De 4 onsets 1948-1960 ligger foer foerste scorede origin (1960). 1981-blokken har kun positive origins (udefineret skill) |
 | G1.8 | §1: rapportér provisoriske nuller der senere blev et; Kimi R6 | Kun et antal (7) ved L = 18 | diagnostik.json: flips L12/L18/L24 = 8/7/4 (alle pre-1979-konventionen; de 7 ved L = 18 og "1,7pp"-spaendet i trin 2 gaelder fuldmodellen paa det trunkerede panel). Kimi R6: median **9** episoder i traeningen pr. origin (min 4, max 12) — embargoens pris; skill naar de scorede origins i nyeste episodeblok udelades: +20,5 % mod +27,1 % |
@@ -649,7 +652,12 @@ IKKE paa blueprintets egen selektionsregel. +27,1 % er den faste-λ-sti; det aer
 operationelle model er +18,3 %. Den CV-valgte λ = 3 ville flytte P fra 15,1 til 15,8 % ved dagens kurve.
 Alt dette forelaegges raadet foer september-refitten 2027; hverken λ, modelvalg eller P aendres uden mandat.
 
-### Driftsaendringer uden raadsmandat (F29) — forelaegges til ratifikation ved september-refit 2027
+### Driftsaendringer uden raadsmandat (F29) — ratificeret ex post (RAADETS_2027 §10, 2026-10-15)
+
+Alle fire er ratificeret enkeltvis. Den daglige live-kurve er ratificeret som et erklaeret instrumentskifte
+(ikke maalemaessigt identisk med GS10 - TB3MS); P paa maanedstal dobbeltlogges permanent. Live-censureringen
+er ratificeret paa betingelse af, at reglen goeres byte-identisk med noeglens aabne-episode-regel og skrives i
+protokollen foer 2027-refitten, og at hver censureret maaned faar en uscoret kolonne med P og udfald.
 
 | Dato / commit | Aendring | Hvorfor uden mandat | Sporbarhed |
 |---|---|---|---|
@@ -714,6 +722,12 @@ kommer kun i P via: raadsmandat; forseglet spec (niveau, lag, forventet fortegn 
 foer koersel; G5-aera-split; og en deklaration af, at EBP's vaerdier op til onsets er SET i dette review
 (kontamineringsrisiko). Indtil da er EBP kun en kontekstlinje.
 
+**Besluttet 2026-10-15 (RAADETS_2027 §8):** EBP's historiske forseglede test er LUKKET permanent (onset-moenstret
+er set). EBP forbliver en kontekstlinje. Et fremtidigt raad kan specificere en rent prospektiv evaluering,
+forseglet foer den onset, den bedoemmes paa; ingen EBP-observation foer 2027 bruges nogensinde som evidens; en
+scoret test kraever >= 2 onsets efter forseglingen (aartier); selv en uscoret sporingskolonne kraever foerst en
+revisions-audit over >= 12 snapshots. Baa-10y er lukket (kan ikke videregives).
+
 ### Historik og licensbegraensede filer (F1/F12/F55) — besluttet 2026-10-15
 
 ICE BofA HY OAS, S&P 500 og multpl-siden laa i offentlige commits fra 2026-08-09 til 2026-10-15. Siden da
@@ -747,3 +761,31 @@ offentlige serier. Anbefalet handling (Rasmus): send en kort forespoergsel til F
 (stlsFRED@stls.frb.org) om et skriftligt OK til et ikke-kommercielt, offentligt forskningsarkiv. Hvis
 svaret er nej, hentes de operationelle serier fra primaerkilden (Fed Boards H.15). Tallene er de samme,
 men pipelinen og hasherne aendres, saa det kraever en protokolbeslutning.
+
+## Raadet 2027 — beslutninger til september-refitten 2027 (RAADETS_2027.md, 7/7, 2026-10-15)
+
+Syv deterministiske, uafhaengigt verificerede analyser ([analyser/](analyser/README.md)) og fem debatrunder
+med GPT-6.1 Sol Pro, Gemini 4 Argon, Claude Fable 5.1, Grok 4.7, Kimi K3, DeepSeek V4 Pro og Claude Opus 5.5
+(part og sekretaer). Pris ca. $3,90. Transkript: `../debat/raad2027/`. **Intet aendrer P foer refitten 2027-09.**
+
+**Gennemfoert nu ([now]-punkterne, ingen P-aendring):**
+- §1.2: motor og dashboard.json (`skill_saetning`) viser skill i een saetning: oracle-fri fast λ (+20,4 %)
+  foerst, saa orakel-censureret fast λ (+27,1 %) og nested λ (+18,3 %), med styrkeklausulen i samme saetning.
+  Testen `TestRaad2027SkillSaetning` laaser raekkefoelgen.
+- §2.2: "MDE" er omdoebt til kritisk vaerdi i dokumentationen.
+- §5.1 og §8: dokumenteret ovenfor.
+- §7.2: E5 er publiceret i [analyser/README.md](analyser/README.md) (realtid +24,41 / uden vintage-antagelse
+  +28,95 / orakel +33,28 %; logget basisrate 22,8 % mod realiseret 15,3 %).
+- §10: F29 er ratificeret ex post.
+
+**Skal implementeres foer september-refitten 2027.** Hver forseglet spec committes og pushes, foer den bruges:
+
+| § | Hvad | Status |
+|---|---|---|
+| 2.3 | Gaten: ensidet Δ = skill(F5) - skill(curve) paa faelles origins mod 1,96·SD_block; agenda-punkt, aldrig "evidens"; print 80 %-MDE, Δ uden stoerste blok, Δ ved 1953Q2/1960Q1; 4,42 ud | aaben |
+| 9 | L_R-audit: L_R = max(18, max peak-lag, max trough-lag - 12); eligibility R >= q + 12 + L_R OG censurstatus afgjort med info ved R; stop ved brud; datostemplede tests (1991, 2001; Kimi: ogsaa 1980-81; Fable: graensetests R-1/R) | aaben |
+| 6 | Indholdstrigger: een refit pr. ny onset (foerste modne positive label) + enhver omlabeling; aldrig negative modninger; trigger-maaned i manifestet; konfigurationsspecifik replay forseglet foer brug (alle tre censurvarianter) | aaben |
+| 3.3 | Maanedligt fit (uscoret kolonne): spec inkl. fastlaast λ-normalisering (Sol/Argon/Grok/Kimi: λ_m = λ_q·N_m/N_q under summeret tab, eller middel-tab), plus den parrede samme-origins-diagnostik med identitetstjek i kode | aaben |
+| 4, 10.4 | Uscorede felter: P ved 1953Q2/1960Q1 i hver raekke; P og udfald for censurerede maaneder (UDFALD.csv) | aaben |
+| 10.4 | Live-censureringens regeltekst byte-identisk med noeglens aabne-episode-regel, skrevet i protokollen | aaben |
+| 1.2 | Ved refitten: beregn nested λ oracle-fri; re-afled styrkeklausulen fra den konfigurationsspecifikke replay | aaben |

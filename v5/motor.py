@@ -39,6 +39,24 @@ CAPE_MAX_ALDER = 45               # F30: dage — aeldre live-CAPE -> fuldmodell
 SPX_MAX_ALDER = 7                 # F30: dage — manuel S&P vs 52u-top flages (blokerer ikke)
 MARGIN_LAG = 25                   # F30: FINRA publicerer ca. 25 dage efter maanedens udgang
 NA = float("nan")
+# RAADETS_2027 §1.2: styrkeklausulen staar i SAMME saetning som hvert skill-tal (analyser/styrke_simulation.py;
+# stoerrelsesorden, re-afledes fra den konfigurationsspecifikke replay ved september-refit 2027)
+STYRKEKLAUSUL = ("80 % styrke kraever stoerrelsesordenen 150 kalenderaars hovedbog; P(3 komplette cyklusblokke "
+                 "inden for 20 aar) = 0,25; naive tests forkaster en sand nulhypotese 36-53 % af gangene ved 5-20 aar")
+
+
+def skill_saetning(op, diag, a9):
+    """RAADETS_2027 §1.2: oracle-fri fast-lambda-skill foerst, saa orakel-censureret fast lambda og nested lambda,
+    hver maerket, og styrkeklausulen i samme saetning. +27,05 % staar aldrig alene."""
+    of = ((diag or {}).get("oracle_fri") or {}).get("alle_live_publicerbare") or {}
+    nest = (((a9 or {}).get("skill") or {}).get("curve_nested") or {}).get("improvement")
+    dele = []
+    if of.get("improvement") is not None:
+        dele.append(f"oracle-fri, fast lambda=1: +{of['improvement']:.1f}% ({of['n']} origins)")
+    dele.append(f"orakel-censureret, fast lambda=1: +{op['wf_improvement']:.1f}%")
+    if nest is not None:
+        dele.append(f"nested lambda (orakel-censureret; oracle-fri udgave ikke beregnet): +{nest:.1f}%")
+    return "Walk-forward-skill: " + "; ".join(dele) + " — og " + STYRKEKLAUSUL + "."
 
 
 def idag():
@@ -581,8 +599,24 @@ def main():
         print(f" UTILGAENGELIGE monitor-serier i dette snapshot: {', '.join(sorted(set(utilg)))} (vises som [?])")
     print("=" * 74)
 
-    print(f"\n1) SANDSYNLIGHED   [operationel wf: +{op['wf_improvement']:.1f}% log-loss / "
-          f"+{op['wf_brier']:.1f}% Brier — fast lambda=1 (arvet fra v4), fuld-sti-valg mellem to modeller, ikke nested]")
+    diag = None
+    df = HERE / "diagnostik.json"
+    if df.exists():
+        try:
+            diag = json.loads(df.read_text(encoding="utf-8"))
+        except ValueError:
+            diag = None
+    a9 = None
+    a9f = HERE / "ablation9_resultat.json"
+    if a9f.exists():
+        try:
+            a9 = json.loads(a9f.read_text(encoding="utf-8"))
+        except ValueError:
+            a9 = None
+    skill_tekst = skill_saetning(op, diag, a9)
+    print(f"\n1) SANDSYNLIGHED   [{skill_tekst}]")
+    print(f"   (orakel-censureret wf: +{op['wf_improvement']:.1f}% log-loss / +{op['wf_brier']:.1f}% Brier — fast lambda=1 "
+          "(arvet fra v4), fuld-sti-valg mellem to modeller, ikke nested)")
     print(f"   P({W['label_tekst']})     {p_op*100:>6.1f}%")
     if LI["kilde"] == "daglig":
         print(f"   (paa publicerede maanedstal GS10-TB3MS {LI['maanedlig']['maaned']}, kurve "
@@ -635,13 +669,6 @@ def main():
     else:
         wf5 = fm.get("wf_improvement")
         print(f"   {'fuldmodel (5 features)':<34}{('+'+format(wf5,'.1f')+'%') if wf5 is not None else '':>10}{'—':>9}   [{fm_grund}]")
-    diag = None
-    df = HERE / "diagnostik.json"
-    if df.exists():
-        try:
-            diag = json.loads(df.read_text(encoding="utf-8"))
-        except ValueError:
-            diag = None
     cc = W["benchmarks"].get("curve_cape")
     ca = W["benchmarks"].get("curve_awh")
     trunk = ((diag or {}).get("skill_73") or {}).get("trunkeret_panel") or {}
@@ -1257,6 +1284,7 @@ def main():
             n_obs=W["n_obs"], n_episoder=W["n_episoder"],
             wf_log_loss=op["wf_improvement"], wf_brier=op["wf_brier"],
             wf_note="fast lambda=1 (arvet fra v4); fuld-sti-valg mellem to modeller, ikke nested (G1.1/G1.2)",
+            skill_saetning=skill_tekst,
             p=round(p_op, 6), baand=[round(float(lo), 6), round(float(hi), 6)],
             basisrate=base, baand_udelukker_basisrate=bool(band_excludes_base),
             ratio=round(p_op / base, 4) if band_excludes_base else None,
