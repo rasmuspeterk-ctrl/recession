@@ -2,7 +2,9 @@
 
 **9. august 2026 · 18 modeller, 2 runder (uafhængig review + krydsforhør) · 17/18 svarede i begge runder (Gemma 31B's gratis-pulje overbelastet; hendes 26B-søster deltog) · Pris: $0,73**
 
-Udvidet råd: de oprindelige 7 (GPT-5.6 Sol, Kimi K3, Gemini Pro, Grok 4.5, Nemotron Ultra 550B, Gemma, GPT-OSS) + **DeepSeek V4 Pro** + 10 nye gratis (Nemotron Super 120B/Omni 30B/Nano 30B/12B/9B, Gemma 26B, Ling 3.0, Laguna S/XS, North Mini). Fuldt transkript: [debat/runder/reviewA+B](debat).
+Udvidet råd: de oprindelige 7 (GPT-5.6 Sol, Kimi K3, Gemini Pro, Grok 4.5, Nemotron Ultra 550B, Gemma, GPT-OSS) + **DeepSeek V4 Pro** + 10 nye gratis (Nemotron Super 120B/Omni 30B/Nano 30B/12B/9B, Gemma 26B, Ling 3.0, Laguna S/XS, North Mini). ~~Fuldt transkript: [debat/runder/reviewA+B](debat).~~
+
+> **Rettet 2026-10-15 (kode-review F16):** Transkriptet blev ikke arkiveret. Runde A og B blev kørt fra en midlertidig sessionsmappe, som siden er slettet. Hverken modellernes svar eller review-orkestratoren blev kopieret til [`debat/`](debat), og `debat/runder/reviewA+B` har aldrig eksisteret i repoet. R1–R4 nedenfor findes derfor **kun som sekretærens sammenfatning** og kan ikke efterprøves mod modellernes egne svar. Det gælder fx stemmeoptællingen i R2 og R4-modellernes konkrete forslag. Brudstykker (orkestratoren og dele af seks modelsvar) findes kun i en lokal sessionslog uden for repoet og er ikke publiceret. Blueprint-debatten ([`debat/runder/`](debat/runder), runde 1-6) og v5.0.1-debatten ([`debat/v501/`](debat/v501)) er fuldt arkiveret.
 
 ---
 

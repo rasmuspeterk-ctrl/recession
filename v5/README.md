@@ -214,7 +214,7 @@ begrundelse (praeregistreret i ablation7's header). Resultat: ablation7_resultat
 ## Vedligehold 2026-09-10 (udfyldte monitor-pladser + pengepolitik/inflation som kontekst)
 
 - De to tomme monitor-pladser er udfyldt. `Claims-momentum` viser nu 4-ugers niveau
-  (atlassets 200-220k-zone) og 12m %-aendring paa sidste KOMPLETTE maaned (trin 4's
+  (atlassets claims-zone — rettet i G2.5-erratumet: Q2-varsler 225-290k, 220k er falsifikator-niveau, 200k prompt-ekko) og 12m %-aendring paa sidste KOMPLETTE maaned (trin 4's
   definition); `Permits y/y` viser niveau + 12m %-aendring. Begge beholder `aktiv=None`
   ([-]), saa hovedbogens antaendings-kolonne er uaendret og raekkerne forbliver
   sammenlignelige paa tvaers af maaneder.
