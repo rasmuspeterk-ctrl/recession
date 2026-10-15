@@ -85,10 +85,9 @@
     "fuldmodel_brier": 23.69,
     "forskel_pp": -3.89,
     "mde_pp": 4.42,
-    "mde_gate_pp": 21.06,
     "fuldmodel_slaar": false,
     "raadsbeslutning_paakraevet": false,
-    "note": "LL-forskel 3.9pp < stoejgulv 4.42pp (trin 3-MDE, laant fra frekvenstesten; gatens egen MDE 21.06pp). Gaten er mekanisk og kan ikke flytte den operationelle model (RAADETS_V501 §6)."
+    "note": "LL-forskel 3.9pp < stoejgulv 4.42pp (trin 3-MDE). Gaten er mekanisk og kan ikke flytte den operationelle model (RAADETS_V501 §6)."
   },
   "stale": null,
   "diagnostik": {

@@ -18,7 +18,7 @@ blev til, ikke hvordan den koeres i dag.
 | `calibrate.py` | Hjaelpefunktioner for hele kaeden (read_fred, live_kurve, fit ...). Som script HISTORISK (trin 1): skriver `calibrate_resultat.json`; `weights.json` kun med `--overskriv` (bevidst) |
 | `ablation2_nber.py` | NBER-labelen, annonceringstabellen, USREC-krydstjekket, eligibility og den forklarede origin-audit. Som script (`--promote`) HISTORISK — koer ikke i drift |
 | `ablation3/4/7/8_*.py`, `audit5_alfred.py` | Historiske, afsluttede tests (frekvens, features, curve+cape, AWHMAN, ALFRED) — koer ikke i drift |
-| `test_v5.py` | 147 tests, stdlib unittest, ingen netvaerk (~80 s) |
+| `test_v5.py` | 154 tests, stdlib unittest, ingen netvaerk (~80 s) |
 | `nber_announcements.csv` | NBER's annonceringsdatoer (top/bund) — se *NBER-vedligehold* nedenfor |
 | `manual/` | `manual.json` (S&P vs 52u-top, live-CAPE, marginlaan y/y + deres datoer), `shiller_yale_2023-09.csv` (uforanderlig Yale-kopi), `seam_check_2023.json`, evt. `outliers_accepteret.json` |
 | `kalibreringer/` | Kalibreringsmanifester (v5.0.1 §3.3): et pr. kalibrering, index.json, legacy_mapping.json |
@@ -32,7 +32,7 @@ python fetch.py                  # hent + rygrad + guards + diff-tjek med oejnen
 # opdater manual/manual.json: spx_vs_hi + spx_dato, cape + cape_dato, margin_yoy + margin_periode
 python fetch.py                  # igen, saa snapshottet baerer de manuelle tal
 python motor.py --log --json     # aflaesning, prospektiv raekke i ../LOG.md + ../hovedbog.jsonl, dashboard.json
-python -m unittest test_v5       # 147 tests
+python -m unittest test_v5       # 154 tests
 ```
 Hovedbogen (`../LOG.md`) er den eneste fuldt prospektive test: een raekke pr. maaned, skrevet FOER
 udfaldet kendes; historiske raekker roeres aldrig. Den beskytter mod look-ahead, men er statistisk

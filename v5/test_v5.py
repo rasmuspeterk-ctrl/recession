@@ -1784,9 +1784,12 @@ class Test1015Finalize6(unittest.TestCase):
         self.assertIn("mde_gate_pp", W1["gate"]); self.assertIn("koersel", W1)
         m1 = json.loads((self.here / "kalibreringer" / f"manifest_{W1['manifest_hash']}.json").read_text(encoding="utf-8"))
         self.assertIn("miljoe", m1); self.assertIn("band_sha256", m1["bootstrap"]); self.assertTrue(m1["L_R_audit"]["ok"])
-        if int(REAL_SNAP.name[5:7]) != 9:
+        andre_ikke_sep = [d for d in sorted(C.RAW.iterdir()) if d.is_dir() and C.snapshot_complete(d)
+                          and d != REAL_SNAP and int(d.name[5:7]) != 9]
+        if andre_ikke_sep:                                          # et ANDET snapshot uden trigger kraever --reparation
             with self.assertRaisesRegex(SystemExit, "ingen deterministisk trigger"):
-                self._main()
+                self._main("--snapshot", str(andre_ikke_sep[-1]))
+        self._main()                                                # ren reproduktion paa eget snapshot er tilladt
         mf1 = self.here / "kalibreringer" / f"manifest_{W1['manifest_hash']}.json"
         gl = "2025-09" if m1["refit_maaned"] != "2025-09" else "2024-09"   # G4.2: forrige refit i en ANDEN maaned
         m1["refit_maaned"] = gl
@@ -1983,6 +1986,83 @@ class Test1015Motor(unittest.TestCase):
                 self._motor(["--log"], raw=raw2, here=here, dag=senere)
             gap = [r for r in M.laes_hovedbog(logf) if "ikke logget" in r["logget"]]
             self.assertEqual(len(gap), 1); self.assertEqual(gap[0]["kalibrering"], "")
+
+
+class TestMergeVerifikation(unittest.TestCase):
+    """Fund fra verifikationen af fletningen PR #1 + kode-review (2026-10-15)."""
+    setUpClass = classmethod(TestMotor.setUpClass.__func__)
+    tearDownClass = classmethod(TestMotor.tearDownClass.__func__)
+    _motor = TestMotor._motor
+
+    def _log(self, here):
+        logf = here.parent / "LOG.md"
+        logf.write_text("| logget | snapshot | P | baand | basisrate | dom | kurve | antaending | note | kalibrering |"
+                        + chr(10) + "|---|" + chr(10), encoding="utf-8")
+        return logf
+
+    def test_log_json_er_replay_stabil(self):
+        """Ritualet 'motor.py --log --json' maa give samme dashboard.json som CI's replay (uden --log) bagefter."""
+        with tempfile.TemporaryDirectory() as t:
+            here = Path(t) / "v5"; shutil.copytree(self.here, here)
+            logf = self._log(here)
+            logf.write_text(logf.read_text(encoding="utf-8") + "| 2026-01-12 | 2026-01-12 | 20.0% | 14.0-29.0% | 18.0% | "
+                            "ikke skelnelig | +0.50 | ingen |  | 72c3371d |" + chr(10), encoding="utf-8")
+            a, b = Path(t) / "a.json", Path(t) / "b.json"
+            self._motor(["--log", "--json", str(a)], here=here)
+            self._motor(["--snapshot", str(self.raw / self.today), "--allow-stale", "--json", str(b)], here=here)
+            self.assertEqual(a.read_bytes(), b.read_bytes())
+
+    def test_samme_snapshot_kan_ikke_logges_igen_naeste_maaned(self):
+        with tempfile.TemporaryDirectory() as t:
+            here = Path(t) / "v5"; shutil.copytree(self.here, here)
+            self._log(here)
+            d0 = date.fromisoformat(self.today)
+            self.assertIn("LOGGET", self._motor(["--log"], here=here, dag=d0))
+            naeste = date(d0.year + (d0.month == 12), d0.month % 12 + 1, min(d0.day, 28))
+            with mock.patch.object(M, "september_forfalden", lambda ref, d: False):
+                out = self._motor(["--log"], here=here, dag=naeste)
+            self.assertIn("allerede grundlag for", out); self.assertNotIn("LOGGET", out)
+
+    def test_log_uden_afsluttende_linjeskift_afvises(self):
+        with tempfile.TemporaryDirectory() as t:
+            here = Path(t) / "v5"; shutil.copytree(self.here, here)
+            logf = self._log(here)
+            logf.write_text(logf.read_text(encoding="utf-8").rstrip(chr(10)), encoding="utf-8")
+            out = self._motor(["--log"], here=here)
+        self.assertIn("ender ikke med et linjeskift", out); self.assertNotIn("LOGGET", out)
+
+    def test_dd_fra_foraeldet_rygrad_goer_fuldmodellen_unavailable(self):
+        with tempfile.TemporaryDirectory() as t:
+            raw = Path(t) / "raw"; shutil.copytree(self.raw / self.today, raw / self.today)
+            f = raw / self.today / "spine.csv"
+            ln = f.read_text(encoding="utf-8").splitlines()
+            f.write_text(chr(10).join([ln[0]] + [r for r in ln[1:] if r[:7] <= "2023-07"]) + chr(10), encoding="utf-8")
+            ud = Path(t) / "d.json"
+            self._motor(["--json", str(ud)], raw=raw)
+            d = json.loads(ud.read_text(encoding="utf-8"))
+        fmb = next(b for b in d["benchmarks"] if b["navn"].startswith("fuldmodel"))
+        self.assertIsNone(fmb["live_p"]); self.assertIn("dd stale", fmb["status"])
+
+    def test_ren_note_og_splitlines(self):
+        self.assertEqual(M.ren_note("a|b" + chr(0x2028) + "c" + chr(11) + "d"), "a/b c d")
+
+    def test_diff_mark_fanger_indsat_observation(self):
+        with tempfile.TemporaryDirectory() as t:
+            prev = Path(t)
+            gl = [("2020-01-01", "1.5"), ("2020-03-01", "1.7")]               # 2020-02 manglede (hul)
+            (prev / "CPIAUCNS.csv").write_bytes(fred_bytes(gl))
+            b = fred_bytes(ROWS)                                             # hullet udfyldt, samme sidste obs
+            m = F.diff_mark(dict(sha256="x", last="2020-03-01", last_value="1.7"), prev, "CPIAUCNS", F.parse_rows(b),
+                            dict(sha256=sha(b), last="2020-03-01", last_value="1.7"))
+        self.assertIn("REVIDERET", m)
+
+    def test_bestem_trigger_bruger_seneste_koersels_tabel(self):
+        """Efter en genbrugende NBER-koersel (weights.json har den nye tabel) er naeste september 'september (aarlig)'."""
+        gl = dict(version="5.0.1", announcement_table_sha256="gammel", announcement_table_kanonisk="K0")
+        ny = dict(version="5.0.2", refit_maaned="2027-09", announcement_table_sha256="ny", announcement_table_kanonisk="K1")
+        self.assertIn("nber", F6.bestem_trigger(ny, gl))
+        self.assertEqual(F6.bestem_trigger(ny, gl, ref=dict(announcement_table_sha256="ny", announcement_table_kanonisk="K1")),
+                         "september (aarlig)")
 
 
 class Test1015Calibrate(unittest.TestCase):

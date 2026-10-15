@@ -251,30 +251,25 @@ def fra_top12(series):
     return (series[k] / max(vin) - 1) * 100
 
 
-def dd_kalibrering(sp_daily):
-    """F33: kalibreringens dd-statistik paa live-data — middel af dagslukkene i den trailing kalendermaaned
-    (som live_kurve) mod max af de 11 foregaaende kalendermaaneders middel og trailing-middel.
-    (Kalibreringen: maanedsmiddel / rullende 12-mdr max af maanedsmiddel - 1.) None uden data."""
-    if not sp_daily:
+def _sporede_bnp_snapshots(raw):
+    """F32: kun COMMITTEDE snapshots er 'arkivet' (dashboard-replay i CI). None uden git (temp-kopier i tests)."""
+    import subprocess
+    try:
+        r = subprocess.run(["git", "ls-files", "--", "*/A191RL1Q225SBEA.csv"], cwd=raw,
+                           capture_output=True, text=True, check=True, timeout=20)
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
         return None
-    sidste = sp_daily[-1][0]
-    fra = C.maaned_foer(sidste)
-    trail = [v for d, v in sp_daily if d > fra]
-    mm = SP.monthly_mean([(d, v) for d, v in sp_daily if d <= fra])
-    k_sidste = (int(sidste[:4]), int(sidste[5:7]))
-    tidl = [mm[f"{kk[0]:04d}-{kk[1]:02d}"] for kk in (kal_minus(k_sidste, i) for i in range(1, 12))
-            if f"{kk[0]:04d}-{kk[1]:02d}" in mm]
-    if not trail or len(tidl) < 6:
-        return None
-    t = float(np.mean(trail))
-    return dict(dd=t / max(tidl + [t]) - 1, trailing=t, vindue=[d for d, _ in sp_daily if d > fra][0], sidste=sidste)
+    spor = {Path(x).parts[0] for x in r.stdout.splitlines() if x.strip()}
+    return spor or None
 
 
 def bnp_foerste_print(raw, snap):
-    """F32: hvert kvartals FOERSTE vintage blandt de arkiverede snapshots t.o.m. det aktuelle —
+    """F32: hvert kvartals FOERSTE vintage blandt de arkiverede (committede) snapshots t.o.m. det aktuelle —
     ritualet omkring den 10. falder altid mellem advance- og second-estimatet. -> {(aar, mdr): (vaerdi, snapshot)}."""
     ud = {}
-    dirs = [d for d in sorted(raw.iterdir()) if d.is_dir() and len(d.name) == 10 and d.name <= snap.name] if raw.exists() else []
+    spor = _sporede_bnp_snapshots(raw) if raw.exists() else None
+    dirs = [d for d in sorted(raw.iterdir()) if d.is_dir() and len(d.name) == 10 and d.name <= snap.name
+            and (spor is None or d.name in spor)] if raw.exists() else []
     if snap not in dirs:
         dirs.append(snap)
     for d in dirs:
@@ -305,8 +300,9 @@ def p_of(x, feats, mu, sd, w):
 
 
 def ren_note(t):
-    """F48: '|' i en note forskyder hovedbogens kolonner."""
-    return str(t).replace("|", "/").replace(chr(10), " ").replace(chr(13), " ")
+    """F48: '|' i en note forskyder hovedbogens kolonner, og ethvert tegn str.splitlines() deler ved (LF, CR, VT, FF,
+    FS/GS/RS, NEL, U+2028/9) ville afkorte raekken ved genlaesning."""
+    return " ".join(str(t).replace("|", "/").splitlines())
 
 
 def noegle_hash(logf):
@@ -363,7 +359,7 @@ def main():
     W = json.loads(wf.read_text(encoding="utf-8"))
     if W.get("protocol_version") != "5.0-final":
         sys.exit(f"FEJL: weights.json er {W.get('protocol_version')} — de frosne driftsvaegte er overskrevet. "
-                 "Gendan med git checkout v5/weights.json (calibrate.py skriver ikke laengere weights.json, F45).")
+                 "Gendan med git checkout v5/weights.json (calibrate.py skriver kun weights.json med --overskriv, F45).")
     snap = C.find_snapshot(sys.argv)
     meta = json.loads((snap / "meta.json").read_text(encoding="utf-8"))
     I = idag()
@@ -473,6 +469,8 @@ def main():
 
     # ---- dd (F33): kalibreringens statistik hvis SP500 findes lokalt, ellers manuel dagsluk ----
     ddk = dd_rygrad(snap)
+    dd_alder = (D_las - date(int(ddk["maaned"][:4]), int(ddk["maaned"][5:7]), 1)).days if ddk else None
+    dd_stale = dd_alder is not None and dd_alder > SP.FRISKHED_DAGE["spine"]      # samme graense som meta.stale.spine
     dd_live = ddk["dd"] if ddk else float(man["spx_vs_hi"])
     dd_kilde = (f"kalibreringsstatistik paa rygradens seneste lukkede maaned {ddk['maaned']} (maanedsmiddel mod 12-mdr max)"
                 if ddk else "manuel dagsluk vs 52-ugers top (ingen rygrad)")
@@ -507,6 +505,8 @@ def main():
         fm_grund = fm.get("status", "unavailable")
     elif friskhed["cape"]["stale"]:
         fm_grund = f"unavailable — CAPE stale ({cape_alder} dage)" if cape_alder is not None else "unavailable — CAPE uden dato"
+    elif dd_stale:
+        fm_grund = f"unavailable — dd stale (rygraden slutter {ddk['maaned']}, {dd_alder} dage)"
     fm_ok = fm_grund is None
     p_full = float(p_of(x, fm["features"], fm["mu"], fm["sd"], fm["w"])) if fm_ok else NA
     bm = W["benchmarks"]["curve_only"]
@@ -517,8 +517,8 @@ def main():
     arvf = HERE / "weights_trin1_teknisk.json"
     if arvf.exists():
         A = json.loads(arvf.read_text(encoding="utf-8"))
-        if "cape_pct" in A["features"] and friskhed["cape"]["stale"]:
-            arv_grund = fm_grund or "unavailable — CAPE stale"        # samme CAPE-regel som fuldmodellen
+        if ("cape_pct" in A["features"] and friskhed["cape"]["stale"]) or ("dd" in A["features"] and dd_stale):
+            arv_grund = fm_grund or "unavailable — CAPE/dd stale"     # samme regel som fuldmodellen
         elif all(np.isfinite(x[f]) for f in A["features"]):
             p_arv = float(p_of(x, A["features"], A["mu"], A["sd"], A["w"]))
 
@@ -687,11 +687,9 @@ def main():
     arb_txt = []                                            # F58: utestede monitorer — egen linje, ikke 'trin 4'
     ccsa_raw = raw_valgfri(snap, "CCSA")
     if ccsa_raw:
-        mmc = SP.monthly_mean(ccsa_raw)
-        kc = fuld_maaned(ccsa_raw, 4)
-        glc = f"{int(kc[:4]) - 1}{kc[4:]}"
+        kc, ccsa_12m = claims_12m_maaned(ccsa_raw)               # samme komplet-maaned-regel som ICSA (PR #1)
         arb_txt.append(f"fortsatte {ccsa_raw[-1][1]/1e6:.2f}M ({ccsa_raw[-1][0]}); maanedssnit {kc} 12m "
-                       f"{fmt((mmc[kc]/mmc[glc]-1)*100 if glc in mmc else NA, '+.1f')}%")
+                       f"{fmt(ccsa_12m, '+.1f')}%")
     tmp_s = fred_valgfri(snap, "TEMPHELPS")
     if tmp_s:
         kt = max(tmp_s)
@@ -758,7 +756,8 @@ def main():
 
     # ---- SCENARIE-APPENDIKS: svaerm-tripwires (R3: uden for modeloutput og antaendings-kolonnen) ----
     rows = laes_hovedbog(HERE.parent / "LOG.md")
-    forr = next((r for r in reversed(rows) if tal_af(r.get("P"), 0.01) is not None), None)
+    tidl_rows = [r for r in rows if r.get("snapshot") != snap.name]   # replay-stabil: ikke raekken --log netop skriver
+    forr = next((r for r in reversed(tidl_rows) if tal_af(r.get("P"), 0.01) is not None), None)
     sidst_logget = forr["logget"][:10] if forr else None
     _pm = {}
     if forr and (C.RAW / forr.get("snapshot", "") / "meta.json").exists() and forr.get("snapshot"):
@@ -992,7 +991,7 @@ def main():
                else "over basisraten" if band_excludes_base else "ikke skelnelig")
     print("\n7) HOVEDBOG (LOG.md)")
     aendring = None
-    sidste_ae = next((r for r in reversed(rows) if tal_af(r.get("P"), 0.01) is not None), None)
+    sidste_ae = forr
     if sidste_ae:
         dP = p_op * 100 - tal_af(sidste_ae["P"])
         dK = x["curve"] - (tal_af(sidste_ae["kurve"]) or 0.0)
@@ -1051,6 +1050,14 @@ def main():
     lv_fra, lv_til = ((date(I.year, I.month, 1) + timedelta(days=LOGDAG_VINDUE[0] - 1), None) if LOGDAG_VINDUE
                       else logvindue(I))
     i_vindue = (LOGDAG_VINDUE[0] <= I.day <= LOGDAG_VINDUE[1]) if LOGDAG_VINDUE else (lv_fra <= I <= lv_til)
+    sidste_rigtige = next((r for r in reversed(rows) if tal_af(r.get("P"), 0.01) is not None), None)
+    if any(r.get("snapshot") == snap.name for r in rows) or (sidste_rigtige and snap.name <= sidste_rigtige["logget"][:10]):
+        blok.append(f"snapshot {snap.name} er allerede grundlag for / aeldre end forrige hovedbogsraekke "
+                    f"({sidste_rigtige['logget'] if sidste_rigtige else '?'}) — hovedbogen faar kun friske data; koer fetch.py")
+    if i_vindue and not LOGDAG_VINDUE and D_las < lv_fra:
+        blok.append(f"snapshot {snap.name} er hentet foer logvinduet ({lv_fra}) — G3.6: koer fetch.py i vinduet foer --log")
+    if logf.exists() and logf.stat().st_size and not logf.read_bytes().endswith(b"\n"):
+        blok.append("LOG.md ender ikke med et linjeskift — ret filen foer --log (en ny raekke ville klistres paa den forrige)")
     if not i_vindue:
         if "--log-uden-for-vindue" in sys.argv:
             k = sys.argv.index("--log-uden-for-vindue")
@@ -1280,7 +1287,8 @@ def main():
                           "Vises uden samlet score eller dom.",
             noegle=noegle_hash(logf),
         )
-        ud.write_text(json.dumps(endelig(data), indent=2, ensure_ascii=False, allow_nan=False) + chr(10), encoding="utf-8")
+        with ud.open("w", encoding="utf-8", newline="\n") as fh:          # LF paa alle platforme (CI-replay)
+            fh.write(json.dumps(endelig(data), indent=2, ensure_ascii=False, allow_nan=False) + chr(10))
         print(f"{chr(10)}   JSON skrevet: {ud}  ({len(hb)} hovedbogsraekker)")
 
 

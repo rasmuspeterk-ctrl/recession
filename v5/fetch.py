@@ -147,7 +147,8 @@ def diff_mark(prev_s, prev_dir, sid, data, cur):
             faelles = [d for d in old if d in new]
             forsvundet = [d for d in old if d not in new and d >= start]
             foran = [d for d in old if d < start]          # raekker faldet af FORAN: kun ok for de rullende vinduer
-            if any(old[d] != new[d] for d in faelles) or forsvundet or (foran and sid not in ROLLING):
+            indsat = [d for d in new if d not in old and old and d <= max(old) and (sid not in ROLLING or d >= min(old))]
+            if any(old[d] != new[d] for d in faelles) or forsvundet or indsat or (foran and sid not in ROLLING):
                 marks.append("REVIDERET historik")
             if foran and sid in ROLLING:
                 marks.append(f"rullende vindue (start flyttet {min(old)} -> {start})")

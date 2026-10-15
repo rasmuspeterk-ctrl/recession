@@ -149,7 +149,8 @@ def live_x(snap):
 
 HASH_UDELUKKET = ("created_utc", "code_commit", "kaldt_som", "hash",
                   "delta_vs_forrige", "trigger", "miljoe", "reparation", "nber_effekt",
-                  "L_R_audit")   # proveniens om aendringen/koerslen, ikke kalibreringsindhold
+                  "L_R_audit", "announcement_table_kanonisk")   # proveniens om aendringen/koerslen, ikke
+# kalibreringsindhold (den kanoniske tabelhash er afledt af samme fil som announcement_table_sha256)
 
 def manifest_hash(m):
     """Hash af kalibreringens INDHOLD (snapshot, rygrad, annonceringstabel, R, origins, vaegte, gate, audit):
@@ -308,6 +309,7 @@ def rekalibrer(snap, spine_file=None, R=None, version=VERSION, kaldt_som="rekali
         code_commit=git_commit(), kaldt_som=kaldt_som,
         snapshot=snap.name, snapshot_sha256=meta["snapshot_sha256"],
         announcement_table_sha256=C.ann_sha256(ann) if ann.exists() else None,
+        announcement_table_kanonisk=A2.tabel_hash(ann) if ann.exists() else None,   # F15: bestem_trigger/koersel kanonisk
         refit_maaned=f"{R // 12}-{R % 12 + 1:02d}",
         spine=dict(fil=spine_navn, sha256=sha256_file(snap / spine_navn) if (snap / spine_navn).exists() else None,
                    sidste=meta.get("spine", {}).get("sidste") if not spine_file else None),
@@ -377,18 +379,19 @@ def kraev_ny_version(forrige):
         sys.exit(f"FEJL (§3.3): dataene giver en ny kalibrering, men VERSION er stadig v{VERSION} som kalibreringen i "
                  f"drift ({forrige.get('hash')}). Er det en rekalibrering (§3.2): bump VERSION i finalize6.py og koer "
                  "igen. Ellers: stop — vaegtene er frosne mellem rekalibreringer; driftsvaegtene gendannes med "
-                 f"'git checkout weights.json' eller 'python finalize6.py --snapshot data/raw/{forrige.get('snapshot')}'. "
+                 "'git checkout v5/weights.json'. "
                  "Intet er skrevet.")
 
 
-def bestem_trigger(m_ny, m_gl):
+def bestem_trigger(m_ny, m_gl, ref=None):
     """Hvorfor koerte rekalibreringen (§3.2)? Bestemmes af det NYE manifest mod det forrige DISTINKTE
     manifest: NBER-datering (annonceringstabel aendret), september (aarlig), ellers manuel/reparation.
     Foerste manifest efter legacy (v5.0) er per definition reparationen."""
     if m_gl is None or m_gl.get("version") in (None, LEGACY_VERSION):
         return "manuel/reparation (foerste kalibrering efter v5.0)"
-    k_gl, k_ny = A2.kanonisk_af(m_gl), A2.kanonisk_af(m_ny) or A2.tabel_hash(ann_fil())
-    if (k_gl != k_ny) if k_gl else (m_gl.get("announcement_table_sha256") != m_ny["announcement_table_sha256"]):
+    ref = ref or m_gl              # tabeltilstanden en genbrugende NBER-koersel allerede har registreret (weights.json)
+    k_gl, k_ny = A2.kanonisk_af(ref), A2.kanonisk_af(m_ny) or A2.tabel_hash(ann_fil())
+    if (k_gl != k_ny) if k_gl else (ref.get("announcement_table_sha256") != m_ny["announcement_table_sha256"]):
         return "nber-datering (annonceringstabellen aendret)"
     if int(m_ny["refit_maaned"][5:7]) == 9:
         return "september (aarlig)"
@@ -487,6 +490,7 @@ def main():
         reparation = sys.argv[k + 1] if len(sys.argv) > k + 1 and not sys.argv[k + 1].startswith("-") else ""
         if not reparation.strip():
             sys.exit('FEJL: --reparation kraever en begrundelse: --reparation "<hvad og hvorfor>"')
+    ref = None
     if forrige and forrige.get("version") not in (None, LEGACY_VERSION):
         sep = int(snap.name[5:7]) == 9
         W_ = {}
@@ -497,7 +501,9 @@ def main():
                 W_ = {}
         ref = W_ if W_.get("manifest_hash") == forrige.get("hash") and W_.get("announcement_table_sha256") else forrige
         ny_tabel = A2.tabel_aendret(ref.get("announcement_table_sha256"), A2.kanonisk_af(ref), f=ann_fil())
-        if not sep and not ny_tabel and reparation is None:
+        # en ren reproduktion paa kalibreringens EGET snapshot er tilladt (gendanner driftsvaegtene bit-identisk;
+        # kraev_ny_version stopper den, hvis den mod forventning giver en anden kalibrering)
+        if not sep and not ny_tabel and reparation is None and snap.name != forrige.get("snapshot"):
             sys.exit(f"FEJL (§3.2, F4): ingen deterministisk trigger — snapshot {snap.name} er ikke et september-snapshot, "
                      "og annonceringstabellen er uaendret siden manifest "
                      f"{forrige.get('hash')}. Vaegtene er frosne. En reparation kraever "
@@ -564,7 +570,7 @@ def main():
     # Saa genbruges forrige hash (intet nyt manifest); kaeden holder, og en genkoersel uden
     # dataaendring (fx den aarlige september-koersel i et roligt aar) skaber ikke stoej.
     _indhold = kalibrerings_indhold
-    m["trigger"] = bestem_trigger(m, forrige)
+    m["trigger"] = bestem_trigger(m, forrige, ref)
     if reparation is not None:
         m["trigger"] = (f"manuel/reparation: {reparation}" if m["trigger"].startswith("manuel/reparation")
                         and not m["trigger"].startswith("manuel/reparation (foerste")
@@ -580,6 +586,17 @@ def main():
         m["audit"] = audit
         m["refit_maaned"] = forrige["refit_maaned"]         # G4.2: manifestets refit-maaned, ikke denne koersels
         m["version"] = forrige["version"]
+        koersel_gate = m["gate"]
+        m["gate"] = dict(forrige["gate"])                   # #12: manifestets gate og fuldmodel, ikke denne koersels
+        if "fuldmodel" in forrige["modeller"]:
+            m["modeller"]["fuldmodel"] = forrige["modeller"]["fuldmodel"]
+        else:
+            m["modeller"].pop("fuldmodel", None)
+        g = m["gate"]
+        if (koersel_gate.get("identiske_origins") != g.get("identiske_origins")
+                or koersel_gate.get("fuldmodel_wf") != g.get("fuldmodel_wf")):
+            print(f"ADVARSEL: denne koersels fuldmodel/gate afviger fra manifest {forrige['hash']} (fx ufuldstaendig rygrad) — "
+                  "weights.json beholder manifestets fuldmodel og gate.")
         delta = forrige.get("delta_vs_forrige")
         print(f"kalibrering UAENDRET (samme origins, labels og vaegte): manifest {h} genbruges, intet nyt skrives.")
         # hash-udelukkede proveniensfelter skrives igennem hvis de mangler i det eksisterende manifest
@@ -620,7 +637,11 @@ def main():
                     ref_bh = hashlib.sha256(json.dumps([Wd["band"]["W"], Wd["band"].get("base")]).encode("utf-8")).hexdigest()[:16]
             except ValueError:
                 pass
-        if ref_bh is not None and ref_bh != bh:
+        if ref_bh is None:
+            sys.exit(f"FEJL (F54): manifest {h} genbruges, men bootstrap-baandet kan ikke verificeres: manifestet har ingen "
+                     "bootstrap.band_sha256, og weights.json er ikke kalibreringens (mangler/overskrevet). Gendan "
+                     "driftsvaegtene med 'git checkout v5/weights.json'. Intet er skrevet.")
+        if ref_bh != bh:
             sys.exit(f"FEJL (F54): manifest {h} genbruges, men bootstrap-baandet afviger fra det i drift ({bh} != {ref_bh}) — "
                      f"numpy/platform har aendret stroemmen (miljoe nu: {miljoe()}). Intet er skrevet; laas numpy-versionen.")
 

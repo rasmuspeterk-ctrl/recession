@@ -16,7 +16,7 @@ Kun stdlib + numpy.  Koer:  python calibrate.py [--check] [--snapshot data/raw/Y
 I drift (v5.0.1) er calibrate.py kun trin-1-reproduktionen og et modul for resten af kaeden (read_fred,
 live_kurve, fit ...). Resultatet skrives til calibrate_resultat.json. weights.json roeres kun med
 --overskriv: indeholder den de frosne driftsvaegte (protokol 5.0-final), ville motor.py ellers afvise et
-5.0-trin1-weights.json, og finalize6.py skulle koeres foer motor.py igen virker (kode-review F45).
+5.0-trin1-weights.json, og weights.json skal gendannes med git checkout foer motor.py igen virker (F45).
 """
 import calendar, csv, hashlib, json, re, sys
 from datetime import datetime, timezone
@@ -462,7 +462,7 @@ def main():
     if "--overskriv" in sys.argv:
         wf.write_text(json.dumps(out, indent=1), encoding="utf-8")
         print("weights.json OVERSKREVET med trin-1-resultatet (--overskriv): gendan driftsvaegtene med "
-              "'git checkout weights.json' eller koer finalize6.py foer motor.py.")
+              "'git checkout v5/weights.json' foer motor.py (finalize6.py koeres kun ved en §3.2-trigger).")
     elif wf.exists():
         try:
             gl = json.loads(wf.read_text(encoding="utf-8")).get("protocol_version")

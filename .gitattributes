@@ -4,3 +4,5 @@ v5/data/** -text
 v5/manual/** -text
 # Annonceringstabellen hashes (rekalibrerings-trigger §3.2b; kanonisk fra kode-review F15): ingen linjeskift-konvertering.
 v5/nber_announcements.csv -text
+# dashboard.json skrives med LF og genskabes bit-identisk i CI
+dashboard.json text eol=lf
