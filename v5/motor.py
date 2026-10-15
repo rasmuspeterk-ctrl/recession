@@ -712,6 +712,8 @@ def main():
     adv_txt = ", ".join(f"{k[0]}Q{(k[1]-1)//3+1} {v:+.1f}% (1. set {d[5:]})" for k, (v, d) in zip(sidste2, foerste))
     adv_aktiv = len(foerste) == 2 and all(v < 0 for v, _ in foerste)
 
+    if oas and oas[2] != "fil":
+        print(" (HY OAS laeses fra meta.json's last_value: den licensbegraensede fil findes kun lokalt, F1)")
     print("\n4) MONITORS   [individuelle linjer, ingen taellinger, ingen indflydelse paa P]")
     print("   Antaendings-klassen (kan staa i hovedbogens antaendings-kolonne):")
     oas_bp = oas[1] * 100 if oas else None
@@ -721,7 +723,7 @@ def main():
         ("Sahm >= 0,50", (sahm[1] >= 0.50) if sahm else "?", f"{sahm[1]:.2f} ({sahm[0][0]}-{sahm[0][1]:02d})" if sahm else "utilgaengelig",
          "testet, ikke bestaaet (trin 4)"),
         ("HY OAS > 600bp", (oas_bp > 600) if oas_bp is not None else "?",
-         (f"{oas_bp:.0f}bp ({oas[0]}{', ' + oas[2] if oas[2] != 'fil' else ''}){hy_zone}" if oas else "utilgaengelig"),
+         (f"{oas_bp:.0f}bp ({oas[0]}){hy_zone}" if oas else "utilgaengelig"),
          "v4-flag/seed-taerskel 600bp; ineligible (historik 1997-, FRED leverer kun rullende 3 aar); "
          "svaerm-zone 350-450bp = eneste atlas-taerskel med 3+ kanaler (5)"),
         ("S&P dagsluk vs 52u-top < -20%", float(man["spx_vs_hi"]) < -0.20, f"{float(man['spx_vs_hi'])*100:+.0f}% (manuel{', ' + man['spx_dato'] if man.get('spx_dato') else ''})",

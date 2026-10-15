@@ -65,6 +65,61 @@ def make_snapshot(raw, name, series=None, complete=True, manual=True, meta=True)
         (d / "meta.json").write_bytes(json.dumps(m, indent=1).encode("utf-8"))
     return d
 
+def licensfri_kilder(snap):
+    """(SP500-csv-bytes, multpl-html) for et snapshot. De licensbegraensede filer (F1/F12) findes kun lokalt; i en
+    ren klon (CI) bygges stand-ins af snapshottets COMMITTEDE, afledte data: SP500 som hverdagsvaerdier lig
+    maanedsmidlet (Shiller-kopien t.o.m. 2023-07, spine.csv's komposit derefter) fra 2016-10-17 (FRED's vindue
+    starter midt i en maaned), og multpl-tabellen fra Yale-CAPE/spine-CAPE. November 2016 er delt (dagene foer
+    den 14. lavere, efter hoejere), saa et afkortet vindue fra 2016-11-14 giver en DELVIS maaned der afviger
+    > 1 % — praecis november-fejlen (F2) — mens hele maanedens middel er uaendret."""
+    sp, html = snap / "SP500.csv", snap / "multpl_cape.html"
+    if sp.exists() and html.exists():
+        return sp.read_bytes(), html.read_bytes()
+    import csv as _csv, calendar as _cal
+    maaned_sp, maaned_cape = {}, {}
+    with (snap / F.YALE).open(encoding="utf-8-sig") as fh:
+        for r in _csv.DictReader(fh):
+            k = r["Date"].strip()
+            if k <= S.SEAM:
+                if r.get("SP500"):
+                    maaned_sp[k] = float(r["SP500"])
+                if r.get("CAPE"):
+                    maaned_cape[k] = float(r["CAPE"])
+    with (snap / "spine.csv").open(encoding="utf-8") as fh:
+        for r in _csv.DictReader(fh):
+            if r["Kilde"] != "shiller":
+                maaned_sp[r["Date"]] = float(r["SP500"]); maaned_cape[r["Date"]] = float(r["CAPE"])
+    snapdag = date.fromisoformat(snap.name)
+    linjer = ["observation_date,SP500"]
+    for k in sorted(maaned_sp):
+        if k < "2016-10":
+            continue
+        y, m = int(k[:4]), int(k[5:7])
+        dage = [date(y, m, d) for d in range(1, _cal.monthrange(y, m)[1] + 1)
+                if date(y, m, d).weekday() < 5 and (k > "2016-10" or d >= 17)]
+        v = maaned_sp[k]
+        if k == "2016-11":                     # delt maaned: middel uaendret, anden halvdel 2 % over
+            n1 = sum(d.day < 14 for d in dage); n2 = len(dage) - n1
+            hoej = v * 1.02; lav = (v * len(dage) - hoej * n2) / n1
+            linjer += [f"{d},{(lav if d.day < 14 else hoej):.4f}" for d in dage]
+        else:
+            linjer += [f"{d},{v:.4f}" for d in dage]
+    for d in range(1, snapdag.day):            # den loebende maaned (ikke lukket -> indgaar ikke)
+        dd = date(snapdag.year, snapdag.month, d)
+        if dd.weekday() < 5:
+            linjer.append(f"{dd},{list(maaned_sp.values())[-1]:.4f}")
+    MON = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()
+    rk = []
+    for y in range(1871, snapdag.year + 1):
+        for m in range(1, 13):
+            k = f"{y:04d}-{m:02d}"
+            if k < "1871-02" or k >= f"{snapdag.year:04d}-{snapdag.month:02d}":
+                continue
+            rk.append(f"<td>{MON[m - 1]} 1, {y}</td>\n<td>\n&#x2002;\n{maaned_cape.get(k, 15.0):.2f}\n</td>")
+    side = "<table>" + "".join(f"<tr>{r}</tr>" for r in reversed(rk)) + "</table>"
+    return (chr(10).join(linjer) + chr(10)).encode("utf-8"), side.encode("utf-8")
+
+
 def quiet():
     return contextlib.redirect_stdout(io.StringIO())
 
@@ -358,9 +413,14 @@ class TestFetchMain(unittest.TestCase):
         afkortet foran som FRED's rullende vindue."""
         for fn in ("manual.json", "acm.csv", F.YALE):
             shutil.copy(REAL_SNAP / fn, self.manual / fn)
-        html = (REAL_SNAP / "multpl_cape.html").read_bytes()
+        sp_bytes, html = licensfri_kilder(REAL_SNAP)
         def fake(sid, attempts=3):
-            b = (REAL_SNAP / f"{sid}.csv").read_bytes()
+            if sid == "SP500":
+                b = sp_bytes
+            elif not (REAL_SNAP / f"{sid}.csv").exists():          # licensbegraenset fil kun lokalt: FRED-format stand-in
+                b = fred_bytes(ROWS, header=f"observation_date,{sid}")
+            else:
+                b = (REAL_SNAP / f"{sid}.csv").read_bytes()
             if sid == "SP500" and sp500_fra:
                 ln = b.decode("utf-8").splitlines()
                 b = (chr(10).join([ln[0]] + [r for r in ln[1:] if r >= sp500_fra]) + chr(10)).encode()
@@ -668,6 +728,8 @@ class TestMotor(unittest.TestCase):
         shutil.copytree(self.raw / self.today, snap); shutil.copytree(self.here, here)
         def add(sid, rows):
             f = snap / f"{sid}.csv"
+            if not f.exists():                                   # licensbegraenset fil findes kun lokalt (F1)
+                f.write_text(f"observation_date,{sid}" + chr(10), encoding="utf-8")
             tekst = f.read_text(encoding="utf-8")
             f.write_text(tekst + ("" if tekst.endswith(chr(10)) else chr(10)) + "".join(f"{d},{v}{chr(10)}" for d, v in rows),
                          encoding="utf-8")
@@ -890,7 +952,7 @@ class TestMotor(unittest.TestCase):
         THREEFYTP10 -> acm.csv, CPIAUCSL valgfri)."""
         for sid in sorted(F.RESERVE):
             raw, _ = self._scenario()
-            (raw / self.today / f"{sid}.csv").unlink()
+            (raw / self.today / f"{sid}.csv").unlink(missing_ok=True)      # licensfiler mangler allerede i en ren klon
             self.assertIn("MOTOR v", self._motor([], raw=raw), sid)
 
     def test_gammelt_snapshot_afvises_med_mindre_allow_stale(self):
