@@ -25,6 +25,7 @@ RAADETS_2027 (refit-maaned >= 2027-09; protokol2027.py, forseglede specs i spec2
     §9 L_R-auditten (max(18, top-lag, bund-lag - 12); eligibility med info ved R; finalitet) stopper refitten ved brud.
     §6 NBER-indholdstriggeren (een refit pr. ny onset + omlabelinger) er en deterministisk trigger, naar kalibreringen
     i drift er fra 2027-refitten; trigger-maaneden skrives i manifestet. Replayen ligger i replay2027.py.
+    §3.3/§4 maanedligt curve-only-fit (lambda_m = N_m/N_q) og fits ved start 1953Q2/1960Q1 -> 'uscorede' (aldrig i P).
 §7  Bro ved fast inputvektor: (i) legacy-rygrad, (ii) korrigerede kilder paa samme origins,
     (iii) udvidet panel. Raa koefficienter (beta = w1/s, alpha = w0 - w1*mu/s) ved siden af.
 
@@ -155,7 +156,8 @@ def live_x(snap):
 
 HASH_UDELUKKET = ("created_utc", "code_commit", "kaldt_som", "hash",
                   "delta_vs_forrige", "trigger", "miljoe", "reparation", "nber_effekt",
-                  "L_R_audit", "announcement_table_kanonisk", "indholdstrigger")   # proveniens om aendringen/koerslen, ikke
+                  "L_R_audit", "announcement_table_kanonisk", "indholdstrigger",
+                  "uscorede")   # proveniens om aendringen/koerslen (og RAADETS_2027's uscorede fit), ikke
 # kalibreringsindhold (den kanoniske tabelhash er afledt af samme fil som announcement_table_sha256)
 
 def manifest_hash(m):
@@ -559,6 +561,13 @@ def main():
             print(ln)
         P27.stop_ved_brud(lr)
     m["L_R_audit"] = lr
+    if P27.i_kraft(ekstra["R"]):
+        # RAADETS_2027 §3.3/§4 (spec2027/4_maanedligt_fit_uscorede.md): maanedligt fit (lambda_m = N_m/N_q) og fits ved
+        # universstart 1953Q2/1960Q1 — uscorede, uden for indholds-hashen, aldrig i P/baand/dom
+        m["uscorede"] = P27.uscorede(snap, ekstra["Dc"], ekstra["eps"], ekstra["avail"], ekstra["usrec"], ekstra["R"])
+        mf_ = m["uscorede"]["maanedligt_fit"]
+        print(f"uscoret (RAADETS_2027 §3.3): maanedligt fit N_m {mf_['N_m']} / N_q {mf_['N_q']} -> lambda_m {mf_['l2']:.3f}, "
+              f"w {mf_['w']}; starter 1953Q2 n {m['uscorede']['start_1953Q2']['n_obs']}, 1960Q1 n {m['uscorede']['start_1960Q1']['n_obs']}")
     if indhold_gaelder:
         m["indholdstrigger"] = indhold               # spec 3 §2: trigger-maaneden i manifestet (null: ikke udloest)
         if indhold:
@@ -643,6 +652,8 @@ def main():
         m["version"] = forrige["version"]
         koersel_gate = m["gate"]
         m["gate"] = dict(forrige["gate"])                   # #12: manifestets gate og fuldmodel, ikke denne koersels
+        if "uscorede" in forrige:
+            m["uscorede"] = forrige["uscorede"]             # spec 4 §2: et genbrugt manifest genbruger ogsaa sine uscorede fit
         if "fuldmodel" in forrige["modeller"]:
             m["modeller"]["fuldmodel"] = forrige["modeller"]["fuldmodel"]
         else:
@@ -742,6 +753,8 @@ def main():
                fallback_note="Forhaandsforpligtet i RAADETS_KONSENSUS (Kimi R5/Sol R6) FOER foerste test; "
                              "v5.0.1 (§6): gaten kan ikke flytte den operationelle model.")
     out["benchmarks"].update(permanente_linjer())
+    if m.get("uscorede"):
+        out["uscorede"] = m["uscorede"]                     # RAADETS_2027 §3.3/§4: kun fra refit 2027-09
     (HERE / "weights.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
     print(f"weights.json (v{m['version']}, manifest {h}) skrevet.")
 

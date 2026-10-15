@@ -32,8 +32,16 @@ Fra 2026-09-28 måles kurven på daglige data (trailing måned af DGS10 − DTB3
 GS10/TB3MS, uden publiceringsforsinkelse), og 10Y-tripwiren i antændings-kolonnen læser seneste daglige
 niveau. De to ældre rækker brugte månedstal; den første række på daglig input får noten "input: daglig".
 
-| logget | snapshot | P | baand 10-90 | basisrate | dom | kurve | antaending aktiv | note | kalibrering | vindue | input | P_maanedlig |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
+**Uscorede kolonner fra september-refitten 2027** (RAADETS_2027 §3.3/§4, forseglet spec
+[v5/spec2027/4_maanedligt_fit_uscorede.md](v5/spec2027/4_maanedligt_fit_uscorede.md)): `P_maanedligt_fit` (P fra et
+månedligt curve-only-fit med samme straf pr. observation, λ_m = N_m/N_q), `P_1953Q2` og `P_1960Q1` (P hvis
+rækkeuniverset startede 1953Q2 eller 1960Q1). De er uscorede: de indgår aldrig i P, bånd, dom eller nøglens
+score, og rækker under kalibreringer før 2027-09 har dem ikke. En række logget inde i en annonceret recession
+(dom `censureret`) scores ikke, men dens P og det endelige udfald føres alligevel: UDFALD.csv's kolonne
+`uscoret_censureret` er "ja" for netop de rækker (RAADETS_2027 §10.4).
+
+| logget | snapshot | P | baand 10-90 | basisrate | dom | kurve | antaending aktiv | note | kalibrering | vindue | input | P_maanedlig | P_maanedligt_fit | P_1953Q2 | P_1960Q1 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 2026-08-12 | 2026-08-12 | 20.1% | 14.4-29.2% | 18.2% | ikke skelnelig | +0.87 | ingen |  |
 | 2026-09-09 | 2026-09-09 | 18.0% | 12.7-26.3% | 18.2% | ikke skelnelig | +0.96 | ingen |  |
 | 2026-10-10 | 2026-10-10 | 15.1% | 10.4-21.6% | 18.0% | ikke skelnelig | +1.11 | ingen | input: daglig (kurve = trailing maaned DGS10-DTB3; foer: GS10-TB3MS maanedssnit); bro: P(v? 6baeade4)=15.0% / P(v5.0.1 72c3371d)=15.1% ved identiske inputs; trigger: manuel/reparation (foerste kalibrering efter v5.0) | 72c3371d |

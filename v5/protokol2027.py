@@ -13,6 +13,8 @@ R >= IKRAFT (2027-09). En kalibrering med R < IKRAFT (fx reproduktionen af 72c33
   spec2027/2_L_R_audit.md   §9        L_R = max(18, top-lag, bund-lag - 12); eligibility med info ved R; stop ved brud
   spec2027/3_indholdstrigger_replay.md
                             §6        een refit pr. ny onset + enhver omlabeling; replayen ligger i replay2027.py
+  spec2027/4_maanedligt_fit_uscorede.md
+                            §3.3/§4/§10.4  maanedligt fit (lambda_m = N_m/N_q), parret diagnostik, uscorede felter
 
 Kun stdlib + numpy.
 """
@@ -33,6 +35,7 @@ SPECS = {
     "1_gate.md": "127f46beb9212a3ede057f17c8fccdd364b1175f5e09f79b3d2c1a0cdcb4620c",
     "2_L_R_audit.md": "017f1f3152b32e367e4f67d77be696bf5944a93691ca37dd8462bebb66c0a2e3",
     "3_indholdstrigger_replay.md": "c63471d399768e81b57c39c3c5dc8ea458a2105dfe8456c12caa747f4d76ed3f",
+    "4_maanedligt_fit_uscorede.md": "c2c988c97b4c5f516b31fb2d8ebf4d8deccc09f21ab7de9ef5666fa428fa0e33",
 }
 
 Z_975, Z_80 = 1.959964, 0.841621   # spec 1 §4.1: 80 %-MDE = (z_0,975 + z_0,80) x SD_block (normalteori)
@@ -398,3 +401,210 @@ def trigger_tekst(it):
     dele = [f"ny onset {o} ({', '.join(v)})" for o, v in sorted(it["nye_onsets"].items())] + \
            [f"omlabeling {x}" for x in it["omlabelinger"]]
     return f"nber-indhold (RAADETS_2027 §6): trigger-maaned {it['trigger_maaned']}; " + "; ".join(dele)
+
+
+# ------------------------------------------------------------------ spec 4: maanedligt fit og uscorede felter
+MIN_TR_M, MIN_POS_M = 180, 18       # ablation3.wf_monthly: 60 kvartaler / 6 positive i maaneder
+STARTFELTER = (("start_1953Q2", (1953, 2)), ("start_1960Q1", (1960, 1)))
+
+
+def maanedligt_univers(snap, Dq):
+    """Spec 4 §2: maaneder med defineret kurve, hvis kvartal ligger i det kvartalsvise curve-only-univers Dq
+    (= analyser/frekvensgate.byg_maanedligt(snap, Dq, ['curve']), inkl. rygrad-forlaengelsen)."""
+    shiller = C.read_shiller(snap)
+    gs10, tb3ms = C.read_fred(snap, "GS10"), C.read_fred(snap, "TB3MS")
+    sidst = shiller[-1][0] if shiller else (0, 0)
+    shiller = shiller + [(k, np.nan, np.nan, np.nan, np.nan) for k in sorted(set(gs10) & set(tb3ms)) if k > sidst]
+    keys, M = C.build_monthly(shiller, gs10, tb3ms)
+    F = M["curve"].reshape(-1, 1)
+    ok_q = set(Dq["qk"])
+    rk = [i for i, (y, m) in enumerate(keys) if not np.isnan(F[i, 0]) and (y, (m - 1) // 3 + 1) in ok_q]
+    return dict(F=F[rk], feats=["curve"], midx=np.array([A2.midx(*keys[i]) for i in rk]), ym=[keys[i] for i in rk])
+
+
+def _labels_m(Dm, eps, usrec):
+    win, Y, inr, epo = [], np.zeros(len(Dm["midx"])), np.zeros(len(Dm["midx"]), bool), []
+    for j, m in enumerate(Dm["midx"]):
+        wo = [o for o, _ in eps if m + 1 <= o <= m + 12]
+        win.append(wo)
+        Y[j] = 1.0 if wo else 0.0
+        inr[j] = usrec.get(int(m), 0) == 1
+        e = A2.episode_of(int(m), eps)
+        epo.append(e[0] if e else None)
+    return win, Y, inr, epo
+
+
+def eligible_maanedlig(Dm, eps, avail, R, lab):
+    """Spec 4 §2: berettigede maanedsraekker ved R (m + 12 + 18 <= R, ikke i en recession annonceret senest R)."""
+    win, _Y, _inr, epo = lab
+    n = len(Dm["midx"])
+    elig, yR = np.zeros(n, bool), np.zeros(n)
+    for j in range(n):
+        if Dm["midx"][j] + 12 + A2.L_EMBARGO > R or (epo[j] is not None and avail[epo[j]] <= R):
+            continue
+        elig[j] = True
+        yR[j] = 1.0 if any(avail[o] <= R for o in win[j]) else 0.0
+    return elig, yR
+
+
+def lambda_m(N_m, N_q, lambda_q=1.0):
+    """Spec 4 §2 (fastlaast): samme straf pr. observation under summeret tab -> lambda_m = lambda_q * N_m / N_q."""
+    if N_q <= 0:
+        raise SystemExit("FEJL (RAADETS_2027 §3.3, spec 4 §2): N_q = 0 — lambda_m er udefineret.")
+    return lambda_q * N_m / N_q
+
+
+def maanedligt_fit(snap, Dq, eps, avail, usrec, R):
+    """Spec 4 §2: det maanedlige curve-only-fit ved refit-maaned R med lambda_m = N_m(R)/N_q(R)."""
+    Dm = maanedligt_univers(snap, Dq)
+    elig, yR = eligible_maanedlig(Dm, eps, avail, R, _labels_m(Dm, eps, usrec))
+    N_q = int(A2.eligible_fit(Dq, eps, avail, usrec, R)[0].sum())
+    X, y = Dm["F"][elig], yR[elig]
+    mu, sd = X.mean(0), X.std(0, ddof=1)
+    sd[sd == 0] = 1
+    lam = lambda_m(int(elig.sum()), N_q)
+    w = C.fit((X - mu) / sd, y, l2=lam)
+    sidste = Dm["ym"][int(np.where(elig)[0][-1])]
+    return dict(features=["curve"], mu={"curve": round(float(mu[0]), 4)}, sd={"curve": round(float(sd[0]), 4)},
+                w=[round(float(v), 4) for v in w], l2=round(lam, 6), N_m=int(elig.sum()), N_q=N_q, n_pos=int(y.sum()),
+                base_rate=round(float(y.mean()), 4), estimering_slut=f"{sidste[0]}-{sidste[1]:02d}")
+
+
+def start_fits(Dq, eps, avail, usrec, R):
+    """Spec 4 §5: curve-only paa universet afkortet til >= 1953Q2 og >= 1960Q1 (som diagnostik.start_sensitivitet)."""
+    import finalize6 as F6                       # sen import: finalize6 importerer protokol2027
+    ud = {}
+    for navn, st in STARTFELTER:
+        m = F6.fit_model(_sub(Dq, st), eps, avail, usrec, R)
+        ud[navn] = {k: m[k] for k in ("features", "mu", "sd", "w", "n_obs", "base_rate")}
+    return ud
+
+
+def uscorede(snap, Dq, eps, avail, usrec, R):
+    """Spec 4 §2/§5: manifestets og weights.json's 'uscorede'-blok for en refit med R >= 2027-09."""
+    h = kraev_forseglet("4_maanedligt_fit_uscorede.md")
+    return dict(protokol="RAADETS_2027 §3.3/§4/§10.4", spec_sha256=h,
+                note="uscorede felter: indgaar aldrig i P, baand, dom, gate, trigger eller noeglens score",
+                maanedligt_fit=maanedligt_fit(snap, Dq, eps, avail, usrec, R) | dict(spec_sha256=h),
+                **start_fits(Dq, eps, avail, usrec, R))
+
+
+def _p(model, c):
+    z = (c - model["mu"]["curve"]) / model["sd"]["curve"]
+    return float(1 / (1 + np.exp(-np.clip(model["w"][0] + model["w"][1] * z, -30, 30))))
+
+
+def p_uscorede(us, curve):
+    """Spec 4 §3/§5: de uscorede P'er ved raekkens live-input."""
+    return dict(p_maanedligt_fit=_p(us["maanedligt_fit"], curve),
+                p_start_1953Q2=_p(us["start_1953Q2"], curve), p_start_1960Q1=_p(us["start_1960Q1"], curve))
+
+
+def wf_maanedlig(Dm, Dq, eps, avail, usrec, R_score, variant):
+    """Spec 4 §4: purget expanding-origin walk-forward paa maanedsraekker (ablation3.wf_monthly /
+    frekvensgate.wf_maanedlig) med straffen `variant`: 'A' = lambda_m(R) = N_m(R)/N_q(R) i hvert vindue, 'B' = 1."""
+    lab = _labels_m(Dm, eps, usrec)
+    win, Y, inr, epo = lab
+    out, lams = [], []
+    for i in range(len(Dm["midx"])):
+        if Dm["ym"][i][0] < 1960 or Dm["midx"][i] + 12 + A2.L_EMBARGO > R_score:
+            continue
+        R = int(Dm["midx"][i])
+        tr = [j for j in range(i) if Dm["midx"][j] + 12 + A2.L_EMBARGO <= R and not (epo[j] is not None and avail[epo[j]] <= R)]
+        if len(tr) < MIN_TR_M:
+            continue
+        yR = np.array([1.0 if any(avail[o] <= R for o in win[j]) else 0.0 for j in tr])
+        if yR.sum() < MIN_POS_M:
+            continue
+        lam = 1.0 if variant == "B" else lambda_m(len(tr), int(A2.eligible_fit(Dq, eps, avail, usrec, R)[0].sum()))
+        X = Dm["F"][tr]
+        mu, sd = X.mean(0), X.std(0, ddof=1)
+        sd[sd == 0] = 1
+        w = C.fit((X - mu) / sd, yR, l2=lam)
+        if inr[i]:
+            continue
+        y, m = Dm["ym"][i]
+        out.append((int(y), int(m), float(C.predict(w, (Dm["F"][[i]] - mu) / sd)[0]), float(Y[i])))
+        lams.append(lam)
+    return out, lams
+
+
+def identiteter(tyndet, kvartal):
+    """Spec 4 §4 (Fable): origin-maengde, labels og poolet basisrate skal vaere identiske — fejler hoejlydt."""
+    kt = {(y, q): yy for (y, q, _, yy) in tyndet}
+    kq = {(y, q): yy for (y, q, _, yy) in kvartal}
+    fejl = []
+    if set(kt) != set(kq):
+        fejl.append(f"origin-maengderne er forskellige (kun maanedlig: {sorted(set(kt) - set(kq))[:4]}, "
+                    f"kun kvartal: {sorted(set(kq) - set(kt))[:4]})")
+    uenige = sorted(k for k in set(kt) & set(kq) if kt[k] != kq[k])
+    if uenige:
+        fejl.append(f"{len(uenige)} uenige labels ({uenige[:4]})")
+    bt = float(np.mean(list(kt.values()))) if kt else None
+    bq = float(np.mean(list(kq.values()))) if kq else None
+    if bt != bq:
+        fejl.append(f"poolet basisrate {bt} != {bq}")
+    if fejl:
+        raise SystemExit("FEJL (RAADETS_2027 §3.3, spec 4 §4): den parrede samme-origins-diagnostik er ikke parret — "
+                         + "; ".join(fejl) + ". Intet skrevet; forelaegges raadet.")
+    return len(kt), bq
+
+
+def maanedlig_parret(snap, eps, avail, usrec, R):
+    """Spec 4 §4: §3.2(b)-diagnostikken paa refittens panel i to straf-varianter (A primaer, B kontinuitet)."""
+    h = kraev_forseglet("4_maanedligt_fit_uscorede.md")
+    Dq = A2.build_dataset(snap, ["curve"])
+    Dm = maanedligt_univers(snap, Dq)
+    kv, _, _ = A2.wf_nber(Dq, eps, avail, usrec, A2.L_EMBARGO, R_score=R)
+    q_by = {(y, q): (p, yy) for (y, q, p, yy) in kv}
+    ud = dict(protokol="RAADETS_2027 §3.3 (genkoersel af §3.2(b))", spec_sha256=h, R_score=ym(R),
+              kvartal=dict(n=len(kv), improvement=round(C.metrics(kv)[2], 2)), varianter={},
+              sprog=("Beskrivende diagnostik; aendrer intet. |Delta| under den kritiske vaerdi er fortegns-uinformativt — "
+                     "et negativt Delta betyder ikke, at maanedlig er daarligere (Fable)."))
+    for v, navn in (("A", "lambda_m = N_m/N_q (forseglet normalisering, primaer)"), ("B", "lambda = 1 (kontinuitet med §3.2(b))")):
+        rows, lams = wf_maanedlig(Dm, Dq, eps, avail, usrec, R, v)
+        tyndet = [(y, m // 3, p, yy) for (y, m, p, yy) in rows if m % 3 == 0]
+        n, base = identiteter(tyndet, kv)
+        par = [(y, q, p, q_by[(y, q)][0], yy) for (y, q, p, yy) in tyndet]
+        d, sd, lo, hi = A3.mde_bootstrap(par, eps)
+        ud["varianter"][v] = dict(navn=navn, n_parrede_origins=n, labels_uenige=0, basisrate=round(base, 4),
+                                  maanedlig_tyndet_improvement=round(C.metrics(tyndet)[2], 2),
+                                  maanedlig_fuld=dict(n=len(rows), improvement=round(C.metrics(rows)[2], 2)),
+                                  forskel_pp=round(float(d), 2), sd_pp=round(sd, 2), ci10=round(lo, 2), ci90=round(hi, 2),
+                                  kritisk_vaerdi_pp=round(1.96 * sd, 2),
+                                  lambda_spaend=[round(min(lams), 3), round(max(lams), 3)] if lams else None)
+    return ud
+
+
+def parret_linjer(d):
+    ud = [f"   §3.3 Maanedlig parret diagnostik ({d['R_score']}; uscoret): kvartal +{d['kvartal']['improvement']}% paa {d['kvartal']['n']} origins"]
+    for v, x in d["varianter"].items():
+        ud.append(f"       {v} {x['navn']}: tyndet maanedlig +{x['maanedlig_tyndet_improvement']}% paa {x['n_parrede_origins']} "
+                  f"identiske origins (0 uenige labels, basisrate {x['basisrate']:.4f}); Delta {x['forskel_pp']:+.2f}pp "
+                  f"[{x['ci10']:+.2f}, {x['ci90']:+.2f}], kritisk vaerdi {x['kritisk_vaerdi_pp']:.2f}pp")
+    ud.append(f"       {d['sprog']}")
+    return ud
+
+
+# ------------------------------------------------------------------ spec 4 §6: UDFALD.csv (censurerede maaneder)
+UDFALD_KOLONNER = ["raekke_logget", "Y", "afgjort_dato", "kilde", "note", "uscoret_censureret"]
+
+
+def udfald_tjek(log_rows, udfald_rows, kolonner):
+    """Spec 4 §6: hver UDFALD-raekke henviser til en logget LOG-raekke, Y i {0,1}, og uscoret_censureret = 'ja' hvis
+    og kun hvis LOG-raekkens dom er 'censureret'. -> liste af fejl (tom = konsistent)."""
+    fejl = []
+    if list(kolonner) != UDFALD_KOLONNER:
+        fejl.append(f"UDFALD.csv's kolonner er {list(kolonner)}, forventet {UDFALD_KOLONNER}")
+    dom = {r["logget"][:10]: r.get("dom", "") for r in log_rows if r.get("P") not in (None, "", "–")}
+    for r in udfald_rows:
+        k = (r.get("raekke_logget") or "").strip()
+        if k not in dom:
+            fejl.append(f"{k}: ingen logget raekke i LOG.md")
+            continue
+        if (r.get("Y") or "").strip() not in ("0", "1"):
+            fejl.append(f"{k}: Y = {r.get('Y')!r} (skal vaere 0 eller 1)")
+        forv = "ja" if dom[k] == "censureret" else "nej"
+        if (r.get("uscoret_censureret") or "").strip() != forv:
+            fejl.append(f"{k}: uscoret_censureret = {r.get('uscoret_censureret')!r}, forventet {forv!r} (dom {dom[k]!r})")
+    return fejl

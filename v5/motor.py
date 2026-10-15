@@ -117,9 +117,10 @@ def laes_hovedbog(logf):
     """LOG.md-tabellen -> [dict] med alle kolonner. P/kurve beholder tekstformen;
     dashboardet faar tal via tal_af()."""
     kol = ("logget", "snapshot", "P", "baand", "basisrate", "dom", "kurve", "antaending", "note", "kalibrering",
-           "vindue", "input", "P_maanedlig")
+           "vindue", "input", "P_maanedlig", "P_maanedligt_fit", "P_1953Q2", "P_1960Q1")
     # v5.0.1 (§3.3): 'kalibrering' findes kun i raekker fra og med v5.0.1; 'vindue', 'input' og 'P_maanedlig'
-    # kun fra 2026-10-15 (kode-review G3.4/F29). Aeldre raekker har faerre celler og roeres aldrig.
+    # kun fra 2026-10-15 (kode-review G3.4/F29); de tre uscorede (RAADETS_2027 §3.3/§4) kun under kalibreringer fra
+    # 2027-09. Aeldre raekker har faerre celler og roeres aldrig.
     ud = []
     if not logf.exists():
         return ud
@@ -657,6 +658,10 @@ def main():
               f"{'skelnelig' if parret['skelnelig'] else 'ikke skelnelig'} fra 0 "
               f"({'enig' if parret['enig_med_baandregel'] else 'UENIG'} med baandreglen). "
               "Diagnostik: aendrer ikke dommen. Coverage not established.")
+    p_us = P27.p_uscorede(W["uscorede"], x["curve"]) if W.get("uscorede") else None
+    if p_us:
+        print(f"   Uscoret (RAADETS_2027 §3.3/§4; aldrig i dommen): maanedligt fit {p_us['p_maanedligt_fit']*100:.1f}% | "
+              f"start 1953Q2 {p_us['p_start_1953Q2']*100:.1f}% | start 1960Q1 {p_us['p_start_1960Q1']*100:.1f}%")
     if cens:
         print(f"   CENSURERET: laesningens maaned ligger inde i en annonceret recession (USREC-onset "
               f"{cens[0] // 12}-{cens[0] % 12 + 1:02d}, annonceret {cens[1] // 12}-{cens[1] % 12 + 1:02d}) — "
@@ -1178,11 +1183,14 @@ def main():
             inp = (f"daglig {LI['vindue'][0]}..{LI['vindue'][1]} ({LI['n_dage']}d)" if LI["kilde"] == "daglig"
                    else f"maanedlig {LI['maanedlig']['maaned']}")
             # 'ikke logget'-raekker har ingen P og derfor ingen kalibrering (noeglens pkt. 1e: kolonnen er tom)
-            linjer = [f"| {m} (ikke logget) | – | ikke logget | | | | | | ingen raekke i logvinduet | | | | |" for m in mangler]
+            ekstra_tom = " | | |" if p_us else ""             # RAADETS_2027 §3.3/§4: tre uscorede celler fra 2027-09
+            linjer = [f"| {m} (ikke logget) | – | ikke logget | | | | | | ingen raekke i logvinduet | | | | |{ekstra_tom}" for m in mangler]
             linjer.append(f"| {idag_s} | {snap.name} | {p_op*100:.1f}% | {lo*100:.1f}-{hi*100:.1f}% | "
                           f"{base*100:.1f}% | {dom_ord} | {x['curve']:+.2f} | "
                           f"{ren_note(', '.join(aktive)) if aktive else 'ingen'} | {ren_note('; '.join(noter))} | {kh} | "
-                          f"{vindue} | {ren_note(inp)} | {p_maanedlig*100:.1f}% |")
+                          f"{vindue} | {ren_note(inp)} | {p_maanedlig*100:.1f}% |"
+                          + (f" {p_us['p_maanedligt_fit']*100:.1f}% | {p_us['p_start_1953Q2']*100:.1f}% | "
+                             f"{p_us['p_start_1960Q1']*100:.1f}% |" if p_us else ""))
             with logf.open("a", encoding="utf-8", newline="\n") as fh:
                 for ln in linjer:
                     fh.write(ln + "\n")
@@ -1196,6 +1204,13 @@ def main():
                        antaending=aktive, monitors=[dict(navn=n, aktiv=a if a in (True, False) else None, vaerdi=v) for n, a, v, _ in mon],
                        scenarie=[dict(navn=n, aktiv=a if a in (True, False) else None, vaerdi=v) for n, a, v, _ in scen],
                        censureret=bool(cens), noter=noter, noegle=nh, ikke_logget_foer=mangler)
+            if p_us:                                        # RAADETS_2027 §3.3/§4/§10.4 (spec 4): uscorede felter
+                rec.update({k: round(v, 6) for k, v in p_us.items()})
+                if cens:
+                    rec["uscoret_censur"] = dict(p=round(p_op, 6), p_maanedlig=round(p_maanedlig, 6),
+                                                 p_maanedligt_fit=round(p_us["p_maanedligt_fit"], 6), vindue=vindue,
+                                                 note="uscoret (RAADETS_2027 §10.4): raekken scores ikke (noeglen §1 d); "
+                                                      "P og det endelige udfald foeres")
             with (logf.parent / "hovedbog.jsonl").open("a", encoding="utf-8", newline="\n") as fh:
                 fh.write(json.dumps(rec, ensure_ascii=False, sort_keys=True) + "\n")
             print(f"   LOGGET som raekke {len(rows) + len(mangler) + 1}: {idag_s}, P {p_op*100:.1f}%, dom '{dom_ord}'."
@@ -1244,6 +1259,9 @@ def main():
                   + f"{ss_.get('input', {}).get('curve', '?')}pp, ikke dagens): "
                   + "; ".join(f"{k} P {v['P']*100:.1f}% / basis {v['basisrate']*100:.1f}%"
                               for k, v in ss_.items() if k != "input") + " (protokol: 1947Q2 — til raadet foer sept. 2027)")
+        if diag.get("maanedlig_parret"):
+            for ln in P27.parret_linjer(diag["maanedlig_parret"]):
+                print(ln)
         if diag.get("styrke"):
             st = diag["styrke"]
             print(f"   G3.2 Hovedbogens styrke: 80 % styrke kraever ca. {st['blokke_80pct']} cyklusblokke (ca. {st['aar_80pct']} aar). "
@@ -1285,6 +1303,9 @@ def main():
             r["basisrate_tal"] = tal_af(r.get("basisrate"), 0.01)
             r["kurve_tal"] = tal_af(r.get("kurve"))
             r["p_maanedlig_tal"] = tal_af(r.get("P_maanedlig"), 0.01)
+            for k_, n_ in (("P_maanedligt_fit", "p_maanedligt_fit_tal"), ("P_1953Q2", "p_1953Q2_tal"), ("P_1960Q1", "p_1960Q1_tal")):
+                if r.get(k_):                               # RAADETS_2027: kun raekker under en 2027-kalibrering
+                    r[n_] = tal_af(r[k_], 0.01)
 
         def mrow(n, a, v, s):
             return dict(navn=n, tilstand=("aktiv" if a is True else "utilgaengelig" if a == "?" else
@@ -1338,6 +1359,9 @@ def main():
                           "Vises uden samlet score eller dom.",
             noegle=noegle_hash(logf),
         )
+        if p_us:                                            # RAADETS_2027 §3.3/§4: kun under en 2027-kalibrering
+            data["uscorede"] = dict({k: round(v, 6) for k, v in p_us.items()},
+                                    note="uscorede felter (RAADETS_2027 §3.3/§4); aldrig i P, baand eller dom")
         with ud.open("w", encoding="utf-8", newline="\n") as fh:          # LF paa alle platforme (CI-replay)
             fh.write(json.dumps(endelig(data), indent=2, ensure_ascii=False, allow_nan=False) + chr(10))
         print(f"{chr(10)}   JSON skrevet: {ud}  ({len(hb)} hovedbogsraekker)")

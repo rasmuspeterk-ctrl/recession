@@ -2559,5 +2559,191 @@ class TestRaad2027Replay(unittest.TestCase):
             RP.main()
 
 
+
+class TestRaad2027MaanedligtFit(unittest.TestCase):
+    """RAADETS_2027 §3.3/§4 (spec2027/4_maanedligt_fit_uscorede.md): fastlaast lambda-normalisering, den parrede
+    samme-origins-diagnostik med identitetstjek i kode, og P ved 1953Q2/1960Q1."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.snap = C.RAW / "2026-09-19"
+        cls.R = A2.midx(2026, 9)
+        cls.usrec = A2.load_usrec(cls.snap)
+        cls.eps = A2.episodes_from_usrec(cls.usrec)
+        cls.avail = A2.load_announcements(cls.eps, usrec=cls.usrec)
+        cls.Dq = A2.build_dataset(cls.snap, ["curve"])
+
+    def test_lambda_er_samme_straf_pr_observation(self):
+        self.assertAlmostEqual(P27.lambda_m(800, 267), 800 / 267)
+        self.assertAlmostEqual(P27.lambda_m(267, 267), 1.0)
+        with self.assertRaisesRegex(SystemExit, "N_q = 0"):
+            P27.lambda_m(10, 0)
+        fit = P27.maanedligt_fit(self.snap, self.Dq, self.eps, self.avail, self.usrec, self.R)
+        self.assertEqual((fit["N_m"], fit["N_q"]), (800, 267))
+        self.assertAlmostEqual(fit["l2"], 800 / 267, places=5)
+        # uafhaengig genberegning: samme raekker, l2 = N_m/N_q (ikke 1)
+        Dm = P27.maanedligt_univers(self.snap, self.Dq)
+        elig, yR = P27.eligible_maanedlig(Dm, self.eps, self.avail, self.R, P27._labels_m(Dm, self.eps, self.usrec))
+        X = Dm["F"][elig]; mu, sd = X.mean(0), X.std(0, ddof=1)
+        w = C.fit((X - mu) / sd, yR[elig], l2=800 / 267)
+        self.assertEqual(fit["w"], [round(float(v), 4) for v in w])
+        self.assertNotEqual(fit["w"], [round(float(v), 4) for v in C.fit((X - mu) / sd, yR[elig], l2=1.0)])
+
+    def test_universet_er_frekvensgates(self):
+        sys.path.insert(0, str(HERE / "analyser"))
+        import frekvensgate as FG
+        a, b = P27.maanedligt_univers(self.snap, self.Dq), FG.byg_maanedligt(self.snap, self.Dq, ["curve"])
+        self.assertEqual(list(a["midx"]), list(b["midx"]))
+        self.assertTrue(np.array_equal(a["F"], b["F"]))
+
+    def test_parret_diagnostik_B_reproducerer_3_2b_og_A_er_parret(self):
+        d = P27.maanedlig_parret(self.snap, self.eps, self.avail, self.usrec, self.R)
+        B = d["varianter"]["B"]
+        self.assertEqual((B["n_parrede_origins"], B["labels_uenige"], B["forskel_pp"], B["sd_pp"], B["ci10"], B["ci90"]),
+                         (198, 0, -1.02, 2.58, -4.47, 1.32))           # = frekvensgate_resultat.json, parret_tyndet_vs_kvartal
+        self.assertEqual(B["basisrate"], 0.1616)
+        A = d["varianter"]["A"]
+        self.assertEqual((A["n_parrede_origins"], A["labels_uenige"]), (198, 0))
+        self.assertGreater(A["lambda_spaend"][0], 1.0)                 # normaliseringen er aktiv i hvert vindue
+        self.assertEqual(list(d["varianter"]), ["A", "B"])
+        self.assertIn("fortegns-uinformativt", d["sprog"])
+
+    def test_identiteterne_fejler_hoejlydt(self):
+        kv = [(1970, 1, 0.2, 0.0), (1970, 2, 0.3, 1.0)]
+        self.assertEqual(P27.identiteter(list(kv), kv), (2, 0.5))
+        with self.assertRaisesRegex(SystemExit, "origin-maengderne"):
+            P27.identiteter(kv[:1], kv)
+        with self.assertRaisesRegex(SystemExit, "uenige labels"):
+            P27.identiteter([(1970, 1, 0.2, 0.0), (1970, 2, 0.3, 0.0)], kv)
+
+    def test_finalize6_skriver_uscorede_kun_fra_2027(self):
+        W, m, ud = koer_finalize6_2027(A2.midx(2026, 1))
+        us = W["uscorede"]
+        self.assertEqual(us, m["uscorede"])
+        self.assertEqual(us["spec_sha256"], P27.SPECS["4_maanedligt_fit_uscorede.md"])
+        self.assertEqual((us["maanedligt_fit"]["N_m"], us["maanedligt_fit"]["N_q"]), (800, 267))
+        start = json.loads((HERE / "diagnostik.json").read_text(encoding="utf-8"))["start_sensitivitet"]
+        for felt, navn in (("start_1953Q2", "1953Q2"), ("start_1960Q1", "1960Q1")):
+            self.assertEqual(us[felt]["w"], start[navn]["w"])            # samme fit som diagnostik.start_sensitivitet
+            self.assertEqual(us[felt]["n_obs"], start[navn]["n_obs"])
+        self.assertEqual(F6.manifest_hash(m), m["hash"])               # uden for indholds-hashen
+        self.assertIn("uscoret (RAADETS_2027 §3.3)", ud)
+        W0, m0, _ = koer_finalize6_2027(P27.IKRAFT)                     # foer ikrafttraeden: intet
+        self.assertNotIn("uscorede", W0)
+        self.assertNotIn("uscorede", m0)
+
+
+class TestRaad2027UscoredeHovedbog(unittest.TestCase):
+    """Spec 4 §3/§5/§6/§7: motor logger de tre uscorede kolonner under en 2027-kalibrering, en censureret raekke faar
+    en uscoret record, og UDFALD.csv's supplerende kolonne haandhaeves."""
+
+    @classmethod
+    def setUpClass(cls):
+        TestMotor.setUpClass.__func__(cls)
+        snap = C.RAW / "2026-09-19"
+        usrec = A2.load_usrec(snap); eps = A2.episodes_from_usrec(usrec); avail = A2.load_announcements(eps, usrec=usrec)
+        cls.us = P27.uscorede(snap, A2.build_dataset(snap, ["curve"]), eps, avail, usrec, A2.midx(2026, 9))
+
+    @classmethod
+    def tearDownClass(cls):
+        TestMotor.tearDownClass.__func__(cls)
+
+    _motor = TestMotor._motor
+    _scenario = TestMotor._scenario
+
+    def _med_uscorede(self, here):
+        W = json.loads((here / "weights.json").read_text(encoding="utf-8"))
+        W["uscorede"] = self.us
+        (here / "weights.json").write_text(json.dumps(W), encoding="utf-8")
+
+    def test_tre_uscorede_kolonner_og_jsonl_felter(self):
+        raw, here = self._scenario(y10=4.50, tb3=3.40)
+        self._med_uscorede(here)
+        ud = here.parent / "d.json"
+        out = self._motor(["--log", "--json", str(ud)], raw=raw, here=here)
+        forv = P27.p_uscorede(self.us, 4.50 - 3.40)
+        self.assertIn("Uscoret (RAADETS_2027 §3.3/§4; aldrig i dommen)", out)
+        r = M.laes_hovedbog(here.parent / "LOG.md")[-1]
+        self.assertEqual((r["P_maanedligt_fit"], r["P_1953Q2"], r["P_1960Q1"]),
+                         tuple(f"{forv[k]*100:.1f}%" for k in ("p_maanedligt_fit", "p_start_1953Q2", "p_start_1960Q1")))
+        linje = [ln for ln in (here.parent / "LOG.md").read_text(encoding="utf-8").splitlines() if ln.startswith("| 2")][-1]
+        self.assertEqual(linje.count("|"), 17)                                     # 16 celler
+        rec = json.loads((here.parent / "hovedbog.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+        for k, v in forv.items():
+            self.assertAlmostEqual(rec[k], v, places=6)
+        self.assertNotIn("uscoret_censur", rec)                                     # ikke censureret
+        d = json.loads(ud.read_text(encoding="utf-8"))
+        self.assertAlmostEqual(d["uscorede"]["p_maanedligt_fit"], forv["p_maanedligt_fit"], places=6)
+        self.assertNotEqual(d["p"], d["uscorede"]["p_maanedligt_fit"])              # P er fortsat kvartalsfittets
+
+    def test_uden_2027_kalibrering_skrives_intet_nyt(self):
+        raw, here = self._scenario(y10=4.50, tb3=3.40)
+        ud = here.parent / "d.json"
+        out = self._motor(["--log", "--json", str(ud)], raw=raw, here=here)
+        self.assertNotIn("Uscoret", out)
+        linje = [ln for ln in (here.parent / "LOG.md").read_text(encoding="utf-8").splitlines() if ln.startswith("| 2")][-1]
+        self.assertEqual(linje.count("|"), 14)                                     # 13 celler som i dag
+        rec = json.loads((here.parent / "hovedbog.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+        self.assertNotIn("p_maanedligt_fit", rec)
+        self.assertNotIn("uscorede", json.loads(ud.read_text(encoding="utf-8")))
+
+    def test_censureret_maaned_faar_uscoret_record(self):
+        """§10.4: en laesning inde i en annonceret (aaben) recession logges med dom 'censureret', scores ikke, men P og
+        de uscorede felter foeres i hovedbog.jsonl's 'uscoret_censur'."""
+        raw, here = self._scenario(y10=4.50, tb3=3.40)
+        self._med_uscorede(here)
+        snap = raw / self.today
+        u = (snap / "USREC.csv").read_text(encoding="utf-8").splitlines()
+        hoved, rk = u[0], [ln for ln in u[1:] if ln.strip()]
+        rk = rk[:-3] + [ln.split(",")[0] + ",1" for ln in rk[-3:]]               # aaben episode: de tre seneste maaneder
+        (snap / "USREC.csv").write_text(chr(10).join([hoved] + rk) + chr(10), encoding="utf-8")
+        onset = rk[-3].split(",")[0][:7]
+        oy, om = int(onset[:4]), int(onset[5:7])
+        top = f"{oy - (om == 1)}-{(om - 2) % 12 + 1:02d}"
+        sidst = rk[-1].split(",")[0][:7]
+        ann = f"{int(sidst[:4]) + (sidst[5:7] == '12')}-{int(sidst[5:7]) % 12 + 1:02d}-01"
+        tab = here / "nber_announcements.csv"
+        tab.write_text(tab.read_text(encoding="utf-8").rstrip(chr(10)) + chr(10) + f"peak_test,{top},{ann},test" + chr(10), encoding="utf-8")
+        W = json.loads((here / "weights.json").read_text(encoding="utf-8"))
+        W["announcement_table_sha256"], W["announcement_table_kanonisk"] = C.ann_sha256(tab), A2.tabel_hash(tab)
+        (here / "weights.json").write_text(json.dumps(W), encoding="utf-8")
+        out = self._motor(["--log"], raw=raw, here=here)
+        self.assertIn("CENSURERET", out)
+        r = M.laes_hovedbog(here.parent / "LOG.md")[-1]
+        self.assertEqual(r["dom"], "censureret")
+        rec = json.loads((here.parent / "hovedbog.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+        self.assertTrue(rec["censureret"])
+        uc = rec["uscoret_censur"]
+        self.assertAlmostEqual(uc["p"], rec["p"])
+        self.assertAlmostEqual(uc["p_maanedligt_fit"], rec["p_maanedligt_fit"])
+        self.assertEqual(uc["vindue"], rec["vindue"])
+        self.assertIn("RAADETS_2027 §10.4", uc["note"])
+
+    def test_udfald_tjek(self):
+        log = [dict(logget="2026-10-10", P="15.1%", dom="ikke skelnelig"), dict(logget="2027-11-12", P="40.0%", dom="censureret"),
+               dict(logget="2027-12 (ikke logget)", P="–", dom="")]
+        ok = [dict(raekke_logget="2026-10-10", Y="0", uscoret_censureret="nej"),
+              dict(raekke_logget="2027-11-12", Y="1", uscoret_censureret="ja")]
+        self.assertEqual(P27.udfald_tjek(log, ok, P27.UDFALD_KOLONNER), [])
+        for fejl_raekke, tekst in ((dict(raekke_logget="2026-11-11", Y="0", uscoret_censureret="nej"), "ingen logget raekke"),
+                                   (dict(raekke_logget="2026-10-10", Y="2", uscoret_censureret="nej"), "Y ="),
+                                   (dict(raekke_logget="2027-11-12", Y="0", uscoret_censureret="nej"), "forventet 'ja'"),
+                                   (dict(raekke_logget="2026-10-10", Y="0", uscoret_censureret="ja"), "forventet 'nej'"),
+                                   (dict(raekke_logget="2027-12", Y="0", uscoret_censureret="nej"), "ingen logget raekke")):
+            self.assertTrue(any(tekst in x for x in P27.udfald_tjek(log, [fejl_raekke], P27.UDFALD_KOLONNER)), tekst)
+        self.assertTrue(P27.udfald_tjek(log, [], ["raekke_logget", "Y", "afgjort_dato", "kilde", "note"]))
+
+    def test_de_committede_filer_er_konsistente(self):
+        """CI haandhaever §10.4's supplerende kolonne paa de rigtige filer (UDFALD.csv mod LOG.md)."""
+        import csv as _csv
+        with (HERE.parent / "UDFALD.csv").open(encoding="utf-8", newline="") as fh:
+            rd = _csv.DictReader(fh)
+            rk = list(rd)
+            kol = rd.fieldnames
+        self.assertEqual(P27.udfald_tjek(M.laes_hovedbog(HERE.parent / "LOG.md"), rk, kol), [])
+        hoved = [ln for ln in (HERE.parent / "LOG.md").read_text(encoding="utf-8").splitlines() if ln.startswith("| logget")][0]
+        self.assertTrue(hoved.rstrip().endswith("| P_maanedlig | P_maanedligt_fit | P_1953Q2 | P_1960Q1 |"))
+
+
 if __name__ == "__main__":
     unittest.main()
