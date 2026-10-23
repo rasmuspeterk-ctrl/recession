@@ -855,20 +855,20 @@
   "live_input": {
     "kilde": "daglig",
     "vindue": [
-      "2026-09-14",
-      "2026-10-13"
+      "2026-09-23",
+      "2026-10-22"
     ],
     "n_dage": 21,
-    "curve": 1.1181,
-    "y10": 5.15,
-    "tb3": 4.0319,
+    "curve": 1.1295,
+    "y10": 5.1924,
+    "tb3": 4.0629,
     "y10_seneste": [
-      "2026-10-13",
-      5.21
+      "2026-10-22",
+      4.96
     ],
     "tb3_seneste": [
-      "2026-10-13",
-      4.09
+      "2026-10-22",
+      4.04
     ],
     "maanedlig": {
       "curve": 1.0500000000000003,
@@ -879,14 +879,14 @@
     "p_maanedlig": 0.160963,
     "fed_funds": {
       "vaerdi": 3.88,
-      "dato": "2026-10-13",
+      "dato": "2026-10-22",
       "kilde": "DFF dagligt"
     },
     "sammensaetning": {
-      "front_2y_3m": 0.7552,
-      "bag_10y_2y": 0.3629,
+      "front_2y_3m": 0.7429,
+      "bag_10y_2y": 0.3867,
       "n_dage": 21,
-      "ntfs_approks": 0.9133
+      "ntfs_approks": 0.8857
     }
   },
   "trigger": "manuel/reparation (foerste kalibrering efter v5.0)",
@@ -907,8 +907,8 @@
   },
   "koersel": null,
   "rekalibrering_paakraevet": [],
-  "snapshot": "2026-10-15",
-  "snapshot_hash": "c14c62cbc1",
+  "snapshot": "2026-10-23",
+  "snapshot_hash": "a745c8b4ba",
   "model": "curve-only-logit",
   "label": "NBER-onset inden 4 kvartaler",
   "kalibreret": "2026-09-19",
@@ -918,21 +918,21 @@
   "wf_brier": 24.15,
   "wf_note": "fast lambda=1 (arvet fra v4); fuld-sti-valg mellem to modeller, ikke nested (G1.1/G1.2)",
   "skill_saetning": "Walk-forward-skill: oracle-fri, fast lambda=1: +20.4% (219 origins); orakel-censureret, fast lambda=1: +27.1%; nested lambda (orakel-censureret; oracle-fri udgave ikke beregnet): +18.3% — og 80 % styrke kraever stoerrelsesordenen 150 kalenderaars hovedbog; P(3 komplette cyklusblokke inden for 20 aar) = 0,25; naive tests forkaster en sand nulhypotese 36-53 % af gangene ved 5-20 aar.",
-  "p": 0.149408,
+  "p": 0.147537,
   "baand": [
-    0.102461,
-    0.212921
+    0.100998,
+    0.210833
   ],
   "basisrate": 0.1798,
   "baand_udelukker_basisrate": false,
   "ratio": null,
   "baand_fodnote": "Not a predictive interval; reflects weight sensitivity to episode composition",
-  "dom": "P er 14.9% mod basisraten 18.0%, men baandet [10.2-21.3%] indeholder basisraten: IKKE SKELNELIG FRA BASISRATEN.",
+  "dom": "P er 14.8% mod basisraten 18.0%, men baandet [10.1-21.1%] indeholder basisraten: IKKE SKELNELIG FRA BASISRATEN.",
   "dom_ord": "ikke skelnelig",
   "parret": {
     "baand": [
-      -0.063774,
-      -0.002335
+      -0.065463,
+      -0.004799
     ],
     "skelnelig": true,
     "enig_med_baandregel": false,
@@ -945,14 +945,14 @@
   "inputs": [
     {
       "navn": "Rentekurve 10y-3m",
-      "vaerdi": 1.1181,
-      "z": -0.222,
+      "vaerdi": 1.1295,
+      "z": -0.2121,
       "operationel": true
     },
     {
       "navn": "Realrente 10y-CPI",
-      "vaerdi": 1.4123,
-      "z": -0.1235,
+      "vaerdi": 1.4547,
+      "z": -0.1091,
       "operationel": false
     },
     {
@@ -969,8 +969,8 @@
     },
     {
       "navn": "CAPE-percentil (expanding)",
-      "vaerdi": 0.9267,
-      "z": 0.9829,
+      "vaerdi": 0.9251,
+      "z": 0.9771,
       "operationel": false
     }
   ],
@@ -986,7 +986,7 @@
     {
       "navn": "curve-only-logit (NY Fed-stil-bm.)",
       "wf": 27.05,
-      "live_p": 0.149408,
+      "live_p": 0.147537,
       "status": "OPERATIONEL",
       "panel": "fuld sti t.o.m. 2024Q1",
       "note": "fast lambda=1 (arvet fra v4); fuld-sti-valg mellem to modeller, ikke nested"
@@ -994,7 +994,7 @@
     {
       "navn": "fuldmodel (5 features)",
       "wf": 23.16,
-      "live_p": 0.066825,
+      "live_p": 0.065901,
       "status": "testet, ikke bestaaet mod benchmark (trin 6; genkoert v5.0.1)",
       "panel": "fuld sti t.o.m. 2024Q1"
     },
@@ -1022,7 +1022,7 @@
     {
       "navn": "v4-arv (teknisk label)",
       "wf": null,
-      "live_p": 0.037198,
+      "live_p": 0.036827,
       "status": "andet maal - arv",
       "panel": null
     },
@@ -1046,7 +1046,7 @@
     {
       "navn": "Kurven inverteret",
       "tilstand": "inaktiv",
-      "vaerdi": "+1.12pp",
+      "vaerdi": "+1.13pp",
       "klasse": "operationel feature"
     },
     {
@@ -1058,13 +1058,13 @@
     {
       "navn": "HY OAS > 600bp",
       "tilstand": "inaktiv",
-      "vaerdi": "316bp (2026-10-13)",
+      "vaerdi": "340bp (2026-10-22)",
       "klasse": "v4-flag/seed-taerskel 600bp; ineligible (historik 1997-, FRED leverer kun rullende 3 aar); svaerm-zone 350-450bp = eneste atlas-taerskel med 3+ kanaler (5)"
     },
     {
       "navn": "S&P dagsluk vs 52u-top < -20%",
       "tilstand": "inaktiv",
-      "vaerdi": "-1% (manuel, 2026-10-14)",
+      "vaerdi": "-2% (manuel, 2026-10-22)",
       "klasse": "fuldmodel-feature (kalibreringens dd i sektion 2)"
     },
     {
@@ -1082,13 +1082,13 @@
     {
       "navn": "Permits y/y",
       "tilstand": "kontekst",
-      "vaerdi": "1403 (2026-08); 12m +4.2%",
+      "vaerdi": "1400 (2026-09); 12m -3.0%",
       "klasse": "testet, ikke bestaaet (trin 4)"
     },
     {
       "navn": "Fortsatte ansoegninger / vikarer",
       "tilstand": "kontekst",
-      "vaerdi": "fortsatte 1.71M (2026-10-03); maanedssnit 2026-09 12m -11.0%; vikarer 2026-09 12m +0.6%",
+      "vaerdi": "fortsatte 1.73M (2026-10-10); maanedssnit 2026-09 12m -11.0%; vikarer 2026-09 12m +0.6%",
       "klasse": "utestet monitor (kontekst, F58) — ingen taerskel"
     },
     {
@@ -1106,7 +1106,7 @@
     {
       "navn": "Kurve-sti (P ved frosne vaegte)",
       "tilstand": "kontekst",
-      "vaerdi": "top 35.4% (2025-10), 12 mdr siden; nu 14.9% (-20.4pp fra top)",
+      "vaerdi": "top 35.4% (2025-10), 12 mdr siden; nu 14.8% (-20.6pp fra top)",
       "klasse": "beskrivende sti, ingen fremskrivning (R4/F11)"
     }
   ],
@@ -1114,19 +1114,19 @@
     {
       "navn": "CP-spaend 3m > 75bp i 2+ uger",
       "tilstand": "inaktiv",
-      "vaerdi": "-1bp (2026-10-13); >75bp 0/10 seneste dage; efter 2026-10-06: max -1bp (2026-10-13), 0/1 dage over",
+      "vaerdi": "0bp (2026-10-20); >75bp 0/10 seneste dage; efter 2026-10-06: max 5bp (2026-10-16), 0/3 dage over",
       "klasse": "svaerm-tripwire, 1-2 kanaler (funding); atlas-def. alle 10 seneste faelles handelsdage"
     },
     {
       "navn": "10Y > 5,25%",
       "tilstand": "inaktiv",
-      "vaerdi": "5.21% (2026-10-13) / KW TP +1.07pp (Kim-Wright, Fed Board, 10-09); efter 2026-10-08: max 5.24% (2026-10-09), 0/2 dage over",
+      "vaerdi": "4.96% (2026-10-22) / KW TP +0.99pp (Kim-Wright, Fed Board, 10-16); efter 2026-10-08: max 5.24% (2026-10-09), 0/9 dage over",
       "klasse": "1 kanal (fiskal); kanalens ANTAGNE trigger, ikke Q2-varsel; maaleregel: seneste daglige niveau"
     },
     {
       "navn": "Realkredit 30Y > 7,8%",
       "tilstand": "inaktiv",
-      "vaerdi": "7.40% (2026-10-08)",
+      "vaerdi": "7.32% (2026-10-22); efter 2026-10-08: max 7.40% (2026-10-15), 0/2 uger over",
       "klasse": "1 kanal (fiskal); kanalens antagne transmission, ikke Q2-varsel"
     }
   ],
@@ -1134,13 +1134,13 @@
     {
       "navn": "Marginlaan y/y > 40%",
       "tilstand": "inaktiv",
-      "vaerdi": "+37.2%",
+      "vaerdi": "+31.4%",
       "klasse": "svaerm (1 kanal)"
     },
     {
       "navn": "Permits < 1,40M + 3 mdr y/y neg.",
       "tilstand": "inaktiv",
-      "vaerdi": "1403 (2026-08); 12m +4.2%",
+      "vaerdi": "1400 (2026-09); 12m -3.0%",
       "klasse": "svaerm (1 kanal)"
     },
     {
@@ -1153,21 +1153,21 @@
   "market_conditions": [
     {
       "navn": "CAPE-percentil (expanding)",
-      "vaerdi": "92.7. pct (CAPE 41.38, 2026-10-14)"
+      "vaerdi": "92.5. pct (CAPE 40.58, 2026-10-22)"
     },
     {
       "navn": "Aktierisikopraemie 1/CAPE - y10",
-      "vaerdi": "-2.79pp"
+      "vaerdi": "-2.50pp"
     },
     {
       "navn": "Marginlaan y/y",
-      "vaerdi": "+37.2% (FINRA, datamaaned 2026-08)"
+      "vaerdi": "+31.4% (FINRA, datamaaned 2026-09)"
     }
   ],
   "pengepolitik": [
     {
       "navn": "Fed funds (effektiv)",
-      "vaerdi": "3.88% (2026-10-13, DFF dagligt)"
+      "vaerdi": "3.88% (2026-10-22, DFF dagligt)"
     },
     {
       "navn": "Realt kontantafkast FF - PCE",
@@ -1175,7 +1175,7 @@
     },
     {
       "navn": "3m-bill minus Fed funds",
-      "vaerdi": "+21bp (2026-10-13, diskonto)"
+      "vaerdi": "+16bp (2026-10-22, diskonto)"
     },
     {
       "navn": "PCE-infl. 3m/6m/12m ann.",
@@ -1187,19 +1187,19 @@
     },
     {
       "navn": "10y = term-praemie + forventet",
-      "vaerdi": "5.24 = 1.07 + 4.17 (2026-10-09, Kim-Wright)"
+      "vaerdi": "5.09 = 0.99 + 4.10 (2026-10-16, Kim-Wright)"
     },
     {
       "navn": "Kurve = front (2y-3m) + bag (10y-2y)",
-      "vaerdi": "+1.12 = +0.76 + +0.36pp (trailing, 21 dage)"
+      "vaerdi": "+1.13 = +0.74 + +0.39pp (trailing, 21 dage)"
     },
     {
       "navn": "Near-term forward spread (approks.)",
-      "vaerdi": "+0.91pp (2*2y - 1y - 3m; negativ = lempelser prissat)"
+      "vaerdi": "+0.89pp (2*2y - 1y - 3m; negativ = lempelser prissat)"
     },
     {
       "navn": "WTI y/y (regimekontekst, R2)",
-      "vaerdi": "$96.24 (2026-10-06); maanedssnit 2026-09 y/y +52% — nettoproducent; ikke feature, ikke tripwire"
+      "vaerdi": "$107.89 (2026-10-20); maanedssnit 2026-09 y/y +52% — nettoproducent; ikke feature, ikke tripwire"
     }
   ],
   "kredit": [
@@ -1209,7 +1209,7 @@
     },
     {
       "navn": "Baa minus 10Y (Moody's)",
-      "vaerdi": "1.46pp (2026-10-13)"
+      "vaerdi": "1.46pp (2026-10-22)"
     }
   ],
   "nber_indikatorer": [
@@ -1232,8 +1232,8 @@
     {
       "serie": "INDPRO",
       "navn": "Industriproduktion",
-      "maaned": "2026-08",
-      "yoy": 1.42,
+      "maaned": "2026-09",
+      "yoy": 2.25,
       "fra_12m_top": 0.0,
       "note": ""
     },
@@ -1264,17 +1264,17 @@
   ],
   "manual_friskhed": {
     "cape": {
-      "dato": "2026-10-14",
+      "dato": "2026-10-22",
       "alder_dage": 1,
       "stale": false
     },
     "spx_vs_hi": {
-      "dato": "2026-10-14",
+      "dato": "2026-10-22",
       "alder_dage": 1,
       "stale": false
     },
     "margin_yoy": {
-      "periode": "2026-08",
+      "periode": "2026-09",
       "forventet_nyeste": "2026-08",
       "foraeldet": false
     }
@@ -1331,30 +1331,30 @@
         0.161
       ],
       [
-        "trailing 2026-10-13",
-        0.1494
+        "trailing 2026-10-22",
+        0.1475
       ]
     ],
     "top": "2025-10",
     "p_top": 0.3538,
     "maaneder_siden_top": 12,
-    "fald_fra_top_pp": 20.4,
+    "fald_fra_top_pp": 20.6,
     "note": "beskrivende — ingen fremskrivning, ingen indflydelse paa P (DASHBOARD-BRIEF regel 9)"
   },
   "maanedens_aendring": {
     "fra": "2026-10-10",
-    "dP_pp": -0.16,
-    "dK_pp": 0.0081,
-    "d10Y_pp": 0.0391,
-    "d3m_pp": 0.0269,
-    "bidrag_10Y_pp": -0.64,
-    "bidrag_3m_pp": 0.44,
+    "dP_pp": -0.35,
+    "dK_pp": 0.0195,
+    "d10Y_pp": 0.0815,
+    "d3m_pp": 0.0579,
+    "bidrag_10Y_pp": -1.31,
+    "bidrag_3m_pp": 0.92,
     "maerke": "lang-ende-drevet (bear steepening)",
     "input_foer": "daglig",
-    "dTP_pp": -0.0118,
+    "dTP_pp": -0.099,
     "dTP_datoer": [
       "2026-10-02",
-      "2026-10-09"
+      "2026-10-16"
     ]
   },
   "advarsler": {
@@ -1362,7 +1362,7 @@
       "p": 0.9383,
       "origin": "2023Q2"
     },
-    "sti_advarsel": "Modellen laeser kurvens NIVEAU; +1.12pp behandles som +1.12pp uden forhistorie. Seneste inversion: sluttede 2024-11 (22 mdr siden), dybde -1.57pp. Historisk (diagnostik): P var under sin top ved sidste origin foer onset i 6/8 onsets — median 21pp fald, median 9 mdr fra top til onset. 2007Q4: P 16.7% [10.4-27.4%], ikke skelnelig — onset kom maaneden efter. Balance-sheet-drevne recessioner uden frisk inversion er usynlige for modellen.",
+    "sti_advarsel": "Modellen laeser kurvens NIVEAU; +1.13pp behandles som +1.13pp uden forhistorie. Seneste inversion: sluttede 2024-11 (22 mdr siden), dybde -1.57pp. Historisk (diagnostik): P var under sin top ved sidste origin foer onset i 6/8 onsets — median 21pp fald, median 9 mdr fra top til onset. 2007Q4: P 16.7% [10.4-27.4%], ikke skelnelig — onset kom maaneden efter. Balance-sheet-drevne recessioner uden frisk inversion er usynlige for modellen.",
     "lang_ende": "En stigning i den lange ende saenker P mekanisk (ca. 1.6pp pr. 10bp ved nuvaerende kurve); atlassets kanal 5 laeser samme bevaegelse som risiko. Dommen er uaendret.",
     "eksogen": "Eksogene chok kan ikke forudsiges."
   },
