@@ -10,7 +10,7 @@ blev til, ikke hvordan den koeres i dag.
 
 | Fil | Rolle |
 |---|---|
-| `fetch.py` | Henter 37 serier noeglefrit (36 FRED + Fed Boards EBP-CSV) parallelt (~30 s), skriver byte-eksakt hashet snapshot i `data/raw/<dato>/`, bygger rygraden, printer diff mod forrige snapshot (ny obs / aendret vaerdi / revideret historik / rullende vindue) |
+| `fetch.py` | Henter 53 serier noeglefrit (52 FRED + Fed Boards EBP-CSV; 16 af dem kontekst-protokollen 2026-10-24) parallelt (~30 s), skriver byte-eksakt hashet snapshot i `data/raw/<dato>/`, bygger rygraden, printer diff mod forrige snapshot (ny obs / aendret vaerdi / revideret historik / rullende vindue) |
 | `spine.py` | Rygraden (komposit Shiller + FRED + multpl) og dens guards — og **seriernes rolletabel** `SERIER` (rolle P/refit/rygrad/kontekst + licens). Kun P- og refit-serier nedlaegger veto |
 | `motor.py` | Maanedlig aflaesning og hovedbogslogning (`--log` kun i logvinduet), `--json` til dashboardet (reproducerbar) |
 | `finalize6.py` | Rekalibrering — KUN ved en §3.2-trigger (september-snapshot eller ny raekke i `nber_announcements.csv`); ellers kraeves `--reparation "<begrundelse>"`. En NY kalibrering kraever at VERSION bumpes (§3.3). `--legacy` = legacy-replay |
@@ -18,7 +18,7 @@ blev til, ikke hvordan den koeres i dag.
 | `calibrate.py` | Hjaelpefunktioner for hele kaeden (read_fred, live_kurve, fit ...). Som script HISTORISK (trin 1): skriver `calibrate_resultat.json`; `weights.json` kun med `--overskriv` (bevidst) |
 | `ablation2_nber.py` | NBER-labelen, annonceringstabellen, USREC-krydstjekket, eligibility og den forklarede origin-audit. Som script (`--promote`) HISTORISK — koer ikke i drift |
 | `ablation3/4/7/8_*.py`, `audit5_alfred.py` | Historiske, afsluttede tests (frekvens, features, curve+cape, AWHMAN, ALFRED) — koer ikke i drift |
-| `test_v5.py` | 203 tests, stdlib unittest, ingen netvaerk (~4 min) |
+| `test_v5.py` | 209 tests, stdlib unittest, ingen netvaerk (~4 min) |
 | `nber_announcements.csv` | NBER's annonceringsdatoer (top/bund) — se *NBER-vedligehold* nedenfor |
 | `manual/` | `manual.json` (S&P vs 52u-top, live-CAPE, marginlaan y/y + deres datoer), `shiller_yale_2023-09.csv` (uforanderlig Yale-kopi), `seam_check_2023.json`, evt. `outliers_accepteret.json` |
 | `kalibreringer/` | Kalibreringsmanifester (v5.0.1 §3.3): et pr. kalibrering, index.json, legacy_mapping.json |
@@ -34,7 +34,7 @@ python fetch.py                  # hent + rygrad + guards + diff-tjek med oejnen
 # opdater manual/manual.json: spx_vs_hi + spx_dato, cape + cape_dato, margin_yoy + margin_periode
 python fetch.py                  # igen, saa snapshottet baerer de manuelle tal
 python motor.py --log --json     # aflaesning, prospektiv raekke i ../LOG.md + ../hovedbog.jsonl, dashboard.json
-python -m unittest test_v5       # 203 tests
+python -m unittest test_v5       # 209 tests
 ```
 Hovedbogen (`../LOG.md`) er den eneste fuldt prospektive test: een raekke pr. maaned, skrevet FOER
 udfaldet kendes; historiske raekker roeres aldrig. Den beskytter mod look-ahead, men er statistisk
@@ -717,7 +717,11 @@ andet end "vurderet" (monitor-kandidat, aldrig koert mod NBER-labelen).
 | WTI (DCOILWTICO) | **tilfoejet som kontekst** | Regime (atlassets kanal 6); USA er nettoproducent | ja |
 | Fortsatte ansoegninger, vikarer | **tilfoejet som kontekst** (egen linje, utestet monitor) | Arbejdsmarkedskanalen | ja |
 | HOUST (boligbyggeri) | fravalgt (vurderet som monitor, ikke testet) | Overlapper PERMIT (testet, afvist i trin 4) | ja |
-| DRCCLACBS (kortrestancer) | fravalgt (vurderet, ikke testet) | Kvartalsvis og sen; husholdningskredit ses i forbrug/indkomst-linjerne | ja |
+| DRCCLACBS (kortrestancer) | **genaabnet og tilfoejet som kontekst 2026-10-24** (Rasmus' ordre = det nye argument) | Kvartalsvis og sen (forbeholdet staar); vist sammen med CORCCACBS, REVOLSL og H.8-kortlaan | ja |
+| Raavarer (Brent, Henry Hub, benzin, diesel, PPI goedning/kvaelstof/korn/ikke-jernholdige metaller) | **tilfoejet som kontekst 2026-10-24** | Energi-/goedningschokket 2026 (kontekst-protokollen) | ja |
+| Kreditkort (REVOLSL, CCLACBW027SBOG, CORCCACBS) | **tilfoejet som kontekst 2026-10-24** | Husholdningernes kreditkanal (kontekst-protokollen) | ja |
+| Bolig (FHFA HPIPONM226S, MSPUS, MSACSR, DRSFRMACBS) | **tilfoejet som kontekst 2026-10-24** | Boligkanalen (kontekst-protokollen); realkreditrenten var der i forvejen | ja |
+| S&P/Case-Shiller (CSUSHPINSA) | fravalgt (licens) | "Copyrighted: Pre-Approval Required" — FHFA's indeks er den officielle, frie huspris | — |
 | DTWEXBGS (dollarindeks) | fravalgt (vurderet, ikke testet) | Ingen recessionsledetid i USA-data; regimekontekst daekkes af WTI | ja |
 | SOFR minus IORB (funding) | fravalgt (vurderet, ikke testet) | Historik fra 2018; funding ses i CP-spaendet | ja |
 | OECD CLI USA (USALOLITOAASTSAM), USSLIND | fravalgt (vurderet, ikke testet) | Kompositindeks der indeholder kurven; USSLIND er indstillet | ja |
@@ -806,3 +810,51 @@ P, baand, vaegte (manifest 72c3371d), hovedbogens raekker og dashboard.json er u
 `python finalize6.py` (gate, L_R-audit, uscorede fit); `python diagnostik.py` (parret maanedlig diagnostik, nested λ
 oracle-fri); `python replay2027.py` (replay + styrkeklausul); `python motor.py --log --json` i logvinduet; commit og push.
 Den parrede diagnostik og replayen publiceres uanset udfald, og F35-forudsigelsen ovenfor sammenlignes.
+
+## Kontekst-protokollen 2026-10-24: raavarer, kreditkort og bolig (USA) + rettelser fra mellemlaesningen 2026-10-23
+
+Paa Rasmus' ordre ("faa raavarerne med som en del af protokollen samt kreditkortgaeld og boligpriserne,
+bare i USA"). Protokollen er: serierne hentes ved HVER `fetch.py` (byte-hashet i snapshottet som alle andre),
+motor printer dem i sektion 5 i tre faste blokke, dashboard.json baerer dem (`kontekst_usa`), og fra naeste
+logfoerte raekke staar de i raekkens fulde record i `../hovedbog.jsonl` (`kontekst_usa`, uscoret og
+fremadrettet; LOG.md's kolonner og historiske raekker er uroerte). Tabellen er `spine.KONTEKST_BLOKKE`.
+
+**Reglerne (de samme som for al anden kontekst):** ingen indflydelse paa P, baandet, dommen eller
+hovedbogens antaendingskolonne; ingen taerskler (en taerskel valgt efter at have set 2026-tallene ville vaere
+post hoc); ingen taellinger; en fejlet serie nedlaegger aldrig veto (rolle `kontekst`). Feature-soegningen er
+lukket: skal en raavare, kreditkortgaeld eller boligpriser ind i P, kraever det ny oekonomisk begrundelse,
+raadsmandat og en forseglet spec pushet foer koersel (RAADETS_V501 §6, RAADETS_2027 §5).
+
+| Blok | Serie | Kilde (licens) | Hvad linjen viser |
+|---|---|---|---|
+| Raavarer | DCOILWTICO, DCOILBRENTEU, DHHNGSP | EIA (public domain) | spot, dato, y/y; WTI ogsaa 5-dages median, maanedssnittets y/y og udloebsflag |
+| Raavarer | GASREGW, GASDESW | EIA (public domain) | US benzin/diesel detail, ugentlig, y/y |
+| Raavarer | WPU0652, WPU065201, WPU012, WPU102 | BLS (public domain) | PPI goedningsmaterialer, kvaelstofgoedning, korn, ikke-jernholdige metaller; y/y |
+| Kreditkort | REVOLSL, CCLACBW027SBOG | Fed Board G.19 / H.8 (public domain) | revolverende forbrugerkredit (mia. USD), kreditkortlaan i banker (ugentlig); y/y |
+| Kreditkort | DRCCLACBS, CORCCACBS | Fed Board (public domain) | restance- og afskrivningsrate, kvartal; aendring i pp |
+| Bolig | HPIPONM226S | FHFA (public domain) | purchase-only huspris-indeks, SA, maanedlig; y/y |
+| Bolig | MSPUS, MSACSR | Census/HUD (public domain) | median salgspris (kvartal), udbud af nye huse i maaneder |
+| Bolig | DRSFRMACBS, MORTGAGE30US | Fed Board (pd) / Freddie Mac (citation) | restancer paa enfamilie-realkredit; 30-aars realkreditrente |
+
+Licensmaerkerne er tjekket paa FRED's seriesider 2026-10-24. S&P/Case-Shiller er "Pre-Approval Required" og
+bruges ikke; ingen af de nye serier er licensbegraensede, saa de committes med snapshottet og CI's
+dashboard-replay er uafhaengig af lokale filer.
+
+**Rettelser fra mellemlaesningen 2026-10-23** (ingen aendrer P, vaegte eller manifest):
+- **WTI paa udloebsdagen.** EIA's spot den 2026-10-20 (107,89) var dagen, hvor november-kontrakten
+  udloeb; december-futures laa omkring 97. WTI-linjen er flyttet fra pengepolitik-blokken til
+  raavare-blokken og baerer nu 5-dages median, maanedssnittets y/y (den robuste) og et flag, naar den
+  seneste observation ligger paa eller lige foer CL-kontraktens sidste handelsdag (`motor.cl_udloebsdag`,
+  CME-reglen; helligdage ignoreres).
+- **Spot-kurve.** Live-inputtet er en trailing maaned (F29, ratificeret i RAADETS_2027 §10.1), og det
+  halter, naar kurven flytter sig hurtigt: 2026-10-22 var trailing +1,13pp, spot +0,92pp (P ved samme
+  vaegte 18,5 % mod 14,8 %). Motor printer nu spot-kurven og P ved samme vaegte som KONTEKST under P
+  (`spot_kurve` i dashboard.json og hovedbog.jsonl). Den er ikke P og indgaar ikke i dommen.
+- **Krydstjek-benchmark.** Estrella-Mishkin-probitten med NY Fed's publicerede koefficienter beregnes paa
+  samme trailing vindue (DGS10 - DGS3MO) og staar i benchmark-tabellen som "andet maal" (i recession om
+  12 mdr). Den er BEREGNET her og er ikke NY Fed's publicerede tal.
+- **Sikker snapshot-udskiftning (`fetch.skift_paa_plads`).** Den 2026-10-23 stod en terminal i dagens
+  snapshot-mappe; fetch toemte den gamle mappe med rmtree, rename fejlede (Windows-laas), og motor faldt
+  tilbage til snapshottet fra 2026-10-15. Nu omdoebes det gamle snapshot foerst til `<dato>.gammel`; kan
+  det ikke flyttes, er intet roert, det nye ligger komplet i `<dato>.ny`, og fetch stopper hoejlydt.
+

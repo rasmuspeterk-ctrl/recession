@@ -365,6 +365,11 @@ eksempler, ikke den aktuelle læsning. Feltrækkefølgen er motorens.
   (margin, permits og realt kontantafkast; det sidste er et v4-flag). Vises under market
   conditions med firewall-mærkat og tælles aldrig.
 - `market_conditions[]`, `pengepolitik[]` og `kredit[]` er `{navn, vaerdi}`-kontekst.
+- `kontekst_usa` (kontekst-protokollen 2026-10-24): `{raavarer, kreditkort, bolig}`, hver `{titel, linjer[]}` med
+  linjer `{serie, navn, dato, vaerdi, enhed, y_y, y_y_enhed ("%" | "pp"), tekst}`. Vis `tekst` ordret som kontekst,
+  aldrig farvekodet, aldrig talt sammen, aldrig ved P. WTI's `tekst` kan baere et udloebsflag; gengiv det.
+- `spot_kurve` `{dato, kurve, p}`: kurven paa seneste handelsdag og P ved samme vaegte. Det er IKKE P (P bruger
+  trailing maaned); vis den i lille tekst under P med ordene "kontekst, ikke P".
   `kredit` (EBP, Baa−10Y) kan være tom.
 - `nber_indikatorer[]`: `{serie, navn, maaned, yoy, fra_12m_top, note}`, NBER-komiteens egne
   coincident-serier. De har ingen tærskler, tælles ikke og er en anden disciplin end

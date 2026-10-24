@@ -113,6 +113,34 @@ def snapshot_complete(d):
     except ValueError:
         return False
 
+def skift_paa_plads(ny, final):
+    """Flyt et komplet <dato>.ny paa plads som <dato> (2026-10-24). Det gamle dagssnapshot OMDOEBES foerst til
+    <dato>.gammel og slettes foerst, naar det nye staar paa plads. Kan det gamle ikke flyttes (paa Windows fx fordi
+    en terminal eller et program har mappen som arbejdsmappe), er INTET roert: det gamle snapshot er intakt, det nye
+    ligger komplet i <dato>.ny, og fetch stopper hoejlydt. Foer blev det gamle toemt med rmtree, rename fejlede, og
+    motor faldt tilbage til et aeldre snapshot (mellemlaesningen 2026-10-23)."""
+    gammel = final.with_name(final.name + ".gammel")
+    if gammel.exists():
+        shutil.rmtree(gammel)
+    if final.exists():
+        try:
+            final.rename(gammel)
+        except OSError as e:
+            sys.exit(f"FEJL: kan ikke flytte {final.name} (laast? luk terminaler/programmer, der staar i mappen): {e}\n"
+                     f"Det gamle snapshot er uroert; det nye, komplette ligger i {ny.name}. Koer fetch.py igen.")
+    try:
+        ny.rename(final)
+    except OSError as e:
+        if gammel.exists() and not final.exists():
+            gammel.rename(final)              # rul tilbage: det gamle snapshot paa plads igen
+        sys.exit(f"FEJL: kan ikke flytte {ny.name} paa plads: {e}\nDet gamle snapshot er genetableret. Koer fetch.py igen.")
+    if gammel.exists():
+        try:
+            shutil.rmtree(gammel)
+        except OSError as e:
+            print(f"ADVARSEL: {gammel.name} kunne ikke slettes ({e}); det ignoreres af motor/calibrate — slet den manuelt.")
+
+
 def last_snapshot_before(today_dir):
     """Diff-baseline = nyeste KOMPLETTE snapshot (samme valg som calibrate/motor), ikke blot nyeste mappe."""
     if not RAW.exists():
@@ -488,9 +516,7 @@ def main():
         print(f"\nFEJLEDE: {', '.join(kritiske)} — forsoeget er gemt UKOMPLET som {kv.name} "
               f"(ignoreres af calibrate/motor); et evt. eksisterende {today}-snapshot er uroert. Koer fetch.py igen.")
         sys.exit(1)
-    if final_dir.exists():
-        shutil.rmtree(final_dir)              # dagens tidligere snapshot erstattes foerst NU — af et komplet
-    outdir.rename(final_dir)
+    skift_paa_plads(outdir, final_dir)       # dagens tidligere snapshot erstattes foerst NU — af et komplet
     if acc_ny is not None:                    # F31: kun et KOMPLET snapshot kan acceptere en outlier
         (MANUAL / OUTLIERS_ACC).write_text(json.dumps(acc_ny, indent=1, ensure_ascii=False, sort_keys=True) + chr(10),
                                            encoding="utf-8")

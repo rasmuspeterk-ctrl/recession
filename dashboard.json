@@ -907,8 +907,8 @@
   },
   "koersel": null,
   "rekalibrering_paakraevet": [],
-  "snapshot": "2026-10-23",
-  "snapshot_hash": "a745c8b4ba",
+  "snapshot": "2026-10-24",
+  "snapshot_hash": "cb57475e13",
   "model": "curve-only-logit",
   "label": "NBER-onset inden 4 kvartaler",
   "kalibreret": "2026-09-19",
@@ -1040,6 +1040,14 @@
       "live_p": 0.0062,
       "status": "coincident, publiceringslag - anden disciplin",
       "panel": null
+    },
+    {
+      "navn": "Estrella-Mishkin-probit (NY Fed-koef.)",
+      "wf": null,
+      "live_p": 0.127504,
+      "status": "andet maal: i recession om 12 mdr; beregnet, ikke NY Fed's publicerede tal",
+      "panel": null,
+      "spread": 0.9557
     }
   ],
   "monitors": [
@@ -1196,10 +1204,6 @@
     {
       "navn": "Near-term forward spread (approks.)",
       "vaerdi": "+0.89pp (2*2y - 1y - 3m; negativ = lempelser prissat)"
-    },
-    {
-      "navn": "WTI y/y (regimekontekst, R2)",
-      "vaerdi": "$107.89 (2026-10-20); maanedssnit 2026-09 y/y +52% — nettoproducent; ikke feature, ikke tripwire"
     }
   ],
   "kredit": [
@@ -1262,15 +1266,217 @@
       "note": ""
     }
   ],
+  "kontekst_usa": {
+    "raavarer": {
+      "titel": "RAAVARER (USA-relevante)",
+      "linjer": [
+        {
+          "serie": "DCOILWTICO",
+          "navn": "WTI spot (EIA)",
+          "dato": "2026-10-20",
+          "vaerdi": 107.89,
+          "enhed": "$/bbl",
+          "y_y": 84.933,
+          "y_y_enhed": "%",
+          "tekst": "$107.89/bbl (2026-10-20); y/y +84.9%; 5-dages median $107.89; maanedssnit 2026-09 y/y +52%; omkring udloeb af front-kontrakten (CL, sidste handelsdag 2026-10-20): spot kan afvige kraftigt fra front-futures"
+        },
+        {
+          "serie": "DCOILBRENTEU",
+          "navn": "Brent spot (EIA)",
+          "dato": "2026-10-20",
+          "vaerdi": 115.22,
+          "enhed": "$/bbl",
+          "y_y": 89.788,
+          "y_y_enhed": "%",
+          "tekst": "$115.22/bbl (2026-10-20); y/y +89.8%"
+        },
+        {
+          "serie": "DHHNGSP",
+          "navn": "Henry Hub naturgas (EIA)",
+          "dato": "2026-10-20",
+          "vaerdi": 3.1,
+          "enhed": "$/MMBtu",
+          "y_y": 3.679,
+          "y_y_enhed": "%",
+          "tekst": "$3.10/MMBtu (2026-10-20); y/y +3.7%"
+        },
+        {
+          "serie": "GASREGW",
+          "navn": "Benzin, regular, detail (EIA)",
+          "dato": "2026-10-19",
+          "vaerdi": 4.284,
+          "enhed": "$/gal",
+          "y_y": 39.954,
+          "y_y_enhed": "%",
+          "tekst": "$4.28/gal (2026-10-19); y/y +40.0%"
+        },
+        {
+          "serie": "GASDESW",
+          "navn": "Diesel, detail (EIA)",
+          "dato": "2026-10-19",
+          "vaerdi": 6.276,
+          "enhed": "$/gal",
+          "y_y": 71.241,
+          "y_y_enhed": "%",
+          "tekst": "$6.28/gal (2026-10-19); y/y +71.2%"
+        },
+        {
+          "serie": "WPU0652",
+          "navn": "PPI goedningsmaterialer (BLS)",
+          "dato": "2026-09",
+          "vaerdi": 409.172,
+          "enhed": "(1982=100)",
+          "y_y": 11.566,
+          "y_y_enhed": "%",
+          "tekst": "409.17 (1982=100) (2026-09); y/y +11.6%"
+        },
+        {
+          "serie": "WPU065201",
+          "navn": "PPI kvaelstofgoedning (BLS)",
+          "dato": "2026-09",
+          "vaerdi": 455.699,
+          "enhed": "(1982=100)",
+          "y_y": 20.675,
+          "y_y_enhed": "%",
+          "tekst": "455.70 (1982=100) (2026-09); y/y +20.7%"
+        },
+        {
+          "serie": "WPU012",
+          "navn": "PPI korn (BLS)",
+          "dato": "2026-09",
+          "vaerdi": 203.861,
+          "enhed": "(1982=100)",
+          "y_y": 31.594,
+          "y_y_enhed": "%",
+          "tekst": "203.86 (1982=100) (2026-09); y/y +31.6%"
+        },
+        {
+          "serie": "WPU102",
+          "navn": "PPI ikke-jernholdige metaller (BLS)",
+          "dato": "2026-09",
+          "vaerdi": 535.047,
+          "enhed": "(1982=100)",
+          "y_y": 33.614,
+          "y_y_enhed": "%",
+          "tekst": "535.05 (1982=100) (2026-09); y/y +33.6%"
+        }
+      ]
+    },
+    "kreditkort": {
+      "titel": "KREDITKORT & FORBRUGERKREDIT (USA)",
+      "linjer": [
+        {
+          "serie": "REVOLSL",
+          "navn": "Revolverende forbrugerkredit (G.19)",
+          "dato": "2026-08",
+          "vaerdi": 1352.414,
+          "enhed": "$ mia.",
+          "y_y": 3.371,
+          "y_y_enhed": "%",
+          "tekst": "$1,352 mia. (2026-08); y/y +3.4%"
+        },
+        {
+          "serie": "CCLACBW027SBOG",
+          "navn": "Kreditkortlaan i banker (H.8)",
+          "dato": "2026-10-14",
+          "vaerdi": 1105.8543,
+          "enhed": "$ mia.",
+          "y_y": 4.841,
+          "y_y_enhed": "%",
+          "tekst": "$1,106 mia. (2026-10-14); y/y +4.8%"
+        },
+        {
+          "serie": "DRCCLACBS",
+          "navn": "Restancer kreditkort (30+ dage)",
+          "dato": "2026Q2",
+          "vaerdi": 2.85,
+          "enhed": "%",
+          "y_y": -0.19,
+          "y_y_enhed": "pp",
+          "tekst": "2.85% (2026Q2); y/y -0.19pp"
+        },
+        {
+          "serie": "CORCCACBS",
+          "navn": "Afskrivninger kreditkort",
+          "dato": "2026Q2",
+          "vaerdi": 3.82,
+          "enhed": "%",
+          "y_y": -0.37,
+          "y_y_enhed": "pp",
+          "tekst": "3.82% (2026Q2); y/y -0.37pp"
+        }
+      ]
+    },
+    "bolig": {
+      "titel": "BOLIG (USA)",
+      "linjer": [
+        {
+          "serie": "HPIPONM226S",
+          "navn": "FHFA huspriser (purchase-only, SA)",
+          "dato": "2026-07",
+          "vaerdi": 443.52,
+          "enhed": "(1991=100)",
+          "y_y": 2.572,
+          "y_y_enhed": "%",
+          "tekst": "443.52 (1991=100) (2026-07); y/y +2.6%"
+        },
+        {
+          "serie": "MSPUS",
+          "navn": "Median salgspris, solgte huse",
+          "dato": "2026Q2",
+          "vaerdi": 410700.0,
+          "enhed": "$",
+          "y_y": -1.298,
+          "y_y_enhed": "%",
+          "tekst": "$410,700 (2026Q2); y/y -1.3%"
+        },
+        {
+          "serie": "MSACSR",
+          "navn": "Udbud af nye huse",
+          "dato": "2026-08",
+          "vaerdi": 8.5,
+          "enhed": "mdr.",
+          "y_y": 0.0,
+          "y_y_enhed": "%",
+          "tekst": "8.50 mdr. (2026-08); y/y +0.0%"
+        },
+        {
+          "serie": "DRSFRMACBS",
+          "navn": "Restancer enfamilie-realkredit",
+          "dato": "2026Q2",
+          "vaerdi": 1.86,
+          "enhed": "%",
+          "y_y": 0.08,
+          "y_y_enhed": "pp",
+          "tekst": "1.86% (2026Q2); y/y +0.08pp"
+        },
+        {
+          "serie": "MORTGAGE30US",
+          "navn": "30-aars realkreditrente (Freddie Mac)",
+          "dato": "2026-10-22",
+          "vaerdi": 7.32,
+          "enhed": "%",
+          "y_y": 1.05,
+          "y_y_enhed": "pp",
+          "tekst": "7.32% (2026-10-22); y/y +1.05pp"
+        }
+      ]
+    }
+  },
+  "spot_kurve": {
+    "dato": "2026-10-22",
+    "kurve": 0.92,
+    "p": 0.185011
+  },
   "manual_friskhed": {
     "cape": {
       "dato": "2026-10-22",
-      "alder_dage": 1,
+      "alder_dage": 2,
       "stale": false
     },
     "spx_vs_hi": {
       "dato": "2026-10-22",
-      "alder_dage": 1,
+      "alder_dage": 2,
       "stale": false
     },
     "margin_yoy": {

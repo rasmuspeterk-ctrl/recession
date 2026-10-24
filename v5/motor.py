@@ -366,6 +366,112 @@ def fuld_maaned(rows, min_n):
     return ks[-1] if n[ks[-1]] >= min_n or len(ks) == 1 else ks[-2]
 
 
+def cl_udloebsdag(aar, maaned):
+    """Sidste handelsdag for NYMEX WTI-kontrakten (CL), der udloeber i (aar, maaned): 3 handelsdage foer den 25.;
+    er den 25. ikke en hverdag, 3 handelsdage foer hverdagen foer den 25. (CME-reglen). Helligdage ignoreres og kan
+    flytte datoen en dag. Paa og lige foer denne dag kan EIA's spotpris (Cushing) afvige kraftigt fra front-futures
+    (2026-10-20: spot 107,89 mod december-kontrakten ca. 97)."""
+    d = date(aar, maaned, 25)
+    while d.weekday() >= 5:
+        d -= timedelta(days=1)
+    n = 0
+    while n < 3:
+        d -= timedelta(days=1)
+        if d.weekday() < 5:
+            n += 1
+    return d
+
+
+def spot_kurve(snap, op):
+    """Kurven paa den seneste faelles handelsdag (DGS10 - DTB3) og P ved driftens frosne vaegte (2026-10-24).
+    KONTEKST, ikke P: P maales paa en trailing maaned (F29, ratificeret i RAADETS_2027 §10.1). Linjen viser, hvor
+    naeste raekkes input bevaeger sig, naar kurven flytter sig hurtigt (2026-10-22: trailing +1,13 mod spot +0,92)."""
+    if op["features"] != ["curve"]:
+        return None
+    a, b = dict(C.read_fred_daily(snap, "DGS10") or []), dict(C.read_fred_daily(snap, "DTB3") or [])
+    faelles = sorted(set(a) & set(b))
+    if not faelles:
+        return None
+    d = faelles[-1]
+    k = a[d] - b[d]
+    return dict(dato=d, kurve=round(k, 4), p=round(float(p_of(dict(curve=k), op["features"], op["mu"], op["sd"], op["w"])), 6))
+
+
+def em_probit(snap, vindue):
+    """Benchmark: Estrella-Mishkin-probit med NY Fed's publicerede koefficienter, P(recession 12 mdr frem) =
+    Phi(-0.5333 - 0.6330 * spread), paa samme trailing vindue som live-inputtet, med DGS10 - DGS3MO (obligations-
+    aekvivalent, som NY Fed bruger). Andet maal end P (i recession om 12 mdr, ikke onset inden 12 mdr), og BEREGNET
+    her, ikke NY Fed's publicerede tal (NY Fed bruger maanedssnit)."""
+    a, c = dict(C.read_fred_daily(snap, "DGS10") or []), dict(C.read_fred_daily(snap, "DGS3MO") or [])
+    vin = [d for d in sorted(set(a) & set(c)) if vindue and vindue[0] <= d <= vindue[1]]
+    if not vin:
+        return None
+    s = float(np.mean([a[d] - c[d] for d in vin]))
+    return dict(spread=round(s, 4), p=round(0.5 * (1 + math.erf((-0.5333 - 0.6330 * s) / math.sqrt(2))), 6), n_dage=len(vin))
+
+
+def _paar_foer(rows, dage=365):
+    """Seneste (dato, vaerdi) med dato <= sidste dato minus `dage` (daglige/ugentlige serier) — None hvis ingen."""
+    graense = (date.fromisoformat(rows[-1][0]) - timedelta(days=dage)).isoformat()
+    tidl = [r for r in rows if r[0] <= graense]
+    return tidl[-1] if tidl else None
+
+
+def kontekst_usa(snap):
+    """Kontekst-protokollen 2026-10-24 (Rasmus' ordre): raavarer, kreditkort og bolig i USA, som spine.KONTEKST_BLOKKE
+    definerer. Hver linje: seneste vaerdi, dato og aendring mod samme periode aaret foer (% for niveauer, pp for
+    rater). INGEN taerskler, ingen taellinger, ingen indflydelse paa P, dommen eller antaendingskolonnen. Manglende
+    filer springes over (aeldre snapshots). WTI faar et udloebsflag (cl_udloebsdag) og 5-dages median."""
+    ud = {}
+    for blok, (titel, linjer) in SP.KONTEKST_BLOKKE.items():
+        raekker = []
+        for sid, navn, frekv, praefiks, suffiks, skala in linjer:
+            if not (snap / f"{sid}.csv").exists():
+                continue
+            rate = suffiks == "%"
+            note = None
+            if frekv in ("d", "u"):
+                rows = C.read_fred_daily(snap, sid)
+                if not rows:
+                    continue
+                dato, v = rows[-1]
+                fr = _paar_foer(rows)
+                aendr = (v - fr[1] if rate else (v / fr[1] - 1) * 100) if fr else None
+                if sid == "DCOILWTICO":
+                    med5 = float(np.median([r[1] for r in rows[-5:]]))
+                    dd = date.fromisoformat(dato)
+                    exp = cl_udloebsdag(dd.year, dd.month)
+                    flag = []
+                    if 0 <= (exp - dd).days <= 3:
+                        flag.append(f"omkring udloeb af front-kontrakten (CL, sidste handelsdag {exp.isoformat()}): "
+                                    "spot kan afvige kraftigt fra front-futures")
+                    if abs(v / med5 - 1) > 0.05:
+                        flag.append(f"afviger {(v / med5 - 1) * 100:+.0f}% fra 5-dages median")
+                    wm = SP.monthly_mean(rows)                # F40: den robuste y/y er maanedssnittet (komplet maaned)
+                    kw = fuld_maaned(rows, 15); kwg = f"{int(kw[:4]) - 1}{kw[4:]}"
+                    note = (f"5-dages median ${med5:.2f}; maanedssnit {kw} y/y "
+                            f"{fmt((wm[kw] / wm[kwg] - 1) * 100 if kwg in wm else NA, '+.0f')}%"
+                            + ("; " + "; ".join(flag) if flag else ""))
+            else:
+                s = fred_valgfri(snap, sid)
+                if not s:
+                    continue
+                k = max(s)
+                v = s[k]
+                dato = f"{k[0]}Q{(k[1] - 1) // 3 + 1}" if frekv == "q" else f"{k[0]}-{k[1]:02d}"
+                b = kal_minus(k, 12)
+                aendr = ((v - s[b]) if rate else (v / s[b] - 1) * 100) if b in s else None
+            vv = v * skala
+            vtxt = f"{praefiks}{vv:,.0f}{suffiks}" if abs(vv) >= 1000 else f"{praefiks}{vv:.2f}{suffiks}"
+            atxt = "—" if aendr is None else (f"{aendr:+.2f}pp" if rate else f"{aendr:+.1f}%")
+            raekker.append(dict(serie=sid, navn=navn, dato=dato, vaerdi=round(vv, 4), enhed=(praefiks + suffiks).strip(),
+                                y_y=round(aendr, 3) if aendr is not None else None, y_y_enhed="pp" if rate else "%",
+                                tekst=f"{vtxt} ({dato}); y/y {atxt}" + (f"; {note}" if note else "")))
+        if raekker:
+            ud[blok] = dict(titel=titel, linjer=raekker)
+    return ud
+
+
 def dd_rygrad(snap):
     """F33: kalibreringens dd-statistik paa den seneste LUKKEDE maaned i snapshottets rygrad (spine.csv):
     maanedsmiddel / max af de seneste 12 maanedsmidler - 1 — praecis C.build_monthly's definition, og
@@ -678,6 +784,10 @@ def main():
               f"{'skelnelig' if parret['skelnelig'] else 'ikke skelnelig'} fra 0 "
               f"({'enig' if parret['enig_med_baandregel'] else 'UENIG'} med baandreglen). "
               "Diagnostik: aendrer ikke dommen. Coverage not established.")
+    sk = spot_kurve(snap, op) if LI["kilde"] == "daglig" else None
+    if sk:
+        print(f"   Spot-kurve {sk['dato']}: {sk['kurve']:+.2f}pp -> {sk['p']*100:.1f}% ved samme vaegte (kontekst, IKKE P: P bruger "
+              "trailing maaned, F29/RAADETS_2027 §10.1; viser hvor naeste raekkes input bevaeger sig)")
     p_us = P27.p_uscorede(W["uscorede"], x["curve"]) if W.get("uscorede") else None
     if p_us:
         print(f"   Uscoret (RAADETS_2027 §3.3/§4; aldrig i dommen): maanedligt fit {p_us['p_maanedligt_fit']*100:.1f}% | "
@@ -734,6 +844,10 @@ def main():
     print(f"   {'realtids-Sahm (trigger 0,50)':<34}{'':>10}{fmt(sahm[1] if sahm else None, '>8.2f', '       ?')}    [naerhorisont-signal]")
     print(f"   {'Chauvet-Piger nowcast':<34}{'':>10}{fmt(cp[1] if cp else None, '>8.1f', '       ?')}%   [coincident, "
           f"{(str(cp[0][0]) + '-' + format(cp[0][1], '02d')) if cp else '?'}, publiceringslag — anden disciplin]")
+    em = em_probit(snap, LI.get("vindue")) if LI["kilde"] == "daglig" else None
+    if em:
+        print(f"   {'Estrella-Mishkin-probit (NY Fed-koef.)':<34}{'':>10}{em['p']*100:>8.1f}%   [andet maal: i recession om 12 mdr; "
+              f"beregnet paa trailing 10y-3m (CMT) {em['spread']:+.2f}pp — ikke NY Fed's publicerede tal]")
     print(f"   Note: {fm.get('note', '')}")
     mg_ = (diag or {}).get("gate_mde")
     if mg_ and "laant" not in str(fm.get("note", "")) and not P27.er_2027_gate(W.get("gate")):   # 2027: 4,42 er ude (§2.3)
@@ -971,12 +1085,6 @@ def main():
                     ntfs = float(np.mean([2 * c2[d] - e1[d] - f3[d] for d in vn]))
                     sammensaetning["ntfs_approks"] = round(ntfs, 4)
                     pol.append(("Near-term forward spread (approks.)", f"{ntfs:+.2f}pp (2*2y - 1y - 3m; negativ = lempelser prissat)"))
-    wti = C.read_fred_daily(snap, "DCOILWTICO")
-    if wti:
-        wm = SP.monthly_mean(wti)
-        kw = fuld_maaned(wti, 15); kwg = f"{int(kw[:4]) - 1}{kw[4:]}"
-        pol.append(("WTI y/y (regimekontekst, R2)", f"${wti[-1][1]:.2f} ({wti[-1][0]}); maanedssnit {kw} y/y "
-                    f"{fmt((wm[kw]/wm[kwg]-1)*100 if kwg in wm else NA, '+.0f')}% — nettoproducent; ikke feature, ikke tripwire"))
     print()
     print("   PENGEPOLITIK, INFLATION & KURVENS SAMMENSAETNING   [kontekst — ingen indflydelse paa P]")
     for navn, vaerdi in pol:
@@ -1002,6 +1110,15 @@ def main():
         print("   KREDIT UD OVER HY OAS   [kontekst — aaben praeregistreringskandidat (EBP), ikke i P]")
         for navn, vaerdi in kredit:
             print(f"       {navn:<38}{vaerdi}")
+    # Kontekst-protokollen 2026-10-24: raavarer, kreditkort og bolig i USA (spine.KONTEKST_BLOKKE)
+    kusa = kontekst_usa(snap)
+    for blok in kusa.values():
+        print(f"   {blok['titel']}   [kontekst-protokol 2026-10-24 — ingen indflydelse paa P; ingen taerskler, ingen taelling]")
+        for r in blok["linjer"]:
+            print(f"       {r['navn']:<38}{r['tekst']}")
+    if kusa:
+        print("       Raavarer, kreditkort og bolig er ikke features: feature-soegningen er lukket (v5.0-raadet); en test")
+        print("       i P kraever ny oekonomisk begrundelse + raadsmandat + forseglet spec foer koersel (RAADETS_V501 §6).")
     # F39: NBER-komiteens egne indikatorer (coincident — anden disciplin), uden taerskler og taellinger
     nber_ind = []
     for sid, navn, fodnote in (("PAYEMS", "Loenmodtagerbeskaeftigelse", "foederale engangsbevaegelser kan dominere"),
@@ -1223,7 +1340,8 @@ def main():
                        p_maanedlig=round(p_maanedlig, 6), maanedlig=LI["maanedlig"], parret=parret,
                        antaending=aktive, monitors=[dict(navn=n, aktiv=a if a in (True, False) else None, vaerdi=v) for n, a, v, _ in mon],
                        scenarie=[dict(navn=n, aktiv=a if a in (True, False) else None, vaerdi=v) for n, a, v, _ in scen],
-                       censureret=bool(cens), noter=noter, noegle=nh, ikke_logget_foer=mangler)
+                       censureret=bool(cens), noter=noter, noegle=nh, ikke_logget_foer=mangler,
+                       kontekst_usa=kusa, spot_kurve=sk)       # kontekst-protokollen 2026-10-24: uscoret, fremadrettet
             if p_us:                                        # RAADETS_2027 §3.3/§4/§10.4 (spec 4): uscorede felter
                 rec.update({k: round(v, 6) for k, v in p_us.items()})
                 if cens:
@@ -1314,6 +1432,10 @@ def main():
                         vaerdi=sahm[1] if sahm else None, status="naerhorisont-signal", panel=None))
         bmj.append(dict(navn="Chauvet-Piger nowcast", wf=None, live_p=round(cp[1] / 100, 6) if cp else None,
                         status="coincident, publiceringslag - anden disciplin", panel=None))
+        if em:
+            bmj.append(dict(navn="Estrella-Mishkin-probit (NY Fed-koef.)", wf=None, live_p=em["p"],
+                            status="andet maal: i recession om 12 mdr; beregnet, ikke NY Fed's publicerede tal",
+                            panel=None, spread=em["spread"]))
 
         hb = laes_hovedbog(logf)
         for r in hb:
@@ -1366,6 +1488,7 @@ def main():
             pengepolitik=[dict(navn=n, vaerdi=v) for n, v in pol],
             kredit=[dict(navn=n, vaerdi=v) for n, v in kredit],
             nber_indikatorer=nber_ind,
+            kontekst_usa=kusa, spot_kurve=sk,
             manual_friskhed=friskhed,
             utilgaengelige=sorted(set(utilg)),
             sti=sti, maanedens_aendring=aendring,

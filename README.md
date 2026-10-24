@@ -34,6 +34,12 @@ risk."* Detaljer: [v5/README.md](v5/README.md#v501--foerste-rekalibrering-raadet
 forsinkelse). Det er et erklæret instrumentskifte, ikke målemæssigt identisk med GS10 − TB3MS; rådet
 ratificerede det ex post (RAADETS_2027 §10.1). P på de publicerede månedstal står ved siden af i hver række.
 
+**Kontekst-protokollen (2026-10-24):** råvarer (olie, naturgas, benzin, diesel, gødning, korn, metaller),
+kreditkortgæld og boligpriser i USA hentes nu ved hver kørsel, vises i motoren og dashboardet og gemmes i hver
+hovedbogsrækkes fulde record — som kontekst uden indflydelse på P og uden tærskler. Alle er officielle
+public domain-serier (EIA, BLS, Fed, FHFA, Census). Se
+[v5/README.md](v5/README.md#kontekst-protokollen-2026-10-24-raavarer-kreditkort-og-bolig-usa--rettelser-fra-mellemlaesningen-2026-10-23).
+
 **Rådet 2027 (ratificeret 7/7 den 2026-10-15):** syv analyser og fem debatrunder med seks af de nyeste
 flagskibsmodeller afgjorde de ti spørgsmål, kode-reviewet sendte til "rådet før september 2027":
 - λ = 1 og kvartalsfittet bevares — og protokollen siger ligeud, at blueprintets frekvensgate *som skrevet*
@@ -59,7 +65,7 @@ ud af repoet, sværm-tripwires ud af hovedbogens antændings-kolonne (rådets R3
 | Fil | Indhold |
 |---|---|
 | [v5/README.md](v5/README.md) | Ritualer, filoversigt, afvigelser fra blueprintet, byggelog |
-| [v5/](v5/) | Koden: fetch → (finalize6 → diagnostik ved rekalibrering) → motor (calibrate.py er trin-1-reproduktionen og overskriver ikke driftsvægtene). 203 tests. |
+| [v5/](v5/) | Koden: fetch → (finalize6 → diagnostik ved rekalibrering) → motor (calibrate.py er trin-1-reproduktionen og overskriver ikke driftsvægtene). 209 tests. |
 | [LOG.md](LOG.md) | Hovedbogen — én række pr. måned, logført før udfaldet kendes. Redigeres aldrig. |
 | [BEDOEMMELSESNOEGLE.md](BEDOEMMELSESNOEGLE.md) | Hvordan hovedbogen scores — præregistreret før række 4, med styrketabel |
 | [UDFALD.csv](UDFALD.csv) / [hovedbog.jsonl](hovedbog.jsonl) | Append-only udfald pr. række / fuld record pr. række |
@@ -90,7 +96,7 @@ python fetch.py                        # snapshot (FRED + Fed Board EBP), hashet
 # opdatér manual/manual.json: S&P vs 12-mdr-høj, CAPE, marginlån y/y — med deres datoer
 python fetch.py                        # igen, så snapshottet bærer de nye manuelle tal
 python motor.py --log --json           # læsning, hovedbogsrække (kun i logvinduet), dashboard.json
-python -m unittest test_v5             # 203 tests
+python -m unittest test_v5             # 209 tests
 ```
 
 Vægtene er frosne mellem rekalibreringer (hver september, eller når NBER daterer en ny top/bund):
@@ -107,10 +113,10 @@ samme bytes, kan efterprøve hashen.
 
 | Kilde | Serier | Vilkår | I repoet |
 |---|---|---|---|
-| Board of Governors of the Federal Reserve System (H.15, G.17, CP; Kim-Wright-termpræmien THREEFYTP10; Gilchrist-Zakrajsek EBP) | GS10, TB3MS, DGS10, DTB3, DGS1, DGS2, DGS3MO, DFF, FEDFUNDS, INDPRO, RIFSPPFAAD90NB, THREEFYTP10, EBP | Public domain; kildeangivelse ønskes | ja |
-| U.S. Bureau of Labor Statistics | CPIAUCNS, CPIAUCSL, UNRATE, PAYEMS, CE16OV, AWHMAN, TEMPHELPS | Public domain; kildeangivelse ønskes | ja |
+| Board of Governors of the Federal Reserve System (H.15, G.17, G.19, H.8, CP; Kim-Wright-termpræmien THREEFYTP10; Gilchrist-Zakrajsek EBP) | GS10, TB3MS, DGS10, DTB3, DGS1, DGS2, DGS3MO, DFF, FEDFUNDS, INDPRO, RIFSPPFAAD90NB, THREEFYTP10, EBP; REVOLSL, CCLACBW027SBOG, DRCCLACBS, CORCCACBS, DRSFRMACBS | Public domain; kildeangivelse ønskes | ja |
+| U.S. Bureau of Labor Statistics | CPIAUCNS, CPIAUCSL, UNRATE, PAYEMS, CE16OV, AWHMAN, TEMPHELPS; WPU0652, WPU065201, WPU012, WPU102 | Public domain; kildeangivelse ønskes | ja |
 | U.S. Bureau of Economic Analysis | A191RL1Q225SBEA, GDPC1, PCEPI, PCEC96, W875RX1 | Public domain; kildeangivelse ønskes | ja |
-| U.S. Census Bureau; U.S. Employment and Training Administration; U.S. Energy Information Administration | PERMIT; ICSA, CCSA; DCOILWTICO | Public domain; kildeangivelse ønskes | ja |
+| U.S. Census Bureau (og HUD); U.S. Employment and Training Administration; U.S. Energy Information Administration; U.S. Federal Housing Finance Agency | PERMIT, MSPUS, MSACSR; ICSA, CCSA; DCOILWTICO, DCOILBRENTEU, DHHNGSP, GASREGW, GASDESW; HPIPONM226S | Public domain; kildeangivelse ønskes | ja |
 | NBER via Federal Reserve Bank of St. Louis | USREC | Copyright, kildeangivelse påkrævet | ja |
 | Federal Reserve Bank of St. Louis | CMRMTSPL | Copyright, kildeangivelse påkrævet | ja |
 | Freddie Mac | MORTGAGE30US | "Freddie Mac, 30-Year Fixed Rate Mortgage Average in the United States" — copyright Freddie Mac; kildeangivelse påkrævet (FRED: Citation Required) | ja |

@@ -97,6 +97,51 @@ SERIER = {
     "CMRMTSPL":        ("kontekst", "citation", "Federal Reserve Bank of St. Louis",     "realt engros/detail/industri-salg (NBER-indikator, F39)"),
     "TEMPHELPS":       ("kontekst", "pd",       "U.S. Bureau of Labor Statistics",       "vikarbeskaeftigelse (arbejdsmarkedskontekst, F58)"),
     "DCOILWTICO":      ("kontekst", "pd",       "U.S. Energy Information Administration", "WTI-oliepris, daglig (regimekontekst, F40)"),
+    # Kontekst-protokollen 2026-10-24 (Rasmus' ordre): raavarer, kreditkort og bolig i USA. Kun officielle
+    # public domain-kilder (licensmaerker tjekket paa FRED's seriesider 2026-10-24). Ingen indflydelse paa P,
+    # dom eller antaendingskolonnen; fejl nedlaegger aldrig veto. S&P/Case-Shiller (CSUSHPINSA) er
+    # "Copyrighted: Pre-Approval Required" og bruges derfor ikke — FHFA's indeks er den officielle huspris.
+    "DCOILBRENTEU":    ("kontekst", "pd",       "U.S. Energy Information Administration", "Brent-spot, daglig (raavarer; prissaetter US benzin/diesel)"),
+    "DHHNGSP":         ("kontekst", "pd",       "U.S. Energy Information Administration", "Henry Hub naturgas spot, daglig (raavarer; goedningens feedstock)"),
+    "GASREGW":         ("kontekst", "pd",       "U.S. Energy Information Administration", "US benzin, regular, detail, ugentlig (raavarer)"),
+    "GASDESW":         ("kontekst", "pd",       "U.S. Energy Information Administration", "US diesel, detail, ugentlig (raavarer)"),
+    "WPU0652":         ("kontekst", "pd",       "U.S. Bureau of Labor Statistics",       "PPI goedningsmaterialer, NSA (raavarer)"),
+    "WPU065201":       ("kontekst", "pd",       "U.S. Bureau of Labor Statistics",       "PPI kvaelstofgoedning (nitrogenates), NSA (raavarer)"),
+    "WPU012":          ("kontekst", "pd",       "U.S. Bureau of Labor Statistics",       "PPI korn (farm products: grains), NSA (raavarer)"),
+    "WPU102":          ("kontekst", "pd",       "U.S. Bureau of Labor Statistics",       "PPI ikke-jernholdige metaller, NSA (raavarer)"),
+    "REVOLSL":         ("kontekst", "pd",       "Board of Governors (G.19)",             "revolverende forbrugerkredit, mio. USD, SA (kreditkort)"),
+    "CCLACBW027SBOG":  ("kontekst", "pd",       "Board of Governors (H.8)",              "kreditkortlaan i banker, mia. USD, SA, ugentlig (kreditkort)"),
+    "DRCCLACBS":       ("kontekst", "pd",       "Board of Governors",                    "restancerate kreditkort, alle banker, %, SA, kvartal (kreditkort)"),
+    "CORCCACBS":       ("kontekst", "pd",       "Board of Governors",                    "afskrivningsrate kreditkort, alle banker, %, SA, kvartal (kreditkort)"),
+    "HPIPONM226S":     ("kontekst", "pd",       "U.S. Federal Housing Finance Agency",   "FHFA purchase-only huspris-indeks, SA, maanedlig (bolig)"),
+    "MSPUS":           ("kontekst", "pd",       "U.S. Census Bureau og HUD",             "median salgspris for solgte huse, USD, kvartal (bolig)"),
+    "MSACSR":          ("kontekst", "pd",       "U.S. Census Bureau og HUD",             "udbud af nye huse i maaneder, SA (bolig)"),
+    "DRSFRMACBS":      ("kontekst", "pd",       "Board of Governors",                    "restancerate enfamilie-realkredit, alle banker, %, SA, kvartal (bolig)"),
+}
+# Kontekst-protokollen 2026-10-24: blokkene motor printer, og hvad hver linje viser (EEN tabel; motor, dashboard og
+# hovedbog.jsonl afledes heraf). frekv: "d" daglig, "u" ugentlig, "m" maanedlig, "q" kvartal. skala ganger vaerdien.
+KONTEKST_BLOKKE = {
+    "raavarer": ("RAAVARER (USA-relevante)", (
+        ("DCOILWTICO", "WTI spot (EIA)", "d", "$", "/bbl", 1.0),
+        ("DCOILBRENTEU", "Brent spot (EIA)", "d", "$", "/bbl", 1.0),
+        ("DHHNGSP", "Henry Hub naturgas (EIA)", "d", "$", "/MMBtu", 1.0),
+        ("GASREGW", "Benzin, regular, detail (EIA)", "u", "$", "/gal", 1.0),
+        ("GASDESW", "Diesel, detail (EIA)", "u", "$", "/gal", 1.0),
+        ("WPU0652", "PPI goedningsmaterialer (BLS)", "m", "", " (1982=100)", 1.0),
+        ("WPU065201", "PPI kvaelstofgoedning (BLS)", "m", "", " (1982=100)", 1.0),
+        ("WPU012", "PPI korn (BLS)", "m", "", " (1982=100)", 1.0),
+        ("WPU102", "PPI ikke-jernholdige metaller (BLS)", "m", "", " (1982=100)", 1.0))),
+    "kreditkort": ("KREDITKORT & FORBRUGERKREDIT (USA)", (
+        ("REVOLSL", "Revolverende forbrugerkredit (G.19)", "m", "$", " mia.", 0.001),
+        ("CCLACBW027SBOG", "Kreditkortlaan i banker (H.8)", "u", "$", " mia.", 1.0),
+        ("DRCCLACBS", "Restancer kreditkort (30+ dage)", "q", "", "%", 1.0),
+        ("CORCCACBS", "Afskrivninger kreditkort", "q", "", "%", 1.0))),
+    "bolig": ("BOLIG (USA)", (
+        ("HPIPONM226S", "FHFA huspriser (purchase-only, SA)", "m", "", " (1991=100)", 1.0),
+        ("MSPUS", "Median salgspris, solgte huse", "q", "$", "", 1.0),
+        ("MSACSR", "Udbud af nye huse", "m", "", " mdr.", 1.0),
+        ("DRSFRMACBS", "Restancer enfamilie-realkredit", "q", "", "%", 1.0),
+        ("MORTGAGE30US", "30-aars realkreditrente (Freddie Mac)", "u", "", "%", 1.0))),
 }
 # Ikke-FRED-kilder der hentes og hashes som serier (fetch.fetch_series kender URL'en og kolonnen)
 EKSTERNE = {

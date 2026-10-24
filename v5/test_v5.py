@@ -14,7 +14,7 @@ og reviewet er flettet: TestMotor/TestFetchMain bruges af begge saet tests.
 
 Koer:  cd v5 && python -m unittest -v test_v5
 """
-import contextlib, hashlib, io, json, os, shutil, sys, tempfile, unittest, urllib.error
+import contextlib, hashlib, io, json, math, os, shutil, sys, tempfile, unittest, urllib.error
 from datetime import date, timedelta
 from pathlib import Path
 from unittest import mock
@@ -875,7 +875,8 @@ class TestMotor(unittest.TestCase):
         # Section 6-reglen: ratio kun naar baandet udelukker basisraten
         self.assertEqual(d["ratio"] is None, not d["baand_udelukker_basisrate"])
         self.assertEqual({m["tilstand"] for m in d["monitors"]} - {"aktiv", "inaktiv", "kontekst", "utilgaengelig"}, set())
-        for n in ("scenarie", "parret", "rekalibrering_paakraevet", "sti", "manual_friskhed", "hovedbog_reference"):
+        for n in ("scenarie", "parret", "rekalibrering_paakraevet", "sti", "manual_friskhed", "hovedbog_reference",
+                  "kontekst_usa", "spot_kurve"):                      # + kontekst-protokollen 2026-10-24
             self.assertIn(n, d)                                       # F53/F9/F11/F30/G3.5
         self.assertNotIn("log_blokeringer", d)                        # dagsafhaengigt -> ikke i den reproducerbare JSON
         self.assertNotIn("CP-spaend", " ".join(m["navn"] for m in d["monitors"]))
@@ -2889,6 +2890,91 @@ class TestRaad2027SkillVedRefit(unittest.TestCase):
                 d = Path(t) / "d.json"
                 self._motor(["--allow-stale", "--json", str(d)], here=here)
                 self.assertIn(forv, json.loads(d.read_text(encoding="utf-8"))["skill_saetning"])
+
+
+class TestKontekstProtokol20261024(unittest.TestCase):
+    """Kontekst-protokollen 2026-10-24 (raavarer, kreditkort, bolig i USA) og rettelserne fra mellemlaesningen
+    2026-10-23: WTI-udloebsflag, spot-kurve, Estrella-Mishkin-benchmark og sikker snapshot-udskiftning."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+
+    def _skriv(self, sid, raekker):
+        nl = chr(10)
+        (self.tmp / f"{sid}.csv").write_text("observation_date," + sid + nl + "".join(f"{d},{v}{nl}" for d, v in raekker),
+                                             encoding="utf-8")
+
+    def test_cl_udloebsdag_cme_reglen(self):
+        self.assertEqual(M.cl_udloebsdag(2026, 10), date(2026, 10, 20))     # den 25. er en soendag
+        self.assertEqual(M.cl_udloebsdag(2026, 11), date(2026, 11, 20))     # den 25. er en onsdag
+        self.assertEqual(M.cl_udloebsdag(2027, 1), date(2027, 1, 20))       # den 25. er en mandag
+
+    def test_alle_kontekstserier_er_public_domain_kontekst(self):
+        for blok, (_, linjer) in S.KONTEKST_BLOKKE.items():
+            for sid, *_ in linjer:
+                self.assertIn(sid, S.SERIER, sid)
+                rolle, licens = S.SERIER[sid][:2]
+                self.assertEqual(rolle, "kontekst", sid)                # kan aldrig nedlaegge veto
+                self.assertIn(licens, ("pd", "citation"), sid)         # intet licensbegraenset i protokollen
+                self.assertNotIn(sid, S.VETO)
+        self.assertNotIn("CSUSHPINSA", S.SERIER)                       # Case-Shiller: Pre-Approval Required
+
+    def test_kontekst_usa_aendringer_enheder_og_udloebsflag(self):
+        self._skriv("DCOILWTICO", [("2025-10-20", "50"), ("2026-10-14", "95"), ("2026-10-15", "96"), ("2026-10-16", "97"),
+                                   ("2026-10-19", "98"), ("2026-10-20", "110")])
+        self._skriv("DRCCLACBS", [("2025-04-01", "3.00"), ("2026-04-01", "2.85")])
+        self._skriv("REVOLSL", [("2025-08-01", "1000000"), ("2026-08-01", "1050000")])
+        k = M.kontekst_usa(self.tmp)
+        self.assertEqual(set(k), {"raavarer", "kreditkort"})           # manglende filer springes over, bolig ingen
+        wti = k["raavarer"]["linjer"][0]
+        self.assertAlmostEqual(wti["y_y"], 120.0)                      # 110/50 - 1, i %
+        self.assertIn("omkring udloeb af front-kontrakten", wti["tekst"])
+        self.assertIn("5-dages median $97.00", wti["tekst"])
+        kk = {r["serie"]: r for r in k["kreditkort"]["linjer"]}
+        self.assertEqual(kk["DRCCLACBS"]["dato"], "2026Q2")
+        self.assertAlmostEqual(kk["DRCCLACBS"]["y_y"], -0.15)          # rate -> pp, ikke %
+        self.assertEqual(kk["DRCCLACBS"]["y_y_enhed"], "pp")
+        self.assertAlmostEqual(kk["REVOLSL"]["vaerdi"], 1050.0)        # mio. -> mia.
+        self.assertAlmostEqual(kk["REVOLSL"]["y_y"], 5.0)
+
+    def test_spot_kurve_og_estrella_mishkin(self):
+        self._skriv("DGS10", [("2026-10-21", "5.13"), ("2026-10-22", "4.96")])
+        self._skriv("DTB3", [("2026-10-21", "4.07"), ("2026-10-22", "4.04")])
+        self._skriv("DGS3MO", [("2026-10-21", "4.96"), ("2026-10-22", "4.96")])
+        op = dict(features=["curve"], mu={"curve": 1.0}, sd={"curve": 1.0}, w=[-1.0, -1.0])
+        sk = M.spot_kurve(self.tmp, op)
+        self.assertEqual(sk["dato"], "2026-10-22")
+        self.assertAlmostEqual(sk["kurve"], 0.92)
+        self.assertAlmostEqual(sk["p"], float(M.p_of(dict(curve=0.92), ["curve"], op["mu"], op["sd"], op["w"])), places=6)
+        self.assertIsNone(M.spot_kurve(self.tmp, dict(op, features=["curve", "dd"])))   # kun curve-only
+        em = M.em_probit(self.tmp, ["2026-10-21", "2026-10-22"])
+        self.assertAlmostEqual(em["spread"], 0.085)                    # (0.17 + 0.0) / 2
+        self.assertAlmostEqual(em["p"], 0.5 * (1 + math.erf((-0.5333 - 0.6330 * 0.085) / math.sqrt(2))), places=6)
+
+    def test_skift_paa_plads_erstatter_og_rydder_op(self):
+        gammel, ny = self.tmp / "2026-10-24", self.tmp / "2026-10-24.ny"
+        gammel.mkdir(); (gammel / "meta.json").write_text("gammel", encoding="utf-8")
+        ny.mkdir(); (ny / "meta.json").write_text("ny", encoding="utf-8")
+        F.skift_paa_plads(ny, gammel)
+        self.assertEqual((gammel / "meta.json").read_text(encoding="utf-8"), "ny")
+        self.assertFalse(ny.exists())
+        self.assertFalse((self.tmp / "2026-10-24.gammel").exists())
+
+    def test_skift_paa_plads_laast_snapshot_roeres_ikke(self):
+        gammel, ny = self.tmp / "2026-10-24", self.tmp / "2026-10-24.ny"
+        gammel.mkdir(); (gammel / "meta.json").write_text("gammel", encoding="utf-8")
+        ny.mkdir(); (ny / "meta.json").write_text("ny", encoding="utf-8")
+        aegte = Path.rename
+
+        def laast(self_, maal):                                         # som en terminal med mappen som cwd (Windows)
+            if self_ == gammel:
+                raise PermissionError("[WinError 32] mappen er i brug")
+            return aegte(self_, maal)
+        with mock.patch.object(Path, "rename", laast), self.assertRaises(SystemExit):
+            F.skift_paa_plads(ny, gammel)
+        self.assertEqual((gammel / "meta.json").read_text(encoding="utf-8"), "gammel")   # intakt, ikke toemt
+        self.assertEqual((ny / "meta.json").read_text(encoding="utf-8"), "ny")           # det nye er bevaret
 
 
 if __name__ == "__main__":
