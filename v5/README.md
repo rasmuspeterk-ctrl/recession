@@ -260,6 +260,12 @@ rettelse ville aendre et publiceret trin 4-resultat og kraever derfor eksplicit 
 
 ## Dashboard
 
+Siden er [../dashboard.html](../dashboard.html) (2026-10-26): én HTML-fil uden build-trin, bygget efter
+[../DASHBOARD-BRIEF.md](../DASHBOARD-BRIEF.md)'s sektioner og 15 regler. Den læser `dashboard.json` fra samme
+mappe; serveres repo-roden (`python -m http.server`), virker den direkte, ellers vælges filen i siden.
+Kildetekster translittereres (aa/ae/oe -> å/æ/ø, med undtagelse af fx Baa og koef.) og sættes i dansk
+talformat — de eneste ændringer brief'en tillader.
+
 `python motor.py --json [sti]` skriver hele laesningen som JSON (default
 `../dashboard.json`): P, baand, basisrate, `baand_udelukker_basisrate`/`ratio`,
 dommen ordret, de fem inputs med z-scores, hele benchmark-tabellen, monitorerne med

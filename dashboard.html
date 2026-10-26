@@ -1,0 +1,489 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MOTOR v5 Læsning</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: et roligt centralbank-appendiks — én smal kolonne, læsningen øverst, alt andet som nummererede bilag i brief'ens prioritet.
+   Farve skelner kun KLASSER (operationel / testet / firewallet kontekst / scenarie), aldrig fare (brief regel 4). */
+:root {
+  --bg: #f2f4f6;
+  --flade: #ffffff;
+  --blæk: #17212b;
+  --dæmpet: #5a6571;
+  --linje: #d4dae0;
+  --operationel: #0e6a70;
+  --operationel-bg: #e3f0f0;
+  --firewall: #66727f;
+  --firewall-bg: #e9edf1;
+  --scenarie: #8a939d;
+  --scenarie-bg: #eef0f2;
+  --bånd: #9fb3c2;
+  --display: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --tekst: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --data: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151b; --flade: #151d25; --blæk: #e2e8ee; --dæmpet: #95a1ad; --linje: #28333e;
+    --operationel: #5bb7bb; --operationel-bg: #13292c; --firewall: #8d99a6; --firewall-bg: #1a232c;
+    --scenarie: #7b858f; --scenarie-bg: #161d24; --bånd: #4c6577; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151b; --flade: #151d25; --blæk: #e2e8ee; --dæmpet: #95a1ad; --linje: #28333e;
+  --operationel: #5bb7bb; --operationel-bg: #13292c; --firewall: #8d99a6; --firewall-bg: #1a232c;
+  --scenarie: #7b858f; --scenarie-bg: #161d24; --bånd: #4c6577; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--blæk); font-family: var(--tekst); font-size: 15px; line-height: 1.55; }
+.side { max-width: 900px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 40px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 500; text-wrap: balance; margin: 0; }
+h1 { font-size: 1.9rem; line-height: 1.15; }
+h2 { font-size: 1.35rem; }
+h3 { font-size: 1rem; font-family: var(--tekst); font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+.etiket { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--dæmpet); font-weight: 500; }
+.lille { font-size: .85rem; color: var(--dæmpet); }
+.tal, td.tal, .mono { font-family: var(--data); font-variant-numeric: tabular-nums; }
+section { display: grid; gap: 14px; min-width: 0; }
+.sektionshoved { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; border-bottom: 1px solid var(--linje); padding-bottom: 8px; }
+.mærkat { display: inline-block; font-size: .72rem; letter-spacing: .04em; padding: 2px 8px; border-radius: 3px; max-width: 100%;
+  border: 1px solid var(--linje); color: var(--dæmpet); background: var(--flade); overflow-wrap: anywhere; }
+.mærkat.firewall { background: var(--firewall-bg); color: var(--firewall); border-color: transparent; }
+.mærkat.scenarie { background: var(--scenarie-bg); color: var(--scenarie); border-color: transparent; }
+.mærkat.op { background: var(--operationel-bg); color: var(--operationel); border-color: transparent; }
+
+/* hoved */
+header { display: grid; gap: 10px; }
+.meta { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: .85rem; color: var(--dæmpet); }
+.meta b { font-weight: 500; color: var(--blæk); }
+.notits { border: 1px solid var(--blæk); padding: 10px 14px; font-size: .9rem; display: grid; gap: 4px; }
+.notits strong { letter-spacing: .06em; }
+
+/* læsningen */
+.læsning { background: var(--flade); border: 1px solid var(--linje); padding: 22px clamp(16px, 4vw, 28px); display: grid; gap: 16px; }
+.trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.trio > div { display: grid; gap: 2px; min-width: 0; }
+.trio .værdi { font-family: var(--data); font-size: clamp(1.4rem, 5vw, 2rem); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.trio .p .værdi { color: var(--operationel); }
+.dom { font-family: var(--display); font-size: 1.2rem; line-height: 1.4; max-width: 60ch; }
+.parret { border-top: 1px dashed var(--linje); padding-top: 10px; font-size: .85rem; color: var(--dæmpet); display: grid; gap: 2px; }
+svg text { fill: var(--dæmpet); font-family: var(--data); font-size: 11px; }
+.akse line, .gitter line { stroke: var(--linje); }
+.bånd-rect { fill: var(--bånd); opacity: .55; }
+.punkt { fill: var(--operationel); }
+.basislinje { stroke: var(--blæk); stroke-width: 1.5; }
+.basistekst { fill: var(--blæk); }
+
+/* tabeller */
+.rul { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+th { text-align: left; font-weight: 500; color: var(--dæmpet); font-size: .74rem; letter-spacing: .05em; text-transform: uppercase; padding: 6px 10px 6px 0; border-bottom: 1px solid var(--linje); }
+td { padding: 7px 10px 7px 0; border-bottom: 1px solid var(--linje); vertical-align: top; }
+td.tal, th.tal { text-align: right; white-space: nowrap; }
+tr.op td { background: var(--operationel-bg); }
+tr.op td:first-child { box-shadow: inset 3px 0 0 var(--operationel); padding-left: 8px; }
+tr.afvist td { color: var(--dæmpet); }
+tr.ref td { border-top: 1px solid var(--blæk); }
+
+/* linjer (monitorer m.m.) */
+.gruppe { display: grid; gap: 6px; }
+.linjer { display: grid; gap: 0; }
+.linje { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 4px 16px; padding: 8px 0; border-bottom: 1px solid var(--linje); }
+.linje .navn { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.linje .vrd { font-family: var(--data); font-size: .85rem; overflow-wrap: anywhere; }
+.linje .kl { grid-column: 2; font-size: .78rem; color: var(--dæmpet); }
+.tilstand { font-family: var(--data); font-size: .7rem; padding: 1px 6px; border: 1px solid var(--dæmpet); border-radius: 2px; color: var(--dæmpet); }
+.tilstand.aktiv { background: var(--blæk); color: var(--flade); border-color: var(--blæk); }
+.tilstand.kontekst { border-style: dotted; }
+.tilstand.utilg { border-style: dashed; }
+.firewallet { background: var(--firewall-bg); padding: 16px clamp(12px, 3vw, 20px); display: grid; gap: 18px; }
+.firewallet .linje { border-color: color-mix(in srgb, var(--firewall) 25%, transparent); }
+.scen > * { min-width: 0; }
+.scen { background: var(--scenarie-bg); color: var(--scenarie); padding: 16px clamp(12px, 3vw, 20px); display: grid; gap: 10px; }
+.scen .linje { border-color: color-mix(in srgb, var(--scenarie) 25%, transparent); }
+.scen h2, .scen .vrd { color: var(--scenarie); }
+
+.advarsler { display: grid; gap: 10px; }
+.advarsler p { border-left: 2px solid var(--blæk); padding-left: 12px; }
+.to-kol { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 18px 28px; }
+.to-kol > * { min-width: 0; }
+dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 0; font-size: .85rem; }
+dt { color: var(--dæmpet); }
+dd { margin: 0; font-family: var(--data); overflow-wrap: anywhere; }
+.fod { font-size: .85rem; color: var(--dæmpet); display: grid; gap: 18px; border-top: 1px solid var(--linje); padding-top: 20px; }
+.indlæs { display: grid; gap: 10px; background: var(--flade); border: 1px solid var(--linje); padding: 20px; }
+button, input[type=file] { font: inherit; }
+:focus-visible { outline: 2px solid var(--operationel); outline-offset: 2px; }
+
+@media (max-width: 560px) {
+  .trio { grid-template-columns: 1fr; }
+  .linje { grid-template-columns: 1fr; }
+  .linje .kl { grid-column: 1; }
+}
+</style>
+
+<main class="side" id="side">
+  <div class="indlæs" id="indlaes">
+    <p class="etiket">MOTOR v5</p>
+    <p id="indlaes-tekst">Indlæser dashboard.json …</p>
+    <div id="vaelg" hidden>
+      <p class="lille">Siden læser <span class="mono">dashboard.json</span> fra samme mappe. Åbnes filen direkte fra disken, blokerer browseren det; vælg filen her (den skrives af <span class="mono">python v5/motor.py --json</span>).</p>
+      <label for="fil" class="lille">dashboard.json</label>
+      <input type="file" id="fil" accept="application/json,.json">
+    </div>
+  </div>
+</main>
+
+<script id="indlejret" type="application/json"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ---------- tekst: translitteration og dansk talformat (brief: de eneste tilladte ændringer af ordret tekst)
+  const BESKYT = /^(Baa|BAA|Aaa|AAA)$|koef/i;               // Moody's-ratings og 'koef.' er ikke danske å/ø
+  function translit(s) {
+    if (s === null || s === undefined) return "";
+    s = String(s);
+    return s.replace(/[A-Za-z0-9_\-.']+/g, w => {
+      if (BESKYT.test(w) || /\d/.test(w) && /[A-Z]{3,}/.test(w)) return w;
+      return w.replace(/aa/g, "å").replace(/Aa/g, "Å").replace(/AA/g, "Å")
+              .replace(/ae/g, "æ").replace(/Ae/g, "Æ").replace(/AE/g, "Æ")
+              .replace(/oe/g, "ø").replace(/Oe/g, "Ø").replace(/OE/g, "Ø");
+    });
+  }
+  function dkTal(s) {
+    return String(s)
+      .replace(/(\d),(?=\d{3}(?![\d.,]))/g, "$1\u202f")                    // engelsk tusindtalsseparator -> smalt mellemrum
+      .replace(/(^|[^\d.A-Za-z])(\d+)\.(\d+)(?![\d.])/g, "$1$2,$3")      // decimalpunktum -> komma (ikke v5.2, G2.3)
+      .replace(/(\d)%/g, "$1 %");
+  }
+  const T = s => dkTal(translit(s));                   // ordret tekst fra JSON'en
+  const ENGELSK = s => s ?? "";                         // engelske kildeformuleringer gengives uændret
+  const fmt = (x, d = 1) => x === null || x === undefined || !isFinite(x) ? "—" : x.toFixed(d).replace(".", ",");
+  const pct = (x, d = 1) => x === null || x === undefined ? "—" : fmt(x * 100, d) + " %";
+  const fortegn = (x, d = 2) => x === null || x === undefined ? "—" : (x > 0 ? "+" : x < 0 ? "−" : "±") + fmt(Math.abs(x), d);
+
+  function el(tag, attrs, ...børn) {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (v === null || v === undefined || v === false) continue;
+      if (k === "class") e.className = v; else if (k === "text") e.textContent = v; else e.setAttribute(k, v);
+    }
+    for (const b of børn.flat(Infinity)) if (b !== null && b !== undefined && b !== false) e.append(b instanceof Node ? b : document.createTextNode(b));
+    return e;
+  }
+  const NS = "http://www.w3.org/2000/svg";
+  const bredde = () => Math.round(Math.max(340, Math.min(640, (document.documentElement.clientWidth || 640) - 70)));  // tekst i SVG forbliver læsbar på telefon
+  function s(tag, attrs, tekst) {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+    if (tekst !== undefined) e.textContent = tekst;
+    return e;
+  }
+  function sektion(titel, mærker, ...indhold) {
+    return el("section", {}, el("div", { class: "sektionshoved" }, el("h2", { text: titel }), ...(mærker || [])), ...indhold);
+  }
+  const mærkat = (tekst, klasse) => el("span", { class: "mærkat " + (klasse || ""), text: tekst });
+
+  // ---------- intervalbar: bånd, punkt, basisrate (brief: visuelt sprog)
+  function intervalBar(lo, hi, p, base) {
+    const top = Math.max(hi, base, p, 0.25);
+    const xmax = Math.ceil(top * 1.15 / 0.05) * 0.05;
+    const W = bredde(), H = 78, L = 8, R = 8, y0 = 30;
+    const x = v => L + (W - L - R) * v / xmax;
+    const g = s("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img",
+      "aria-label": `Bånd ${pct(lo)} til ${pct(hi)}, P ${pct(p)}, basisrate ${pct(base)}` });
+    const akse = s("g", { class: "akse" });
+    for (let v = 0; v <= xmax + 1e-9; v += 0.05) {
+      akse.append(s("line", { x1: x(v), x2: x(v), y1: y0 + 18, y2: y0 + 22 }));
+      akse.append(s("text", { x: x(v), y: H - 6, "text-anchor": v === 0 ? "start" : v > xmax - 1e-9 ? "end" : "middle" }, fmt(v * 100, 0) + " %"));
+    }
+    akse.append(s("line", { x1: x(0), x2: x(xmax), y1: y0 + 18, y2: y0 + 18 }));
+    g.append(akse);
+    g.append(s("rect", { class: "bånd-rect", x: x(lo), y: y0 - 9, width: Math.max(1, x(hi) - x(lo)), height: 18, rx: 2 }));
+    g.append(s("circle", { class: "punkt", cx: x(p), cy: y0, r: 6 }));
+    g.append(s("line", { class: "basislinje", x1: x(base), x2: x(base), y1: 8, y2: y0 + 18 }));
+    const høj = x(base) > W * 0.7;
+    g.append(s("text", { class: "basistekst", x: x(base) + (høj ? -6 : 6), y: 14, "text-anchor": høj ? "end" : "start" }, "basisrate " + pct(base)));
+    return g;
+  }
+
+  // ---------- hovedbogen: register over logførte læsninger (aldrig en dom, aldrig en trend)
+  function mIdx(t) { const m = /^(\d{4})-(\d{2})/.exec(t || ""); return m ? (+m[1]) * 12 + (+m[2] - 1) : null; }
+  function hovedbogsGraf(rækker) {
+    const punkter = rækker.map(r => ({ r, i: mIdx(r.logget) })).filter(o => o.i !== null);
+    if (!punkter.length) return null;
+    const i0 = Math.min(...punkter.map(o => o.i)), i1 = Math.max(...punkter.map(o => o.i));
+    const n = Math.max(i1 - i0 + 1, 6);
+    const tal = punkter.flatMap(o => [o.r.baand_tal ? o.r.baand_tal[1] : null, o.r.basisrate_tal, o.r.p_tal]).filter(v => v !== null && v !== undefined);
+    const ymax = Math.ceil(Math.max(0.25, ...tal) * 1.1 / 0.05) * 0.05;
+    const W = bredde(), H = 210, L = 44, R = 12, T0 = 12, B = 34;
+    const kol = (W - L - R) / n;
+    const x = i => L + kol * (i - i0 + 0.5);
+    const y = v => T0 + (H - T0 - B) * (1 - v / ymax);
+    const g = s("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img", "aria-label": "Hovedbogens logførte læsninger med bånd og basisrate" });
+    const gitter = s("g", { class: "gitter" });
+    for (let v = 0; v <= ymax + 1e-9; v += 0.05) {
+      gitter.append(s("line", { x1: L, x2: W - R, y1: y(v), y2: y(v) }));
+      gitter.append(s("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end" }, fmt(v * 100, 0) + " %"));
+    }
+    g.append(gitter);
+    for (const { r, i } of punkter) {
+      const mnd = r.logget.slice(0, 7);
+      g.append(s("text", { x: x(i), y: H - 12, "text-anchor": "middle" }, mnd));
+      if (r.p_tal === null || r.p_tal === undefined) {               // 'ikke logget': et hul, aldrig interpoleret
+        g.append(s("text", { x: x(i), y: y(ymax / 2), "text-anchor": "middle" }, "ikke logget"));
+        continue;
+      }
+      const bw = Math.min(26, kol * 0.5);
+      if (r.baand_tal) g.append(s("rect", { class: "bånd-rect", x: x(i) - bw / 2, y: y(r.baand_tal[1]), width: bw, height: Math.max(1, y(r.baand_tal[0]) - y(r.baand_tal[1])), rx: 2 }));
+      if (r.basisrate_tal !== null && r.basisrate_tal !== undefined)
+        g.append(s("line", { class: "basislinje", x1: x(i) - bw / 2 - 6, x2: x(i) + bw / 2 + 6, y1: y(r.basisrate_tal), y2: y(r.basisrate_tal) }));
+      g.append(s("circle", { class: "punkt", cx: x(i), cy: y(r.p_tal), r: 4.5 }));
+    }
+    return g;
+  }
+
+  function linjeListe(linjer, firewallTekst) {
+    return el("div", { class: "linjer" }, linjer.map(m => {
+      const st = m.tilstand;
+      const stTekst = { aktiv: "aktiv", inaktiv: "inaktiv", kontekst: "kontekst", utilgaengelig: "utilgængelig" }[st] || st;
+      return el("div", { class: "linje" },
+        el("div", { class: "navn" }, el("span", { class: "tilstand " + (st === "aktiv" ? "aktiv" : st === "kontekst" ? "kontekst" : st === "utilgaengelig" ? "utilg" : "") , text: stTekst }), el("span", { text: T(m.navn) })),
+        el("div", { class: "vrd", text: T(m.vaerdi) }),
+        m.klasse ? el("div", { class: "kl", text: T(m.klasse) }) : null);
+    }));
+  }
+  const gruppeNøgle = k => T((k || "").split(/ \(|;|:/)[0].trim());
+
+  // ---------- hele siden
+  function tegn(d) {
+    const side = document.getElementById("side");
+    side.replaceChildren();
+    const hb = Array.isArray(d.hovedbog) ? d.hovedbog : [];
+    const logført = hb.some(r => r.snapshot === d.snapshot);
+    const cens = d.censureret && d.censureret.aktiv;
+
+    // hoved
+    const hoved = el("header", {},
+      el("p", { class: "etiket", text: `MOTOR v${d.version || "?"} · ${T(d.model || "")}` }),
+      el("h1", { text: "Sandsynlighed for at en NBER-recession begynder inden for fire kvartaler" }),
+      el("div", { class: "meta" },
+        el("span", {}, "Snapshot ", el("b", { class: "mono", text: d.snapshot || "—" })),
+        el("span", {}, "Kalibrering ", el("b", { class: "mono", text: d.manifest_hash || "—" }), ` (${d.kalibreret || "?"}, ${d.n_obs ?? "?"} kvartaler, ${d.n_episoder ?? "?"} onsets)`),
+        el("span", { text: logført ? "Logført hovedbogsrække" : "Mellemlæsning — ikke logført i hovedbogen" })));
+    if (Array.isArray(d.rekalibrering_paakraevet) && d.rekalibrering_paakraevet.length)
+      hoved.append(el("div", { class: "notits" }, el("strong", { text: "REKALIBRERING PÅKRÆVET" }), ...d.rekalibrering_paakraevet.map(t => el("span", { text: T(t) }))));
+    const kritiske = d.stale ? Object.entries(d.stale).filter(([, v]) => v && v.kritisk) : [];
+    if (kritiske.length)
+      hoved.append(el("div", { class: "notits" }, el("strong", { text: "FORÆLDEDE KRITISKE INPUT" }),
+        ...kritiske.map(([k, v]) => el("span", { class: "mono", text: `${k}: sidste ${v.sidste}, ${v.alder_dage} dage (grænse ${v.graense})` }))));
+    side.append(hoved);
+
+    // 1. læsningen
+    const læs = el("div", { class: "læsning" });
+    if (cens) {
+      læs.append(el("p", { class: "dom", text: T(d.dom) }),
+        el("p", { class: "lille", text: `Kun til reference: P ${pct(d.p)} (onset ${d.censureret.onset || "?"}). Onset-sandsynligheden er ikke defineret inde i en annonceret recession.` }));
+    } else {
+      const trio = el("div", { class: "trio" },
+        el("div", { class: "p" }, el("span", { class: "etiket", text: "P (onset inden 4 kvt.)" }), el("span", { class: "værdi", text: pct(d.p) })),
+        el("div", {}, el("span", { class: "etiket", text: "Bånd 10–90 %" }), el("span", { class: "værdi", text: `${fmt(d.baand[0] * 100)}–${fmt(d.baand[1] * 100)} %` })),
+        el("div", {}, el("span", { class: "etiket", text: "Basisrate" }), el("span", { class: "værdi", text: pct(d.basisrate) })));
+      læs.append(trio, intervalBar(d.baand[0], d.baand[1], d.p, d.basisrate),
+        el("p", { class: "lille", text: "Estimations-sensitivitetsbånd, ikke et konfidensinterval. " }, el("span", { lang: "en", text: ENGELSK(d.baand_fodnote) })));
+      if (d.baand_udelukker_basisrate === true && d.ratio !== null && d.ratio !== undefined)
+        læs.append(el("p", { class: "mono", text: `Forhold til basisraten: ${fmt(d.ratio, 2)}×` }));
+      læs.append(el("p", { class: "dom", text: T(d.dom) }));
+      if (d.parret) {
+        læs.append(el("div", { class: "parret" },
+          el("span", {}, "Parret supplement (P minus basisrate pr. bootstrap-træk, 10–90 %): ",
+            el("span", { class: "mono", text: `[${fortegn(d.parret.baand[0] * 100, 1)}; ${fortegn(d.parret.baand[1] * 100, 1)}] pp` }), " — ",
+            el("span", { lang: "en", text: ENGELSK(d.parret.daekning) })),
+          el("span", { text: "Supplementet ændrer ikke dommen." + (d.parret.enig_med_baandregel === false ? " Det er uenigt med båndreglen; dommen er stadig den ovenfor." : "") })));
+      }
+      const små = [];
+      if (d.live_input) {
+        const li = d.live_input;
+        små.push(li.kilde === "daglig"
+          ? `Kurve ${fortegn(li.curve)} pp: trailing måned af daglige DGS10 − DTB3 (${(li.vindue || []).join("..")}, ${li.n_dage} dage).`
+          : `Kurve ${fortegn(li.curve)} pp på månedstal.`);
+        if (li.maanedlig && li.p_maanedlig !== undefined)
+          små.push(`På publicerede månedstal ${li.maanedlig.maaned} (kurve ${fortegn(li.maanedlig.curve)} pp): P ${pct(li.p_maanedlig)} — sammenligningslinje, ikke et alternativt tal.`);
+      }
+      if (d.spot_kurve) små.push(`Spot-kurve ${d.spot_kurve.dato}: ${fortegn(d.spot_kurve.kurve)} pp → ${pct(d.spot_kurve.p)} ved samme vægte (kontekst, ikke P).`);
+      if (d.uscorede) små.push(`Uscorede felter (RAADETS_2027): månedligt fit ${pct(d.uscorede.p_maanedligt_fit)}, start 1953Q2 ${pct(d.uscorede.p_start_1953Q2)}, start 1960Q1 ${pct(d.uscorede.p_start_1960Q1)} — indgår ikke i dommen.`);
+      if (små.length) læs.append(el("div", { class: "parret" }, små.map(t => el("span", { text: t }))));
+    }
+    side.append(sektion("Læsningen", [], læs));
+
+    // 2. hovedbogen
+    const ref = d.hovedbog_reference;
+    const graf = hovedbogsGraf(hb);
+    const rækker = el("div", { class: "rul" }, el("table", {},
+      el("thead", {}, el("tr", {}, ["Logget", "P", "Bånd", "Basisrate", "Dom", "Kurve", "Antændelse"].map((h, k) => el("th", { class: k && k !== 4 && k !== 6 ? "tal" : null, text: h })))),
+      el("tbody", {}, hb.slice().reverse().map(r => el("tr", {},
+        el("td", { class: "mono", text: r.logget }),
+        el("td", { class: "tal", text: T(r.P) }), el("td", { class: "tal", text: T(r.baand) }), el("td", { class: "tal", text: T(r.basisrate) }),
+        el("td", { text: T(r.dom) }), el("td", { class: "tal", text: T(r.kurve) }), el("td", { text: T(r.antaending) }))))));
+    side.append(sektion("Hovedbogen", [mærkat("register, ikke en dom")],
+      el("p", { text: T(d.hovedbog_note) }),
+      ref && ref.improvement !== null && ref.improvement !== undefined
+        ? el("p", { class: "lille", text: `Referencetal for hovedbogen: +${fmt(ref.improvement, 1)} % (${T(ref.kilde)}). ${T(ref.note || "")}` }) : null,
+      graf, el("p", { class: "lille", text: "Prik = P som logget; skygge = båndet; vandret streg = den loggede basisrate. Hver række er skrevet, før udfaldet var kendt." }),
+      hb.length ? rækker : el("p", { class: "lille", text: "Ingen logførte rækker endnu." }),
+      d.noegle ? el("p", { class: "lille", text: `Bedømmelsesnøgle ${d.noegle}. Ingen samlet score, før mindst 3 komplette cyklusblokke er scoret.` })
+               : el("p", { class: "lille", text: "Ingen bedømmelsesnøgle i dette snapshot — ingen score vises." })));
+
+    // 3. månedens ændring
+    const æ = d.maanedens_aendring;
+    if (æ) {
+      const dl = el("dl", {},
+        el("dt", { text: "Mod række" }), el("dd", { text: æ.fra }),
+        el("dt", { text: "Ændring i P" }), el("dd", { text: fortegn(æ.dP_pp, 2) + " pp" }),
+        el("dt", { text: "Ændring i kurve" }), el("dd", { text: fortegn(æ.dK_pp, 2) + " pp" }));
+      if (æ.d10Y_pp !== undefined) dl.append(
+        el("dt", { text: "10Y / 3m" }), el("dd", { text: `${fortegn(æ.d10Y_pp)} / ${fortegn(æ.d3m_pp)} pp` }),
+        el("dt", { text: "P-bidrag 10Y / 3m" }), el("dd", { text: `${fortegn(æ.bidrag_10Y_pp)} / ${fortegn(æ.bidrag_3m_pp)} pp` }),
+        el("dt", { text: "Mærke" }), el("dd", { text: T(æ.maerke) }));
+      if (æ.dTP_pp !== undefined) dl.append(el("dt", { text: "Heraf term-præmie" }), el("dd", { text: `${fortegn(æ.dTP_pp)} pp (${(æ.dTP_datoer || []).join("..")}, Kim-Wright)` }));
+      side.append(sektion("Månedens ændring", [mærkat("ved frosne vægte")], dl));
+    }
+
+    // 4. benchmark-tabel
+    const bm = Array.isArray(d.benchmarks) ? d.benchmarks : [];
+    const tabel = el("table", {},
+      el("thead", {}, el("tr", {}, el("th", { text: "Model" }), el("th", { class: "tal", text: "Wf-skill" }), el("th", { text: "Panel" }), el("th", { class: "tal", text: "Live-P" }), el("th", { text: "Status" }))),
+      el("tbody", {}, bm.map(b => {
+        const st = b.status || "";
+        const kl = st === "OPERATIONEL" ? "op" : /reference/.test(st) ? "ref" : /ikke bestaaet/.test(st) ? "afvist" : null;
+        return el("tr", { class: kl },
+          el("td", { text: T(b.navn) }),
+          el("td", { class: "tal", text: b.wf === null || b.wf === undefined ? "" : (b.wf > 0 ? "+" : "") + fmt(b.wf, 1) + " %" }),
+          el("td", { class: "lille", text: b.panel ? T(b.panel) : "" }),
+          el("td", { class: "tal", text: b.live_p !== null && b.live_p !== undefined ? pct(b.live_p) : b.vaerdi !== undefined && b.vaerdi !== null ? fmt(b.vaerdi, 2) : "" }),
+          el("td", { class: "lille", text: T(st) }));
+      })));
+    side.append(sektion("Benchmark-tabel", [mærkat("vises også når den er usmigrende")],
+      el("p", { text: T(d.skill_saetning) }),
+      el("div", { class: "rul" }, tabel),
+      el("p", { class: "lille", text: "Wf-skill sammenlignes kun inden for samme panel. De afviste kandidater er målt på panelet t.o.m. 2023Q2 og sammenlignes med referencerækken lige over dem." }),
+      d.gate && d.gate.note ? el("p", { class: "lille", text: "Gaten: " + T(d.gate.note) }) : null));
+
+    // 5. model-inputs
+    if (Array.isArray(d.inputs) && d.inputs.length)
+      side.append(sektion("Model-inputs", [mærkat("kun én er operationel", "op")], el("div", { class: "rul" }, el("table", {},
+        el("thead", {}, el("tr", {}, el("th", { text: "Feature" }), el("th", { class: "tal", text: "Værdi" }), el("th", { class: "tal", text: "z" }), el("th", { text: "" }))),
+        el("tbody", {}, d.inputs.map(i => el("tr", { class: i.operationel ? "op" : null },
+          el("td", { text: T(i.navn) }), el("td", { class: "tal", text: fmt(i.vaerdi, 2) }), el("td", { class: "tal", text: fortegn(i.z, 2) }),
+          el("td", { class: "lille", text: i.operationel ? "operationel" : "fuldmodel" })))))),
+        d.dd_kilde ? el("p", { class: "lille", text: "Drawdown: " + T(d.dd_kilde) }) : null));
+
+    // 6. monitorer
+    const mon = Array.isArray(d.monitors) ? d.monitors : [];
+    const grupper = new Map();
+    for (const m of mon) { const k = gruppeNøgle(m.klasse); if (!grupper.has(k)) grupper.set(k, []); grupper.get(k).push(m); }
+    side.append(sektion("Monitorer", [mærkat("ingen indflydelse på P", "firewall"), mærkat("tælles aldrig sammen")],
+      ...[...grupper.entries()].map(([k, ms]) => el("div", { class: "gruppe" }, el("h3", { text: k }), linjeListe(ms)))));
+
+    // 7. kontekst
+    const kontekst = el("div", { class: "firewallet" });
+    const nv = (titel, mærke, liste) => liste && liste.length ? el("div", { class: "gruppe" },
+      el("div", { class: "sektionshoved" }, el("h3", { text: titel }), mærkat(mærke, "firewall")),
+      el("div", { class: "linjer" }, liste.map(x => el("div", { class: "linje" }, el("div", { class: "navn", text: T(x.navn) }), el("div", { class: "vrd", text: T(x.vaerdi) }))))) : null;
+    kontekst.append(...[
+      nv("Market conditions", "not recession evidence", d.market_conditions),
+      d.forudsaetninger && d.forudsaetninger.length ? el("div", { class: "gruppe" },
+        el("div", { class: "sektionshoved" }, el("h3", { text: "Forudsætnings-tripwires" }), mærkat("brændstof, ikke gnist · ingen indflydelse på P", "firewall")),
+        linjeListe(d.forudsaetninger)) : null,
+      nv("Pengepolitik & inflation", "ingen indflydelse på P", d.pengepolitik),
+      nv("Kredit", "kontekst · ikke i P", d.kredit),
+      d.nber_indikatorer && d.nber_indikatorer.length ? el("div", { class: "gruppe" },
+        el("div", { class: "sektionshoved" }, el("h3", { text: "NBER-komiteens indikatorer" }), mærkat("coincident · anden disciplin", "firewall")),
+        el("div", { class: "rul" }, el("table", {},
+          el("thead", {}, el("tr", {}, el("th", { text: "Serie" }), el("th", { text: "Måned" }), el("th", { class: "tal", text: "y/y" }), el("th", { class: "tal", text: "Fra 12m-top" }))),
+          el("tbody", {}, d.nber_indikatorer.map(r => el("tr", {},
+            el("td", {}, T(r.navn), r.note ? el("div", { class: "lille", text: T(r.note) }) : null),
+            el("td", { class: "mono", text: r.maaned }), el("td", { class: "tal", text: r.yoy === null ? "—" : fortegn(r.yoy, 1) + " %" }),
+            el("td", { class: "tal", text: fortegn(r.fra_12m_top, 1) + " %" }))))))) : null,
+      ...(d.kontekst_usa ? Object.values(d.kontekst_usa).filter(b => b && b.linjer && b.linjer.length).map(b => el("div", { class: "gruppe" },
+        el("div", { class: "sektionshoved" }, el("h3", { text: T(b.titel) }), mærkat("kontekst-protokollen · aldrig ved P", "firewall")),
+        el("div", { class: "linjer" }, b.linjer.map(l => el("div", { class: "linje" }, el("div", { class: "navn", text: T(l.navn) }), el("div", { class: "vrd", text: T(l.tekst) })))))) : [])
+    ].filter(Boolean));
+    side.append(sektion("Kontekst", [mærkat("firewallet", "firewall")], kontekst));
+
+    // 8. advarsler
+    const a = d.advarsler || {};
+    side.append(sektion("Stående advarsler", [], el("div", { class: "advarsler" },
+      a.vaerste_fejlalarm ? el("p", { text: `Værste fejlalarm i walk-forward: ${pct(a.vaerste_fejlalarm.p)} (${a.vaerste_fejlalarm.origin}) uden onset.` }) : null,
+      a.sti_advarsel ? el("p", { text: T(a.sti_advarsel) }) : null,
+      a.lang_ende ? el("p", { text: T(a.lang_ende) }) : null,
+      a.eksogen ? el("p", { text: T(a.eksogen) }) : null)));
+
+    // 9. scenarie-appendiks
+    if (Array.isArray(d.scenarie) && d.scenarie.length)
+      side.append(el("section", { class: "scen" },
+        el("div", { class: "sektionshoved" }, el("h2", { text: "Scenarie-appendiks" }), mærkat("MiroFish-scenarie — uvalideret, ingen indflydelse på P, ikke i hovedbogen", "scenarie")),
+        linjeListe(d.scenarie)));
+
+    // fodnote: kalibrering og dataalder
+    const fod = el("footer", { class: "fod" });
+    const kal = el("dl", {},
+      el("dt", { text: "Version / manifest" }), el("dd", { text: `${d.version} / ${d.manifest_hash}` + (d.forrige_manifest ? ` (forrige ${d.forrige_manifest})` : "") }),
+      el("dt", { text: "Kalibreret" }), el("dd", { text: `${d.kalibreret}; ${d.n_obs} kvartaler, ${d.n_episoder} onsets` }),
+      el("dt", { text: "Trigger" }), el("dd", { text: T(d.trigger || "—") }));
+    if (d.raa) kal.append(el("dt", { text: "Rå koefficienter" }), el("dd", { text: `P = logit⁻¹(${fmt(d.raa.alpha, 4)} ${d.raa.beta_curve_pr_pp < 0 ? "−" : "+"} ${fmt(Math.abs(d.raa.beta_curve_pr_pp), 4)} · kurve)` }));
+    kal.append(el("dt", { text: "Orakel-censureret wf" }), el("dd", { text: `+${fmt(d.wf_log_loss)} % log-loss / +${fmt(d.wf_brier)} % Brier — ${T(d.wf_note)}` }));
+    if (d.koersel) kal.append(el("dt", { text: "Seneste kørsel" }), el("dd", { text: `${d.koersel.maaned} — ${T(d.koersel.trigger)}${d.koersel.manifest_genbrugt ? " (vægte uændrede)" : ""}` }));
+    const of = d.diagnostik && d.diagnostik.oracle_fri;
+    if (of && of.alle_live_publicerbare && of.ekskl_additional)
+      kal.append(el("dt", { text: "Oracle-fri (i tandem)" }), el("dd", { text: `alle live-publicerbare +${fmt(of.alle_live_publicerbare.improvement, 2)} % (${of.alle_live_publicerbare.n}) | ekskl. additional +${fmt(of.ekskl_additional.improvement, 2)} % (${of.ekskl_additional.n})` + (of.tolkning ? " — " + T(of.tolkning) : " — tolkes i tandem, citeres aldrig hver for sig") }));
+    const blokke = [el("div", { class: "gruppe" }, el("h3", { text: "Kalibreringen" }), kal)];
+    if (d.bro && d.bro.trin) {
+      const navne = { i_legacy_rygrad: "legacy-rygrad", ii_korrigerede_kilder_samme_origins: "korrigerede kilder, samme origins", iii_udvidet_panel: "udvidet panel" };
+      blokke.push(el("div", { class: "gruppe" }, el("h3", { text: `Bro ved identisk input (kurve ${fortegn(d.bro.input_vektor && d.bro.input_vektor.curve)} pp)` }),
+        el("dl", {}, Object.entries(d.bro.trin).map(([k, v]) => [el("dt", { text: navne[k] || k }), el("dd", { text: `${pct(v.P)} (n ${v.n_obs})` })])),
+        el("p", { lang: "en", text: ENGELSK(d.bro.saetning) }),
+        d.delta_vs_forrige ? el("p", { text: `Ændret estimation over ${d.delta_vs_forrige.n_origins} origins: max |ΔP| ${pct(d.delta_vs_forrige.max_abs_dP)} (${d.delta_vs_forrige.origin_max}), middel ${pct(d.delta_vs_forrige.mean_abs_dP)}.` }) : null));
+    }
+    const fr = d.manual_friskhed || {};
+    const frisk = el("dl", {},
+      el("dt", { text: "Snapshot-hash" }), el("dd", { text: d.snapshot_hash || "—" }),
+      fr.cape ? [el("dt", { text: "CAPE" }), el("dd", { text: `${fr.cape.dato || "uden dato"}${fr.cape.alder_dage !== null ? `, ${fr.cape.alder_dage} dage` : ""}${fr.cape.stale ? " — forældet" : ""}` })] : null,
+      fr.spx_vs_hi ? [el("dt", { text: "S&P vs 52u-top" }), el("dd", { text: `${fr.spx_vs_hi.dato || "uden dato"}${fr.spx_vs_hi.alder_dage !== null && fr.spx_vs_hi.alder_dage !== undefined ? `, ${fr.spx_vs_hi.alder_dage} dage` : ""}${fr.spx_vs_hi.stale ? " — forældet" : ""}` })] : null,
+      fr.margin_yoy ? [el("dt", { text: "Marginlån" }), el("dd", { text: `datamåned ${fr.margin_yoy.periode || "?"}${fr.margin_yoy.foraeldet ? ` — forældet (forventet ${fr.margin_yoy.forventet_nyeste})` : ""}` })] : null,
+      el("dt", { text: "Utilgængelige serier" }), el("dd", { text: (d.utilgaengelige || []).length ? d.utilgaengelige.join(", ") : "ingen" }));
+    blokke.push(el("div", { class: "gruppe" }, el("h3", { text: "Data og friskhed" }), frisk));
+    fod.append(el("div", { class: "to-kol" }, blokke),
+      el("p", { text: "Genereret af v5/motor.py --json. Dashboardet er en deterministisk funktion af snapshot, vægte, diagnostik og LOG.md. Kildetekster er translittereret (aa → å, ae → æ, oe → ø) og sat i dansk talformat; ellers gengivet ordret." }));
+    side.append(fod);
+  }
+
+  // ---------- indlæsning: samme mappe -> indlejret kopi -> filvælger
+  function fejl(tekst) {
+    document.getElementById("indlaes-tekst").textContent = tekst;
+    document.getElementById("vaelg").hidden = false;
+  }
+  function brug(d) {
+    try { tegn(d); } catch (e) { fejl("dashboard.json kunne ikke vises: " + e.message); }
+  }
+  document.getElementById("fil").addEventListener("change", ev => {
+    const f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    f.text().then(t => brug(JSON.parse(t))).catch(e => fejl("Filen er ikke gyldig JSON: " + e.message));
+  });
+  const indlejret = document.getElementById("indlejret").textContent.trim();
+  fetch("dashboard.json", { cache: "no-store" })
+    .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then(brug)
+    .catch(() => {
+      if (indlejret) { try { brug(JSON.parse(indlejret)); return; } catch (e) { /* falder igennem */ } }
+      fejl("dashboard.json kunne ikke hentes fra samme mappe.");
+    });
+})();
+</script>

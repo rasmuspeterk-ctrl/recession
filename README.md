@@ -76,6 +76,7 @@ ud af repoet, sværm-tripwires ud af hovedbogens antændings-kolonne (rådets R3
 | [REVIEW-2026-10-15.md](REVIEW-2026-10-15.md) | Kode-reviewet af hele setuppet (85 fund) |
 | [TRIGGER-ATLAS.md](TRIGGER-ATLAS.md) | Sværm-simulerede recessionskanaler og tripwires — narrativ kontekst, ikke input til P |
 | [DASHBOARD-BRIEF.md](DASHBOARD-BRIEF.md) | Designregler for et dashboard der ikke kan oversælge |
+| [dashboard.html](dashboard.html) | Dashboardet: én selvstændig side, der læser `dashboard.json` fra samme mappe (`python -m http.server` i repo-roden, åbn `/dashboard.html`; direkte fra disken vælges filen i siden) |
 | [debat/](debat/) | Transkripter af rådsdebatterne (blueprint, v5.0.1 og 2027; grand reviewets runde A+B blev ikke arkiveret — se RAADETS_REVIEW.md) |
 | [mirofish-sim/](mirofish-sim/) | Sværm-simulationernes rådata og resuméer |
 | [v4/](v4/) | Forgængeren |
