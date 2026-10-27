@@ -65,10 +65,10 @@ ud af repoet, sværm-tripwires ud af hovedbogens antændings-kolonne (rådets R3
 | Fil | Indhold |
 |---|---|
 | [v5/README.md](v5/README.md) | Ritualer, filoversigt, afvigelser fra blueprintet, byggelog |
-| [v5/](v5/) | Koden: fetch → (finalize6 → diagnostik ved rekalibrering) → motor (calibrate.py er trin-1-reproduktionen og overskriver ikke driftsvægtene). 220 tests. |
+| [v5/](v5/) | Koden: fetch → (finalize6 → diagnostik ved rekalibrering) → motor (calibrate.py er trin-1-reproduktionen og overskriver ikke driftsvægtene). 223 tests. |
 | [LOG.md](LOG.md) | Hovedbogen — én række pr. måned, logført før udfaldet kendes. Redigeres aldrig. |
 | [BEDOEMMELSESNOEGLE.md](BEDOEMMELSESNOEGLE.md) | Hvordan hovedbogen scores — præregistreret før række 4, med styrketabel |
-| [UDFALD.csv](UDFALD.csv) / [hovedbog.jsonl](hovedbog.jsonl) | Append-only udfald pr. række / fuld record pr. række |
+| [UDFALD.csv](UDFALD.csv) / [hovedbog.jsonl](hovedbog.jsonl) | Append-only udfald pr. række / fuld record pr. række (hovedbog.jsonl oprettes ved række 4) |
 | [RAADETS_KONSENSUS.md](RAADETS_KONSENSUS.md) | Blueprintet, ratificeret 7/7 af et råd af sprogmodeller efter seks debatrunder |
 | [RAADETS_REVIEW.md](RAADETS_REVIEW.md) | Grand review med 18 modeller |
 | [RAADETS_V501.md](RAADETS_V501.md) | Rådets konsensus om v5.0.1 — den første rekalibrering (4/4, 19. sept. 2026) |
@@ -96,7 +96,7 @@ cd v5
 python fetch.py                        # snapshot (FRED + Fed Board EBP), hashet; beregner selv S&P vs 12-mdr-høj,
                                        # CAPE (multpl) og marginlån (FINRA) — manual/manual.json er kun reserve
 python motor.py --log --json           # læsning, hovedbogsrække (kun i logvinduet), dashboard.json
-python -m unittest test_v5             # 220 tests
+python -m unittest test_v5             # 223 tests
 ```
 
 Vægtene er frosne mellem rekalibreringer (hver september, eller når NBER daterer en ny top/bund):

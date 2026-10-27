@@ -3133,5 +3133,29 @@ class TestCPOgDatastatusIMotor(unittest.TestCase):
             self.assertIn(x["rolle"], ("P", "refit", "rygrad", "kontekst"))
 
 
+class TestReviewRettelser20261027(unittest.TestCase):
+    """Eksterne reviews 2026-10-27: maerke-taerskel, tandem i benchmark-tabellen, BNP-vintage. Kun tekst, aldrig P."""
+
+    def test_kurve_maerke_taerskel(self):
+        self.assertEqual(M.kurve_maerke(0.08, 0.06, 0.0143), "parallelt skift op (kurven flyttede sig under 5bp)")
+        self.assertTrue(M.kurve_maerke(-0.08, -0.06, -0.01).startswith("parallelt skift ned"))
+        self.assertTrue(M.kurve_maerke(0.0, 0.0, 0.0).startswith("naesten uaendret"))
+        self.assertEqual(M.kurve_maerke(0.20, 0.05, 0.15), "lang-ende-drevet (bear steepening)")
+        self.assertEqual(M.kurve_maerke(0.01, -0.20, 0.21), "kort-ende-drevet (bull steepening)")
+
+    def test_bnp_efter_advance(self):
+        self.assertTrue(M.bnp_efter_advance((2026, 1), "2026-08-09"))      # Q1 foerst set efter third estimate
+        self.assertFalse(M.bnp_efter_advance((2026, 4), "2026-08-09"))     # Q2: ritualet ligger efter advance
+        self.assertFalse(M.bnp_efter_advance((2025, 10), "2026-02-10"))    # Q4: kvartalsslut 12-31 + 42 dage
+
+    def test_tandem_note_og_dashboardets_benchmark_raekke(self):
+        self.assertIsNone(M.tandem_note(None))
+        self.assertIsNone(M.tandem_note({"oracle_fri": {}}))
+        d = json.loads((HERE.parent / "dashboard.json").read_text(encoding="utf-8"))
+        of = d["diagnostik"]["oracle_fri"]["alle_live_publicerbare"]
+        raekke = next(b for b in d["benchmarks"] if b.get("status") == "OPERATIONEL")
+        self.assertIn(f"+{of['improvement']}%", raekke["note"])              # RAADETS_2027 §1.2: aldrig +27,05 alene
+
+
 if __name__ == "__main__":
     unittest.main()

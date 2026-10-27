@@ -18,7 +18,7 @@ blev til, ikke hvordan den koeres i dag.
 | `calibrate.py` | Hjaelpefunktioner for hele kaeden (read_fred, live_kurve, fit ...). Som script HISTORISK (trin 1): skriver `calibrate_resultat.json`; `weights.json` kun med `--overskriv` (bevidst) |
 | `ablation2_nber.py` | NBER-labelen, annonceringstabellen, USREC-krydstjekket, eligibility og den forklarede origin-audit. Som script (`--promote`) HISTORISK — koer ikke i drift |
 | `ablation3/4/7/8_*.py`, `audit5_alfred.py` | Historiske, afsluttede tests (frekvens, features, curve+cape, AWHMAN, ALFRED) — koer ikke i drift |
-| `test_v5.py` | 220 tests, stdlib unittest, ingen netvaerk (~4 min) |
+| `test_v5.py` | 223 tests, stdlib unittest, ingen netvaerk (~4 min) |
 | `nber_announcements.csv` | NBER's annonceringsdatoer (top/bund) — se *NBER-vedligehold* nedenfor |
 | `manual/` | `manual.json` (S&P vs 52u-top, live-CAPE, marginlaan y/y + deres datoer), `shiller_yale_2023-09.csv` (uforanderlig Yale-kopi), `seam_check_2023.json`, evt. `outliers_accepteret.json` |
 | `kalibreringer/` | Kalibreringsmanifester (v5.0.1 §3.3): et pr. kalibrering, index.json, legacy_mapping.json |
@@ -43,7 +43,7 @@ hvis Kim-Wright-serien mangler.
 python fetch.py                  # hent + rygrad + guards + diff-tjek med oejnene; beregner selv S&P vs 12m-top,
                                  # CAPE og marginlaan (meta.json -> "afledte"); manual/manual.json er kun reserve
 python motor.py --log --json     # aflaesning, prospektiv raekke i ../LOG.md + ../hovedbog.jsonl, dashboard.json
-python -m unittest test_v5       # 220 tests
+python -m unittest test_v5       # 223 tests
 ```
 Hovedbogen (`../LOG.md`) er den eneste fuldt prospektive test: een raekke pr. maaned, skrevet FOER
 udfaldet kendes; historiske raekker roeres aldrig. Den beskytter mod look-ahead, men er statistisk
@@ -873,3 +873,32 @@ dashboard-replay er uafhaengig af lokale filer.
   tilbage til snapshottet fra 2026-10-15. Nu omdoebes det gamle snapshot foerst til `<dato>.gammel`; kan
   det ikke flyttes, er intet roert, det nye ligger komplet i `<dato>.ny`, og fetch stopper hoejlydt.
 
+
+## Rettelser efter de eksterne reviews 2026-10-27 (kun tekst; P, baand, vaegte og hovedbog uroerte)
+
+To eksterne gennemgange (en rapportlaesning og en kodegennemgang) blev tjekket punkt for punkt mod koden.
+Tre paastande holdt ikke: gate-tallet 3,9pp er fuldmodel mod curve-only paa samme fulde sti (27,05 − 23,16),
+ikke curve+cape mod referencen; Estrella-Mishkin beregnes paa DGS10 − DGS3MO (+0,95pp), ikke paa modellens
++1,12pp; og de 12 onsets er rigtige, fordi panelet starter 1947Q2. Det, der holdt, er rettet:
+- **Maerket paa maanedens aendring** (`motor.kurve_maerke`): under `MAERKE_MIN_DK` = 5bp kurveaendring hedder
+  det "parallelt skift op/ned" i stedet for steepening/flattening. 2026-10 var +0,08/+0,06 med kurve +0,01.
+- **Tandem i benchmark-tabellen** (`motor.tandem_note`): curve-only-raekkens +27,05 % staar aldrig alene
+  (RAADETS_2027 §1.2); noten baerer den oracle-fri +20,37 % (219 origins). Dashboardet viser nu raekke-noter.
+- **Estrella-Mishkin** viser det brugte spaend (CMT) i status-teksten.
+- **BNP-monitoren** skriver "foerst set af os" og maerker en kvartalsvaerdi "senere vintage end advance",
+  naar vores foerste snapshot kom efter advance-vinduet (`motor.bnp_efter_advance`: kvartalsslut + 32 + 10 dage).
+- **Konventionsnoten** under P (`live_input.konvention`): modellen bruger DTB3 paa diskontobasis som
+  kalibreringens TB3MS; FRED's T10Y3M (DGS3MO, CMT) giver +0,95pp paa samme vindue. De frosne vaegte er
+  estimeret paa diskontobasis, saa CMT-kurven kan ikke saettes ind i dem.
+- **Staaende advarsel om forventningsdelen** (`advarsler.forventningsdel`): Kim-Wright 2026-10-16 giver
+  forventningsdel minus 3m paa +0,02pp (DTB3) / −0,16pp (DGS3MO); 98 % af kurven den dag er term-praemie.
+  En ACM-version blev testet og afvist i trin 4 (−77,9pp).
+- **Dashboardet** viser gaten som "fuldmodel mod curve-only, samme fulde sti" og 4.4-intervallet (historisk
+  parret loss-bootstrap over 9 cyklusblokke: middel +0,120, 90 %-interval [−0,042; +0,239], 8,9 % af
+  traekkene <= 0) ved skill-tallene.
+
+To foelsomheds-/feature-spoergsmaal er skrevet som et **udkast til raadet**, ikke forseglet og ikke koert:
+[spec2027/udkast/7_konvention_og_forventningsdel.md](spec2027/udkast/7_konvention_og_forventningsdel.md)
+(del A: 3m-benet paa obligationsaekvivalent basis; del B: forventningsdelen, hvor udkastet anbefaler en
+prospektiv, uscoret linje frem for en ny historisk test, fordi ACM-ideen allerede er testet og afvist).
+`../hovedbog.jsonl` findes endnu ikke: den oprettes ved naeste logfoerte raekke (raekke 4).

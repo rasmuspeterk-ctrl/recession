@@ -40,7 +40,8 @@ LOGDAG_VINDUE = None              # G3.6: None = logvindue() (BEDOEMMELSESNOEGLE
 CAPE_MAX_ALDER = 45               # F30: dage — aeldre live-CAPE -> fuldmodellen 'unavailable — CAPE stale'
 SPX_MAX_ALDER = 7                 # F30: dage — manuel S&P vs 52u-top flages (blokerer ikke)
 MARGIN_LAG = 25                   # F30: FINRA publicerer ca. 25 dage efter maanedens udgang
-CP_MIN_MAALINGER = 3              # 2026-10-27: CP-renten mangler paa ca. halvdelen af dagene; faerre maalinger paa 14 dage = utilgaengelig
+MAERKE_MIN_DK = 0.05             # 2026-10-27 (review): kurveaendring under 5bp = parallelt skift, intet steepening-/flattening-maerke
+CP_MIN_MAALINGER = 3             # 2026-10-27: CP-renten mangler paa ca. halvdelen af dagene; faerre maalinger paa 14 dage = utilgaengelig
 NA = float("nan")
 # RAADETS_2027 §1.2: styrkeklausulen staar i SAMME saetning som hvert skill-tal (analyser/styrke_simulation.py;
 # stoerrelsesorden, re-afledes fra den konfigurationsspecifikke replay ved september-refit 2027)
@@ -306,6 +307,36 @@ def bnp_foerste_print(raw, snap):
         for k, v in (s or {}).items():
             ud.setdefault(k, (v, d.name))
     return ud
+
+
+def kurve_maerke(d10, d3, dK):
+    """F10-maerket paa maanedens aendring. Review 2026-10-27: under MAERKE_MIN_DK er skiftet parallelt (ingen
+    steepening/flattening), ellers det ben, der flyttede sig mest."""
+    if abs(dK) < MAERKE_MIN_DK:
+        retning = "op" if d10 > 0 and d3 > 0 else "ned" if d10 < 0 and d3 < 0 else None
+        return (f"parallelt skift {retning}" if retning else "naesten uaendret") + \
+            f" (kurven flyttede sig under {MAERKE_MIN_DK * 100:.0f}bp)"
+    if abs(d10) >= abs(d3):
+        return "lang-ende-drevet (" + ("bear steepening" if d10 > 0 and dK > 0 else "bull flattening" if d10 < 0 and dK < 0 else "blandet") + ")"
+    return "kort-ende-drevet (" + ("bull steepening" if d3 < 0 and dK > 0 else "bear flattening" if d3 > 0 and dK < 0 else "blandet") + ")"
+
+
+def tandem_note(diag):
+    """RAADETS_2027 §1.2: den orakel-censurerede wf-skill staar aldrig alene — benchmark-raekken faar den oracle-fri med."""
+    of = ((diag or {}).get("oracle_fri") or {}).get("alle_live_publicerbare") or {}
+    if of.get("improvement") is None:
+        return None
+    return (f"wf-kolonnen er orakel-censureret som de oevrige raekker; citeres kun sammen med oracle-fri "
+            f"+{of['improvement']}% ({of['n']} origins), RAADETS_2027 §1.2")
+
+
+def bnp_efter_advance(kvt, snapshot_navn):
+    """Review 2026-10-27: 'foerste print' er den foerste vintage i VORES snapshots. Kom snapshottet efter BEA's
+    advance-vindue (kvartalsslut + udgivelseslag + slaek, spine.UDGIVELSE/SLAEK), er det en senere vintage."""
+    md = kvt[1] + 2                                                     # kvartalets sidste maaned
+    slut = date(kvt[0] + md // 12, md % 12 + 1, 1) - timedelta(days=1)
+    frist = slut + timedelta(days=SP.UDGIVELSE["A191RL1Q225SBEA"][1] + SP.SLAEK["q"])
+    return date.fromisoformat(snapshot_navn) > frist
 
 
 def siden_sidst(daily, fra_dato, taerskel, over=True):
@@ -789,9 +820,18 @@ def main():
     print(f"   (orakel-censureret wf: +{op['wf_improvement']:.1f}% log-loss / +{op['wf_brier']:.1f}% Brier — fast lambda=1 "
           "(arvet fra v4), fuld-sti-valg mellem to modeller, ikke nested)")
     print(f"   P({W['label_tekst']})     {p_op*100:>6.1f}%")
+    em = em_probit(snap, LI.get("vindue")) if LI["kilde"] == "daglig" else None
+    konv_txt = None
     if LI["kilde"] == "daglig":
         print(f"   (paa publicerede maanedstal GS10-TB3MS {LI['maanedlig']['maaned']}, kurve "
               f"{LI['maanedlig']['curve']:+.2f}pp: {p_maanedlig*100:.1f}% — samme vaegte, aeldre input)")
+        if em:                                              # review 2026-10-27: T10Y3M-forvirringen
+            konv_txt = (f"Konvention: 3m-renten er DTB3 paa diskontobasis, ligesom kalibreringens TB3MS. FRED's T10Y3M "
+                        f"bruger DGS3MO (CMT, obligationsaekvivalent); paa samme vindue er den kurve {em['spread']:+.2f}pp. "
+                        f"Forskellen ({LI['curve'] - em['spread']:.2f}pp) er konvention, ikke data. De frosne vaegte er "
+                        "estimeret paa diskontobasis, saa CMT-kurven kan ikke saettes ind i dem; en foelsomhedstest er "
+                        "foreslaaet til refitten 2027 (spec2027/udkast/7, kraever raadets mandat).")
+            print(f"   ({konv_txt})")
     print(f"   Estimation-sensitivity-baand (10-90%)   {lo*100:.1f}% - {hi*100:.1f}%")
     print(f"   Basisrate                               {base*100:.1f}%")
     if band_excludes_base:
@@ -842,6 +882,9 @@ def main():
     print(f"   {'intercept (basisrate)':<34}{'+0.0%':>10}{base*100:>8.1f}%")
     print(f"   {'curve-only-logit (NY Fed-stil-bm.)':<34}{'+'+format(W['benchmarks']['curve_only']['wf_improvement'],'.1f')+'%':>10}{p_curve*100:>8.1f}%"
           f"   fuld sti t.o.m. {op.get('estimering_slut', '?')}" + ("   <- OPERATIONEL" if W["operationel"] == "curve_only" else ""))
+    tandem_txt = tandem_note(diag)
+    if tandem_txt:
+        print(f"   {'':<34}({tandem_txt})")
     if fm_ok:
         print(f"   {'fuldmodel (5 features)':<34}{'+'+format(fm['wf_improvement'],'.1f')+'%':>10}{p_full*100:>8.1f}%"
               f"   [{fm['status']}]")
@@ -865,7 +908,6 @@ def main():
     print(f"   {'realtids-Sahm (trigger 0,50)':<34}{'':>10}{fmt(sahm[1] if sahm else None, '>8.2f', '       ?')}    [naerhorisont-signal]")
     print(f"   {'Chauvet-Piger nowcast':<34}{'':>10}{fmt(cp[1] if cp else None, '>8.1f', '       ?')}%   [coincident, "
           f"{(str(cp[0][0]) + '-' + format(cp[0][1], '02d')) if cp else '?'}, publiceringslag — anden disciplin]")
-    em = em_probit(snap, LI.get("vindue")) if LI["kilde"] == "daglig" else None
     if em:
         print(f"   {'Estrella-Mishkin-probit (NY Fed-koef.)':<34}{'':>10}{em['p']*100:>8.1f}%   [andet maal: i recession om 12 mdr; "
               f"beregnet paa trailing 10y-3m (CMT) {em['spread']:+.2f}pp — ikke NY Fed's publicerede tal]")
@@ -917,7 +959,9 @@ def main():
     fp = bnp_foerste_print(C.RAW, snap)
     sidste2 = [k for k, _ in gq[-2:]]
     foerste = [fp.get(k, (v, snap.name)) for k, v in gq[-2:]]
-    adv_txt = ", ".join(f"{k[0]}Q{(k[1]-1)//3+1} {v:+.1f}% (1. set {d[5:]})" for k, (v, d) in zip(sidste2, foerste))
+    adv_txt = ", ".join(f"{k[0]}Q{(k[1]-1)//3+1} {v:+.1f}% (foerst set af os {d[5:]}"
+                        + ("; senere vintage end advance" if bnp_efter_advance(k, d) else "") + ")"
+                        for k, (v, d) in zip(sidste2, foerste))
     adv_aktiv = len(foerste) == 2 and all(v < 0 for v, _ in foerste)
 
     if oas and oas[2] != "fil":
@@ -937,7 +981,7 @@ def main():
         ("S&P dagsluk vs 52u-top < -20%", float(man["spx_vs_hi"]) < -0.20, f"{float(man['spx_vs_hi'])*100:+.0f}% ({'FRED SP500' if man_kilde['spx_vs_hi'] == 'automatisk' and meta.get('afledte') else 'manuel'}{', ' + man['spx_dato'] if man.get('spx_dato') else ''})",
          "fuldmodel-feature (kalibreringens dd i sektion 2)"),
         ("Advance-estimat: 2 neg. BNP-print", adv_aktiv, adv_txt,
-         "uvalideret realtidsdiagnostik paa foerste print (vintage-flip dokumenteret, trin 5)"),
+         "uvalideret realtidsdiagnostik paa foerste print i vores snapshots (vintage-flip dokumenteret, trin 5)"),
     ]
     kontekst = [
         ("Claims-momentum", None, claims_txt, "testet, ikke bestaaet (trin 4)"),
@@ -1112,6 +1156,21 @@ def main():
                     ntfs = float(np.mean([2 * c2[d] - e1[d] - f3[d] for d in vn]))
                     sammensaetning["ntfs_approks"] = round(ntfs, 4)
                     pol.append(("Near-term forward spread (approks.)", f"{ntfs:+.2f}pp (2*2y - 1y - 3m; negativ = lempelser prissat)"))
+    forv_txt = None                                          # review 2026-10-27: forventningsdel mod term-praemie
+    if tp10 is not None:
+        paa = lambda s: ([v for d, v in (s or []) if d <= tp_dato] or [None])[-1]       # samme dag som TP, ellers foer
+        b3_tp, c3_tp, forv = paa(_tbd), paa(d3mo), _y - tp10
+        if b3_tp is not None:
+            kurve_tp = _y - b3_tp
+            forv_txt = (f"Kurvens sammensaetning (Kim-Wright, {tp_dato}): 10Y {_y:.2f} = term-praemie {tp10:.2f} + forventet "
+                        f"{forv:.2f}. Forventningsdelen minus 3m er {forv - b3_tp:+.2f}pp mod DTB3 (diskonto, modellens konvention)"
+                        + (f" og {forv - c3_tp:+.2f}pp mod DGS3MO (CMT)" if c3_tp is not None else "")
+                        + (f"; {tp10 / kurve_tp * 100:.0f} % af kurven den dag ({kurve_tp:+.2f}pp) er term-praemie"
+                           if kurve_tp > 0 and tp10 > 0 else "")
+                        + ". Litteraturen (Rosenberg-Maurer 2008) finder, at det er forventningsdelen, der forudsiger "
+                          "recessioner; modellen laeser kun summen. En ACM-version blev testet og afvist i trin 4 "
+                          "(-77,9pp fuld sti, primaert straffen for aarene foer 1961). Kontekst, ikke i P; et forslag "
+                          "til raadet ligger i spec2027/udkast/7.")
     print()
     print("   PENGEPOLITIK, INFLATION & KURVENS SAMMENSAETNING   [kontekst — ingen indflydelse paa P]")
     for navn, vaerdi in pol:
@@ -1202,6 +1261,8 @@ def main():
                  "atlassets kanal 5 laeser samme bevaegelse som risiko. Dommen er uaendret.")
     print(f"   STI-ADVARSEL (raadsreview 2026-08, enstemmig): {sti_txt}")
     print(f"   LANG ENDE (F10): {lang_ende}")
+    if forv_txt:
+        print(f"   FORVENTNINGSDEL: {forv_txt}")
 
     # ---- 7) hovedbogen: diff mod sidste log (med dekomposition) + evt. --log-append ----
     logf = HERE.parent / "LOG.md"
@@ -1225,10 +1286,7 @@ def main():
             p_gl = pf(gl["curve"])
             bidrag_10 = pf(gl["curve"] + d10_) - p_gl
             bidrag_3 = p_op - p_gl - bidrag_10
-            if abs(d10_) >= abs(d3_):
-                maerke = "lang-ende-drevet (" + ("bear steepening" if d10_ > 0 and dK > 0 else "bull flattening" if d10_ < 0 and dK < 0 else "blandet") + ")"
-            else:
-                maerke = "kort-ende-drevet (" + ("bull steepening" if d3_ < 0 and dK > 0 else "bear flattening" if d3_ > 0 and dK < 0 else "blandet") + ")"
+            maerke = kurve_maerke(d10_, d3_, dK)
             aendring.update(d10Y_pp=round(d10_, 4), d3m_pp=round(d3_, 4), bidrag_10Y_pp=round(bidrag_10 * 100, 2),
                             bidrag_3m_pp=round(bidrag_3 * 100, 2), maerke=maerke, input_foer=gl["kilde"])
             tp_gl, tp_ny = C.read_fred_daily(gl_snap, "THREEFYTP10"), _tpd
@@ -1454,7 +1512,8 @@ def main():
                     wf=W["benchmarks"]["curve_only"]["wf_improvement"], live_p=round(p_curve, 6),
                     status="OPERATIONEL" if W["operationel"] == "curve_only" else None,
                     panel=f"fuld sti t.o.m. {op.get('estimering_slut', '?')}",
-                    note="fast lambda=1 (arvet fra v4); fuld-sti-valg mellem to modeller, ikke nested"),
+                    note="fast lambda=1 (arvet fra v4); fuld-sti-valg mellem to modeller, ikke nested"
+                         + (f"; {tandem_txt}" if tandem_txt else "")),
                dict(navn="fuldmodel (5 features)", wf=fm.get("wf_improvement"),
                     live_p=round(p_full, 6) if fm_ok else None, status=fm["status"] if fm_ok else fm_grund,
                     panel=f"fuld sti t.o.m. {op.get('estimering_slut', '?')}")]
@@ -1473,7 +1532,8 @@ def main():
                         status="coincident, publiceringslag - anden disciplin", panel=None))
         if em:
             bmj.append(dict(navn="Estrella-Mishkin-probit (NY Fed-koef.)", wf=None, live_p=em["p"],
-                            status="andet maal: i recession om 12 mdr; beregnet, ikke NY Fed's publicerede tal",
+                            status=f"andet maal: i recession om 12 mdr; beregnet paa trailing 10y-3m (CMT) {em['spread']:+.2f}pp, "
+                                   "ikke NY Fed's publicerede tal (NY Fed bruger maanedssnit)",
                             panel=None, spread=em["spread"]))
 
         hb = laes_hovedbog(logf)
@@ -1500,7 +1560,8 @@ def main():
                             y10_seneste=LI.get("y10_seneste"), tb3_seneste=LI.get("tb3_seneste"),
                             maanedlig=LI["maanedlig"], p_maanedlig=round(p_maanedlig, 6),
                             fed_funds=dict(vaerdi=ff_v, dato=ff_dato, kilde=ff_kilde),
-                            sammensaetning=sammensaetning),
+                            sammensaetning=sammensaetning,
+                            konvention=dict(kurve_cmt=em["spread"], tekst=konv_txt) if konv_txt else None),
             trigger=W.get("trigger"), delta_vs_forrige=W.get("delta_vs_forrige"), koersel=W.get("koersel"),
             rekalibrering_paakraevet=rekal_json,
             snapshot=snap.name, snapshot_hash=meta["snapshot_sha256"][:10],
@@ -1532,7 +1593,7 @@ def main():
             utilgaengelige=sorted(set(utilg)),
             datastatus=datastatus,
             sti=sti, maanedens_aendring=aendring,
-            advarsler=dict(vaerste_fejlalarm=fa, sti_advarsel=sti_txt, lang_ende=lang_ende,
+            advarsler=dict(vaerste_fejlalarm=fa, sti_advarsel=sti_txt, lang_ende=lang_ende, forventningsdel=forv_txt,
                            eksogen="Eksogene chok kan ikke forudsiges."),
             hovedbog=hb,
             hovedbog_reference=dict(improvement=ref_tal, kilde="diagnostik 4.5 alle live-publicerbare (realtidscensurering)",

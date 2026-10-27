@@ -161,7 +161,7 @@ button, input[type=file] { font: inherit; }
   function dkTal(s) {
     return String(s)
       .replace(/(\d),(?=\d{3}(?![\d.,]))/g, "$1\u202f")                    // engelsk tusindtalsseparator -> smalt mellemrum
-      .replace(/(^|[^\d.A-Za-z])(\d+)\.(\d+)(?![\d.])/g, "$1$2,$3")      // decimalpunktum -> komma (ikke v5.2, G2.3)
+      .replace(/(^|[^\d.A-Za-z§])(\d+)\.(\d+)(?![\d.])/g, "$1$2,$3")     // decimalpunktum -> komma (ikke v5.2, G2.3, §1.2)
       .replace(/(\d)%/g, "$1 %");
   }
   const T = s => dkTal(translit(s));                   // ordret tekst fra JSON'en
@@ -327,6 +327,7 @@ button, input[type=file] { font: inherit; }
         små.push(li.kilde === "daglig"
           ? `Kurve ${fortegn(li.curve)} pp: trailing måned af daglige DGS10 − DTB3 (${(li.vindue || []).join("..")}, ${li.n_dage} dage).`
           : `Kurve ${fortegn(li.curve)} pp på månedstal.`);
+        if (li.konvention && li.konvention.tekst) små.push(T(li.konvention.tekst));
         if (li.maanedlig && li.p_maanedlig !== undefined)
           små.push(`På publicerede månedstal ${li.maanedlig.maaned} (kurve ${fortegn(li.maanedlig.curve)} pp): P ${pct(li.p_maanedlig)} — sammenligningslinje, ikke et alternativt tal.`);
       }
@@ -374,13 +375,15 @@ button, input[type=file] { font: inherit; }
 
     // 4. benchmark-tabel
     const bm = Array.isArray(d.benchmarks) ? d.benchmarks : [];
+    const plb = d.diagnostik && d.diagnostik.parret_loss_bootstrap && Array.isArray(d.diagnostik.parret_loss_bootstrap.interval_90)
+      ? d.diagnostik.parret_loss_bootstrap : null;
     const tabel = el("table", {},
       el("thead", {}, el("tr", {}, el("th", { text: "Model" }), el("th", { class: "tal", text: "Wf-skill" }), el("th", { text: "Panel" }), el("th", { class: "tal", text: "Live-P" }), el("th", { text: "Status" }))),
       el("tbody", {}, bm.map(b => {
         const st = b.status || "";
         const kl = st === "OPERATIONEL" ? "op" : /reference/.test(st) ? "ref" : /ikke bestaaet/.test(st) ? "afvist" : null;
         return el("tr", { class: kl },
-          el("td", { text: T(b.navn) }),
+          el("td", {}, T(b.navn), b.note ? el("div", { class: "lille", text: T(b.note) }) : null),
           el("td", { class: "tal", text: b.wf === null || b.wf === undefined ? "" : (b.wf > 0 ? "+" : "") + fmt(b.wf, 1) + " %" }),
           el("td", { class: "lille", text: b.panel ? T(b.panel) : "" }),
           el("td", { class: "tal", text: b.live_p !== null && b.live_p !== undefined ? pct(b.live_p) : b.vaerdi !== undefined && b.vaerdi !== null ? fmt(b.vaerdi, 2) : "" }),
@@ -391,7 +394,10 @@ button, input[type=file] { font: inherit; }
       el("p", { text: T(d.skill_saetning) }),
       el("div", { class: "rul" }, tabel),
       el("p", { class: "lille", text: "Wf-skill sammenlignes kun inden for samme panel. De afviste kandidater er målt på panelet t.o.m. 2023Q2 og sammenlignes med referencerækken lige over dem." }),
-      d.gate && d.gate.note ? el("p", { class: "lille", text: "Gaten: " + T(d.gate.note) }) : null));
+      plb ? el("p", { class: "lille", text: `Historisk parret loss-bootstrap over ${plb.n_blokke} cyklusblokke (orakel-censureret, ${fmt(plb.n_draws, 0)} træk): middel ${fortegn(plb.middel_pp, 3)} log-loss pr. origin, 90 %-interval [${fortegn(plb.interval_90[0], 3)}; ${fortegn(plb.interval_90[1], 3)}], ${pct(plb.andel_ikke_positiv)} af trækkene ≤ 0. Selv den historiske skill kan altså ikke skelnes sikkert fra nul på blokniveau.` }) : null,
+      d.gate && d.gate.note ? el("p", { class: "lille", text: (d.gate.fuldmodel_wf !== undefined && d.gate.curve_only_wf !== undefined
+        ? `Gaten (fuldmodel ${fortegn(d.gate.fuldmodel_wf, 1)} % mod curve-only ${fortegn(d.gate.curve_only_wf, 1)} %, samme fulde sti): `
+        : "Gaten: ") + T(d.gate.note) }) : null));
 
     // 5. model-inputs
     if (Array.isArray(d.inputs) && d.inputs.length)
@@ -442,6 +448,7 @@ button, input[type=file] { font: inherit; }
       a.vaerste_fejlalarm ? el("p", { text: `Værste fejlalarm i walk-forward: ${pct(a.vaerste_fejlalarm.p)} (${a.vaerste_fejlalarm.origin}) uden onset.` }) : null,
       a.sti_advarsel ? el("p", { text: T(a.sti_advarsel) }) : null,
       a.lang_ende ? el("p", { text: T(a.lang_ende) }) : null,
+      a.forventningsdel ? el("p", { text: T(a.forventningsdel) }) : null,
       a.eksogen ? el("p", { text: T(a.eksogen) }) : null)));
 
     // datastatus: hvor nye er tallene? (udgivelseskalender pr. serie, as-of snapshottet)
