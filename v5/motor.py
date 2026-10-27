@@ -40,6 +40,7 @@ LOGDAG_VINDUE = None              # G3.6: None = logvindue() (BEDOEMMELSESNOEGLE
 CAPE_MAX_ALDER = 45               # F30: dage — aeldre live-CAPE -> fuldmodellen 'unavailable — CAPE stale'
 SPX_MAX_ALDER = 7                 # F30: dage — manuel S&P vs 52u-top flages (blokerer ikke)
 MARGIN_LAG = 25                   # F30: FINRA publicerer ca. 25 dage efter maanedens udgang
+CP_MIN_MAALINGER = 3              # 2026-10-27: CP-renten mangler paa ca. halvdelen af dagene; faerre maalinger paa 14 dage = utilgaengelig
 NA = float("nan")
 # RAADETS_2027 §1.2: styrkeklausulen staar i SAMME saetning som hvert skill-tal (analyser/styrke_simulation.py;
 # stoerrelsesorden, re-afledes fra den konfigurationsspecifikke replay ved september-refit 2027)
@@ -472,6 +473,22 @@ def kontekst_usa(snap):
     return ud
 
 
+def manuelle_tal(man, afledte):
+    """2026-10-27: S&P vs 12m-top, CAPE og marginlaan beregnes af fetch (meta.json -> 'afledte'). Det automatiske
+    tal bruges, naar det findes og er mindst lige saa nyt som manual.json's; ellers manual.json (reserve).
+    -> (effektiv manual-dict, {felt: 'automatisk' | 'manuel'})."""
+    ud, kilde = dict(man), {}
+    for felt, dfelt, auto_dfelt in (("spx_vs_hi", "spx_dato", "dato"), ("cape", "cape_dato", "dato"),
+                                    ("margin_yoy", "margin_periode", "periode")):
+        a = afledte.get(felt) or {}
+        if "vaerdi" in a and (not man.get(dfelt) or str(a.get(auto_dfelt, "")) >= str(man.get(dfelt))):
+            ud[felt], ud[dfelt] = a["vaerdi"], a.get(auto_dfelt)
+            kilde[felt] = "automatisk"
+        else:
+            kilde[felt] = "manuel"
+    return ud, kilde
+
+
 def dd_rygrad(snap):
     """F33: kalibreringens dd-statistik paa den seneste LUKKEDE maaned i snapshottets rygrad (spine.csv):
     maanedsmiddel / max af de seneste 12 maanedsmidler - 1 — praecis C.build_monthly's definition, og
@@ -561,6 +578,7 @@ def main():
         sys.exit("FEJL: manual.json mangler i snapshottet (spx_vs_hi, cape, margin_yoy). "
                  "Laeg den i manual/ og koer fetch.py igen.")
     man = json.loads(manual_f.read_text(encoding="utf-8"))
+    man, man_kilde = manuelle_tal(man, meta.get("afledte") or {})
     utilg = [sid for sid in ("ICSA", "PERMIT", "RIFSPPFAAD90NB", "MORTGAGE30US", "SAHMREALTIME", "RECPROUSM156N")
              if not (snap / f"{sid}.csv").exists()]           # F18: monitor-serier der mangler i snapshottet
 
@@ -618,6 +636,9 @@ def main():
             forv = f"{km[0]}-{km[1]:02d}"
             break
     friskhed["margin_yoy"] = dict(periode=mp, forventet_nyeste=forv, foraeldet=bool(not mp or (forv and mp < forv)))
+    if meta.get("afledte"):                                  # kun snapshots fra 2026-10-27 og frem
+        for felt in ("cape", "spx_vs_hi", "margin_yoy"):
+            friskhed[felt]["kilde"] = man_kilde[felt]
     man_noter = []
     if friskhed["cape"]["stale"]:
         man_noter.append(f"CAPE {cape_alder} dage gammel" if cape_alder is not None else "CAPE uden dato")
@@ -913,7 +934,7 @@ def main():
          (f"{oas_bp:.0f}bp ({oas[0]}){hy_zone}" if oas else "utilgaengelig"),
          "v4-flag/seed-taerskel 600bp; ineligible (historik 1997-, FRED leverer kun rullende 3 aar); "
          "svaerm-zone 350-450bp = eneste atlas-taerskel med 3+ kanaler (5)"),
-        ("S&P dagsluk vs 52u-top < -20%", float(man["spx_vs_hi"]) < -0.20, f"{float(man['spx_vs_hi'])*100:+.0f}% (manuel{', ' + man['spx_dato'] if man.get('spx_dato') else ''})",
+        ("S&P dagsluk vs 52u-top < -20%", float(man["spx_vs_hi"]) < -0.20, f"{float(man['spx_vs_hi'])*100:+.0f}% ({'FRED SP500' if man_kilde['spx_vs_hi'] == 'automatisk' and meta.get('afledte') else 'manuel'}{', ' + man['spx_dato'] if man.get('spx_dato') else ''})",
          "fuldmodel-feature (kalibreringens dd i sektion 2)"),
         ("Advance-estimat: 2 neg. BNP-print", adv_aktiv, adv_txt,
          "uvalideret realtidsdiagnostik paa foerste print (vintage-flip dokumenteret, trin 5)"),
@@ -964,15 +985,21 @@ def main():
         faelles = sorted(set(_cp) & set(_tb))
         cp_dato = faelles[-1]
         cp_spread_bp = (_cp[cp_dato] - _tb[cp_dato]) * 100
-        sid10 = [(_cp[d] - _tb[d]) * 100 for d in faelles[-10:]]
-        n_over = sum(v > 75 for v in sid10)
+        # 2026-10-27: CP-renten mangler paa ca. halvdelen af dagene (ingen AA-udstedelse). "10 seneste faelles dage"
+        # strakte sig derfor over ca. en maaned. Nu: alle maalinger i de seneste 14 kalenderdage (til seneste T-bill-dag);
+        # faerre end CP_MIN_MAALINGER -> utilgaengelig i stedet for at straekke vinduet.
+        cp_fra = (date.fromisoformat(_tbd[-1][0]) - timedelta(days=13)).isoformat()
+        sid14 = [(_cp[d] - _tb[d]) * 100 for d in faelles if d >= cp_fra]
+        n_over = sum(v > 75 for v in sid14)
         cp_stale = (date.fromisoformat(_tbd[-1][0]) - date.fromisoformat(cp_dato)).days > 10     # F47
+        cp_tynd = len(sid14) < CP_MIN_MAALINGER
         cp_spread = [(d, (_cp[d] - _tb[d]) * 100) for d in faelles]
         ss = siden_sidst(cp_spread, fra("RIFSPPFAAD90NB", "DTB3"), 75) if sidst_logget else None
-        scen.append(("CP-spaend 3m > 75bp i 2+ uger", "?" if cp_stale else n_over == len(sid10) == 10,
-                     f"{cp_spread_bp:.0f}bp ({cp_dato}{', STALE' if cp_stale else ''}); >75bp {n_over}/10 seneste dage"
+        scen.append(("CP-spaend 3m > 75bp i 2+ uger", "?" if cp_stale or cp_tynd else n_over == len(sid14),
+                     f"{cp_spread_bp:.0f}bp ({cp_dato}{', STALE' if cp_stale else ''}); >75bp {n_over}/{len(sid14)} maalinger "
+                     f"de seneste 14 dage{' — for faa maalinger' if cp_tynd else ''}"
                      + (f"; efter {fra('RIFSPPFAAD90NB', 'DTB3')}: max {ss['ekstrem']:.0f}bp ({ss['dato']}), {ss['dage_over']}/{ss['n']} dage over" if ss else ""),
-                     "svaerm-tripwire, 1-2 kanaler (funding); atlas-def. alle 10 seneste faelles handelsdage"))
+                     f"svaerm-tripwire, 1-2 kanaler (funding); alle maalinger de seneste 14 dage over 75bp (mindst {CP_MIN_MAALINGER} maalinger)"))
         if cp_stale:
             utilg.append(f"CP-spaend stale siden {cp_dato}")
     else:
@@ -1356,6 +1383,18 @@ def main():
     elif blok:
         print("   (en --log i dag ville blive afvist: " + "; ".join(blok) + ")")
 
+    # ---- datastatus (2026-10-27): er hver serie saa ny, som kilden tillader? ----
+    datastatus = [d_ for d_ in (SP.datastatus(sid, v.get("last"), D_las) for sid, v in sorted(meta.get("series", {}).items())) if d_]
+    for d_ in datastatus:
+        d_["rolle"] = (SP.SERIER.get(d_["serie"]) or (SP.EKSTERNE.get(d_["serie"], {}).get("rolle"),))[0]
+    forsinkede = [d_ for d_ in datastatus if d_["status"] == "forsinket"]
+    print("\nDATASTATUS (udgivelseskalender, as-of snapshottet):")
+    if forsinkede:
+        for d_ in forsinkede:
+            print(f"   FORSINKET {d_['serie']:<16} {d_['navn']}: {d_['tekst']}")
+    else:
+        print(f"   Ingen forsinkede serier: alle {len(datastatus)} er saa nye, som kilderne normalt udgiver dem.")
+
     # ---- 8) diagnostik (RAADETS_V501 §4): printes, aendrer intet ----
     print("\n8) DIAGNOSTIK (RAADETS_V501 §4 — printes ved siden af, aendrer hverken gate, vaegte eller dom)")
     if not diag:
@@ -1491,6 +1530,7 @@ def main():
             kontekst_usa=kusa, spot_kurve=sk,
             manual_friskhed=friskhed,
             utilgaengelige=sorted(set(utilg)),
+            datastatus=datastatus,
             sti=sti, maanedens_aendring=aendring,
             advarsler=dict(vaerste_fejlalarm=fa, sti_advarsel=sti_txt, lang_ende=lang_ende,
                            eksogen="Eksogene chok kan ikke forudsiges."),

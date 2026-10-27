@@ -65,7 +65,7 @@ ud af repoet, sværm-tripwires ud af hovedbogens antændings-kolonne (rådets R3
 | Fil | Indhold |
 |---|---|
 | [v5/README.md](v5/README.md) | Ritualer, filoversigt, afvigelser fra blueprintet, byggelog |
-| [v5/](v5/) | Koden: fetch → (finalize6 → diagnostik ved rekalibrering) → motor (calibrate.py er trin-1-reproduktionen og overskriver ikke driftsvægtene). 209 tests. |
+| [v5/](v5/) | Koden: fetch → (finalize6 → diagnostik ved rekalibrering) → motor (calibrate.py er trin-1-reproduktionen og overskriver ikke driftsvægtene). 220 tests. |
 | [LOG.md](LOG.md) | Hovedbogen — én række pr. måned, logført før udfaldet kendes. Redigeres aldrig. |
 | [BEDOEMMELSESNOEGLE.md](BEDOEMMELSESNOEGLE.md) | Hvordan hovedbogen scores — præregistreret før række 4, med styrketabel |
 | [UDFALD.csv](UDFALD.csv) / [hovedbog.jsonl](hovedbog.jsonl) | Append-only udfald pr. række / fuld record pr. række |
@@ -93,11 +93,10 @@ ud af repoet, sværm-tripwires ud af hovedbogens antændings-kolonne (rådets R3
 ```bash
 cd v5
 # tjek nber.org/research/business-cycle-dating — ny top/bund? tilføj række i nber_announcements.csv og commit
-python fetch.py                        # snapshot (FRED + Fed Board EBP), hashet
-# opdatér manual/manual.json: S&P vs 12-mdr-høj, CAPE, marginlån y/y — med deres datoer
-python fetch.py                        # igen, så snapshottet bærer de nye manuelle tal
+python fetch.py                        # snapshot (FRED + Fed Board EBP), hashet; beregner selv S&P vs 12-mdr-høj,
+                                       # CAPE (multpl) og marginlån (FINRA) — manual/manual.json er kun reserve
 python motor.py --log --json           # læsning, hovedbogsrække (kun i logvinduet), dashboard.json
-python -m unittest test_v5             # 209 tests
+python -m unittest test_v5             # 220 tests
 ```
 
 Vægtene er frosne mellem rekalibreringer (hver september, eller når NBER daterer en ny top/bund):

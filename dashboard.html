@@ -115,6 +115,8 @@ tr.ref td { border-top: 1px solid var(--blæk); }
 dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 0; font-size: .85rem; }
 dt { color: var(--dæmpet); }
 dd { margin: 0; font-family: var(--data); overflow-wrap: anywhere; }
+.forklaring { color: var(--dæmpet); max-width: 68ch; }
+.datastatus .forsinket { font-weight: 600; color: var(--blæk); }
 .fod { font-size: .85rem; color: var(--dæmpet); display: grid; gap: 18px; border-top: 1px solid var(--linje); padding-top: 20px; }
 .indlæs { display: grid; gap: 10px; background: var(--flade); border: 1px solid var(--linje); padding: 20px; }
 button, input[type=file] { font: inherit; }
@@ -189,6 +191,7 @@ button, input[type=file] { font: inherit; }
     return el("section", {}, el("div", { class: "sektionshoved" }, el("h2", { text: titel }), ...(mærker || [])), ...indhold);
   }
   const mærkat = (tekst, klasse) => el("span", { class: "mærkat " + (klasse || ""), text: tekst });
+  const forklaring = tekst => el("p", { class: "forklaring", text: tekst });   // kort forklaring i almindeligt dansk
 
   // ---------- intervalbar: bånd, punkt, basisrate (brief: visuelt sprog)
   function intervalBar(lo, hi, p, base) {
@@ -252,7 +255,7 @@ button, input[type=file] { font: inherit; }
   function linjeListe(linjer, firewallTekst) {
     return el("div", { class: "linjer" }, linjer.map(m => {
       const st = m.tilstand;
-      const stTekst = { aktiv: "aktiv", inaktiv: "inaktiv", kontekst: "kontekst", utilgaengelig: "utilgængelig" }[st] || st;
+      const stTekst = { aktiv: "krydset", inaktiv: "ikke krydset", kontekst: "ingen tærskel", utilgaengelig: "data mangler" }[st] || st;
       return el("div", { class: "linje" },
         el("div", { class: "navn" }, el("span", { class: "tilstand " + (st === "aktiv" ? "aktiv" : st === "kontekst" ? "kontekst" : st === "utilgaengelig" ? "utilg" : "") , text: stTekst }), el("span", { text: T(m.navn) })),
         el("div", { class: "vrd", text: T(m.vaerdi) }),
@@ -260,6 +263,16 @@ button, input[type=file] { font: inherit; }
     }));
   }
   const gruppeNøgle = k => T((k || "").split(/ \(|;|:/)[0].trim());
+
+  // Hovedbogsrækkens scoringsvindue. Rækker fra før 2026-10-15 har ingen vindue-kolonne; vinduet afledes da efter
+  // bedømmelsesnøglens regel (b): logningsmåneden og de følgende 11 måneder (mærket *).
+  function vindueAf(r) {
+    if (r.vindue) return r.vindue;
+    const i = mIdx(r.logget);
+    if (i === null || r.p_tal === null || r.p_tal === undefined) return "";
+    const ym = k => `${Math.floor(k / 12)}-${String(k % 12 + 1).padStart(2, "0")}`;
+    return `${ym(i)}..${ym(i + 11)}*`;
+  }
 
   // ---------- hele siden
   function tegn(d) {
@@ -273,6 +286,7 @@ button, input[type=file] { font: inherit; }
     const hoved = el("header", {},
       el("p", { class: "etiket", text: `MOTOR v${d.version || "?"} · ${T(d.model || "")}` }),
       el("h1", { text: "Sandsynlighed for at en NBER-recession begynder inden for fire kvartaler" }),
+      forklaring("Modellen ser kun på ét tal: forskellen mellem den 10-årige og den 3-måneders amerikanske rente. Ud fra det giver den en sandsynlighed for, at en recession begynder inden for et år. Den sammenlignes altid med basisraten, dvs. hvor ofte en recession historisk er begyndt inden for et år. Ligger tallet inden for usikkerheden omkring basisraten, ved modellen ikke mere end statistikken alene."),
       el("div", { class: "meta" },
         el("span", {}, "Snapshot ", el("b", { class: "mono", text: d.snapshot || "—" })),
         el("span", {}, "Kalibrering ", el("b", { class: "mono", text: d.manifest_hash || "—" }), ` (${d.kalibreret || "?"}, ${d.n_obs ?? "?"} kvartaler, ${d.n_episoder ?? "?"} onsets)`),
@@ -320,23 +334,26 @@ button, input[type=file] { font: inherit; }
       if (d.uscorede) små.push(`Uscorede felter (RAADETS_2027): månedligt fit ${pct(d.uscorede.p_maanedligt_fit)}, start 1953Q2 ${pct(d.uscorede.p_start_1953Q2)}, start 1960Q1 ${pct(d.uscorede.p_start_1960Q1)} — indgår ikke i dommen.`);
       if (små.length) læs.append(el("div", { class: "parret" }, små.map(t => el("span", { text: t }))));
     }
-    side.append(sektion("Læsningen", [], læs));
+    side.append(sektion("Læsningen", [], forklaring("Prikken er modellens sandsynlighed, den grå bjælke er usikkerheden, og den lodrette streg er basisraten. Ligger stregen inde i bjælken, kan tallet ikke skelnes fra basisraten."), læs));
 
     // 2. hovedbogen
     const ref = d.hovedbog_reference;
     const graf = hovedbogsGraf(hb);
     const rækker = el("div", { class: "rul" }, el("table", {},
-      el("thead", {}, el("tr", {}, ["Logget", "P", "Bånd", "Basisrate", "Dom", "Kurve", "Antændelse"].map((h, k) => el("th", { class: k && k !== 4 && k !== 6 ? "tal" : null, text: h })))),
+      el("thead", {}, el("tr", {}, ["Logget", "Vindue", "P", "Bånd", "Basisrate", "Dom", "Kurve", "Antændelse"].map((h, k) => el("th", { class: k > 1 && k !== 5 && k !== 7 ? "tal" : null, text: h })))),
       el("tbody", {}, hb.slice().reverse().map(r => el("tr", {},
         el("td", { class: "mono", text: r.logget }),
+        el("td", { class: "mono lille", text: vindueAf(r) }),
         el("td", { class: "tal", text: T(r.P) }), el("td", { class: "tal", text: T(r.baand) }), el("td", { class: "tal", text: T(r.basisrate) }),
         el("td", { text: T(r.dom) }), el("td", { class: "tal", text: T(r.kurve) }), el("td", { text: T(r.antaending) }))))));
     side.append(sektion("Hovedbogen", [mærkat("register, ikke en dom")],
+      forklaring("Én række om måneden, skrevet før man ved, om en recession kommer. Senere kan rækkerne sammenlignes med, hvad der faktisk skete. Rækkerne ændres aldrig."),
       el("p", { text: T(d.hovedbog_note) }),
       ref && ref.improvement !== null && ref.improvement !== undefined
         ? el("p", { class: "lille", text: `Referencetal for hovedbogen: +${fmt(ref.improvement, 1)} % (${T(ref.kilde)}). ${T(ref.note || "")}` }) : null,
       graf, el("p", { class: "lille", text: "Prik = P som logget; skygge = båndet; vandret streg = den loggede basisrate. Hver række er skrevet, før udfaldet var kendt." }),
       hb.length ? rækker : el("p", { class: "lille", text: "Ingen logførte rækker endnu." }),
+      hb.some(r => !r.vindue && r.p_tal !== null && r.p_tal !== undefined) ? el("p", { class: "lille", text: "* Rækken er skrevet, før vinduet fik sin egen kolonne. Vinduet er afledt efter bedømmelsesnøglens regel (b); selve rækken er uændret." }) : null,
       d.noegle ? el("p", { class: "lille", text: `Bedømmelsesnøgle ${d.noegle}. Ingen samlet score, før mindst 3 komplette cyklusblokke er scoret.` })
                : el("p", { class: "lille", text: "Ingen bedømmelsesnøgle i dette snapshot — ingen score vises." })));
 
@@ -352,7 +369,7 @@ button, input[type=file] { font: inherit; }
         el("dt", { text: "P-bidrag 10Y / 3m" }), el("dd", { text: `${fortegn(æ.bidrag_10Y_pp)} / ${fortegn(æ.bidrag_3m_pp)} pp` }),
         el("dt", { text: "Mærke" }), el("dd", { text: T(æ.maerke) }));
       if (æ.dTP_pp !== undefined) dl.append(el("dt", { text: "Heraf term-præmie" }), el("dd", { text: `${fortegn(æ.dTP_pp)} pp (${(æ.dTP_datoer || []).join("..")}, Kim-Wright)` }));
-      side.append(sektion("Månedens ændring", [mærkat("ved frosne vægte")], dl));
+      side.append(sektion("Månedens ændring", [mærkat("ved frosne vægte")], forklaring("Hvor meget sandsynligheden og rentekurven har flyttet sig siden sidste logførte række, og om det skyldes den lange eller den korte rente."), dl));
     }
 
     // 4. benchmark-tabel
@@ -370,6 +387,7 @@ button, input[type=file] { font: inherit; }
           el("td", { class: "lille", text: T(st) }));
       })));
     side.append(sektion("Benchmark-tabel", [mærkat("vises også når den er usmigrende")],
+      forklaring("Hvor godt modellen og en række alternativer historisk har ramt, målt uden at kigge ind i fremtiden. Modeller, der blev testet og ikke klarede sig, står her med vilje."),
       el("p", { text: T(d.skill_saetning) }),
       el("div", { class: "rul" }, tabel),
       el("p", { class: "lille", text: "Wf-skill sammenlignes kun inden for samme panel. De afviste kandidater er målt på panelet t.o.m. 2023Q2 og sammenlignes med referencerækken lige over dem." }),
@@ -377,7 +395,7 @@ button, input[type=file] { font: inherit; }
 
     // 5. model-inputs
     if (Array.isArray(d.inputs) && d.inputs.length)
-      side.append(sektion("Model-inputs", [mærkat("kun én er operationel", "op")], el("div", { class: "rul" }, el("table", {},
+      side.append(sektion("Model-inputs", [mærkat("kun én er operationel", "op")], forklaring("Kun rentekurven bruges i sandsynligheden. De fire andre hører til en større model, der blev testet og fravalgt, og vises til sammenligning. z viser, hvor usædvanligt tallet er i forhold til historien (0 = normalt)."), el("div", { class: "rul" }, el("table", {},
         el("thead", {}, el("tr", {}, el("th", { text: "Feature" }), el("th", { class: "tal", text: "Værdi" }), el("th", { class: "tal", text: "z" }), el("th", { text: "" }))),
         el("tbody", {}, d.inputs.map(i => el("tr", { class: i.operationel ? "op" : null },
           el("td", { text: T(i.navn) }), el("td", { class: "tal", text: fmt(i.vaerdi, 2) }), el("td", { class: "tal", text: fortegn(i.z, 2) }),
@@ -389,6 +407,7 @@ button, input[type=file] { font: inherit; }
     const grupper = new Map();
     for (const m of mon) { const k = gruppeNøgle(m.klasse); if (!grupper.has(k)) grupper.set(k, []); grupper.get(k).push(m); }
     side.append(sektion("Monitorer", [mærkat("ingen indflydelse på P", "firewall"), mærkat("tælles aldrig sammen")],
+      forklaring("Advarselslamper, der holdes øje med ved siden af modellen. \"Ikke krydset\" betyder, at tallet findes, men ligger på den rolige side af sin grænse. \"Ingen tærskel\" betyder, at linjen kun er til orientering og aldrig kan slå ud. \"Data mangler\" betyder, at tallet ikke kunne hentes."),
       ...[...grupper.entries()].map(([k, ms]) => el("div", { class: "gruppe" }, el("h3", { text: k }), linjeListe(ms)))));
 
     // 7. kontekst
@@ -415,15 +434,33 @@ button, input[type=file] { font: inherit; }
         el("div", { class: "sektionshoved" }, el("h3", { text: T(b.titel) }), mærkat("kontekst-protokollen · aldrig ved P", "firewall")),
         el("div", { class: "linjer" }, b.linjer.map(l => el("div", { class: "linje" }, el("div", { class: "navn", text: T(l.navn) }), el("div", { class: "vrd", text: T(l.tekst) })))))) : [])
     ].filter(Boolean));
-    side.append(sektion("Kontekst", [mærkat("firewallet", "firewall")], kontekst));
+    side.append(sektion("Kontekst", [mærkat("firewallet", "firewall")], forklaring("Baggrundstal om renter, inflation, kredit, råvarer, kreditkort og bolig. De påvirker ikke sandsynligheden."), kontekst));
 
     // 8. advarsler
     const a = d.advarsler || {};
-    side.append(sektion("Stående advarsler", [], el("div", { class: "advarsler" },
+    side.append(sektion("Stående advarsler", [], forklaring("Kendte svagheder ved modellen, som altid skal læses med."), el("div", { class: "advarsler" },
       a.vaerste_fejlalarm ? el("p", { text: `Værste fejlalarm i walk-forward: ${pct(a.vaerste_fejlalarm.p)} (${a.vaerste_fejlalarm.origin}) uden onset.` }) : null,
       a.sti_advarsel ? el("p", { text: T(a.sti_advarsel) }) : null,
       a.lang_ende ? el("p", { text: T(a.lang_ende) }) : null,
       a.eksogen ? el("p", { text: T(a.eksogen) }) : null)));
+
+    // datastatus: hvor nye er tallene? (udgivelseskalender pr. serie, as-of snapshottet)
+    const ds = Array.isArray(d.datastatus) ? d.datastatus : [];
+    if (ds.length) {
+      const forsinket = ds.filter(x => x.status === "forsinket");
+      const brugesTilP = ds.filter(x => x.rolle !== "kontekst");
+      const række = x => el("tr", {}, el("td", {}, T(x.navn), el("div", { class: "lille mono", text: x.serie })),
+        el("td", { class: x.status === "forsinket" ? "forsinket" : null, text: T(x.tekst) }));
+      const tab = rk => el("div", { class: "rul" }, el("table", { class: "datastatus" },
+        el("thead", {}, el("tr", {}, el("th", { text: "Data" }), el("th", { text: "Status" }))), el("tbody", {}, rk.map(række))));
+      side.append(sektion("Hvor nye er tallene?", [],
+        forklaring("Mange tal udgives med fast forsinkelse: BNP ca. en måned efter kvartalet, forbrugerpriser ca. to uger efter måneden. En serie kaldes kun forsinket, hvis det næste tal burde være kommet efter kildens normale kalender og stadig mangler."),
+        el("p", { class: forsinket.length ? "forsinket" : "", text: forsinket.length
+          ? `Forsinket lige nu: ${forsinket.map(x => T(x.navn)).join(", ")}.`
+          : "Ingen serier er forsinkede. Alle tal er så nye, som kilderne normalt udgiver dem." }),
+        el("h3", { text: "Tal der bruges til sandsynligheden" }), tab(brugesTilP),
+        el("details", {}, el("summary", { text: `Alle ${ds.length} dataserier` }), tab(ds))));
+    }
 
     // 9. scenarie-appendiks
     if (Array.isArray(d.scenarie) && d.scenarie.length)
@@ -452,12 +489,13 @@ button, input[type=file] { font: inherit; }
         d.delta_vs_forrige ? el("p", { text: `Ændret estimation over ${d.delta_vs_forrige.n_origins} origins: max |ΔP| ${pct(d.delta_vs_forrige.max_abs_dP)} (${d.delta_vs_forrige.origin_max}), middel ${pct(d.delta_vs_forrige.mean_abs_dP)}.` }) : null));
     }
     const fr = d.manual_friskhed || {};
+    const kildeTxt = x => x && x.kilde ? (x.kilde === "automatisk" ? " — hentet automatisk" : " — indtastet manuelt") : "";
     const frisk = el("dl", {},
       el("dt", { text: "Snapshot-hash" }), el("dd", { text: d.snapshot_hash || "—" }),
-      fr.cape ? [el("dt", { text: "CAPE" }), el("dd", { text: `${fr.cape.dato || "uden dato"}${fr.cape.alder_dage !== null ? `, ${fr.cape.alder_dage} dage` : ""}${fr.cape.stale ? " — forældet" : ""}` })] : null,
-      fr.spx_vs_hi ? [el("dt", { text: "S&P vs 52u-top" }), el("dd", { text: `${fr.spx_vs_hi.dato || "uden dato"}${fr.spx_vs_hi.alder_dage !== null && fr.spx_vs_hi.alder_dage !== undefined ? `, ${fr.spx_vs_hi.alder_dage} dage` : ""}${fr.spx_vs_hi.stale ? " — forældet" : ""}` })] : null,
-      fr.margin_yoy ? [el("dt", { text: "Marginlån" }), el("dd", { text: `datamåned ${fr.margin_yoy.periode || "?"}${fr.margin_yoy.foraeldet ? ` — forældet (forventet ${fr.margin_yoy.forventet_nyeste})` : ""}` })] : null,
-      el("dt", { text: "Utilgængelige serier" }), el("dd", { text: (d.utilgaengelige || []).length ? d.utilgaengelige.join(", ") : "ingen" }));
+      fr.cape ? [el("dt", { text: "CAPE" }), el("dd", { text: `${fr.cape.dato || "uden dato"}${fr.cape.alder_dage !== null ? `, ${fr.cape.alder_dage} dage` : ""}${fr.cape.stale ? " — forældet" : ""}${kildeTxt(fr.cape)}` })] : null,
+      fr.spx_vs_hi ? [el("dt", { text: "S&P vs 52u-top" }), el("dd", { text: `${fr.spx_vs_hi.dato || "uden dato"}${fr.spx_vs_hi.alder_dage !== null && fr.spx_vs_hi.alder_dage !== undefined ? `, ${fr.spx_vs_hi.alder_dage} dage` : ""}${fr.spx_vs_hi.stale ? " — forældet" : ""}${kildeTxt(fr.spx_vs_hi)}` })] : null,
+      fr.margin_yoy ? [el("dt", { text: "Marginlån" }), el("dd", { text: `datamåned ${fr.margin_yoy.periode || "?"}${fr.margin_yoy.foraeldet ? ` — forældet (forventet ${fr.margin_yoy.forventet_nyeste})` : ""}${kildeTxt(fr.margin_yoy)}` })] : null,
+      el("dt", { text: "Serier der ikke kunne hentes" }), el("dd", { text: (d.utilgaengelige || []).length ? d.utilgaengelige.join(", ") : "ingen" }));
     blokke.push(el("div", { class: "gruppe" }, el("h3", { text: "Data og friskhed" }), frisk));
     fod.append(el("div", { class: "to-kol" }, blokke),
       el("p", { text: "Genereret af v5/motor.py --json. Dashboardet er en deterministisk funktion af snapshot, vægte, diagnostik og LOG.md. Kildetekster er translittereret (aa → å, ae → æ, oe → ø) og sat i dansk talformat; ellers gengivet ordret." }));

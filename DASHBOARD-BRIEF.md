@@ -299,6 +299,11 @@ eksempler, ikke den aktuelle læsning. Feltrækkefølgen er motorens.
   for gamle, da snapshottet blev hentet. `kritisk: true` skal være synligt ved læsningen.
 - `manual_friskhed`: dato og alder for de manuelle input (`cape`, `spx_vs_hi`, `margin_yoy`).
   `stale`/`foraeldet` sand = vis en lille note ved den berørte linje.
+- `datastatus[]` (fra 2026-10-27): én post pr. serie i snapshottet, `{serie, navn, frekvens, sidste, periode,
+  naeste_ventes, status, tekst, rolle}`. `status` er `aktuel` eller `forsinket` (næste tal burde være kommet efter
+  kildens normale kalender). `tekst` er en færdig sætning i almindeligt dansk. Vis forsinkede serier tydeligt; tæl
+  dem gerne — det er datakvalitet, ikke risiko.
+- `manual_friskhed.*.kilde` (fra 2026-10-27): `automatisk` (beregnet af fetch) eller `manuel` (manual.json).
 - `utilgaengelige`: serier der mangler eller er forældede i snapshottet. Deres linjer har
   `tilstand: "utilgaengelig"`.
 

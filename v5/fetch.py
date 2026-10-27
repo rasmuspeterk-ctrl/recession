@@ -32,6 +32,9 @@ Manuelle inputs (dokumenteret protokol, raadets Section 9):
                          "margin_periode": "YYYY-MM", "cape_dato": "YYYY-MM-DD", "spx_dato": "YYYY-MM-DD"}
                         (S&P vs 12m-hoejde som decimal, live Shiller-CAPE fra multpl.com, FINRA
                         marginlaan y/y % og hvilken datamaaned/-dag tallene gaelder, F30).
+  Fra 2026-10-27 beregner fetch selv de tre tal (meta.json -> "afledte"): S&P fra FRED SP500, CAPE fra
+  multpl-sidens live-raekke og marginlaan fra FINRA's margin-statistics.xlsx. manual.json er derefter kun
+  reserve: motor bruger det nyeste af de to og viser hvilken kilde, der blev brugt.
 
 Kun stdlib. Koer:  python fetch.py
 """
@@ -201,6 +204,50 @@ def fetch_multpl(attempts=3):
             last_err = e
             time.sleep(3 * (k + 1))
     raise RuntimeError(f"multpl opgivet efter {attempts} forsoeg ({last_err})")
+
+FINRA_URL = "https://www.finra.org/sites/default/files/2021-03/margin-statistics.xlsx"
+
+
+def fetch_finra(attempts=3):
+    """FINRA's margin-statistik (xlsx). Licensbegraenset som multpl-siden: gemmes lokalt, committes aldrig."""
+    req = urllib.request.Request(FINRA_URL, headers={"User-Agent": "Mozilla/5.0 (MOTOR v5 fetch)"})
+    last_err = None
+    for k in range(attempts):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return r.read()
+        except Exception as e:
+            last_err = e
+            time.sleep(3 * (k + 1))
+    raise RuntimeError(f"FINRA opgivet efter {attempts} forsoeg ({last_err})")
+
+
+def afledte_tal(outdir, series_data, hent_finra=True):
+    """De tre tal manual.json foer kraevede i haanden, beregnet af snapshottets egne filer (2026-10-27).
+    En fejl her koster kun det enkelte tal (motor falder tilbage til manual.json), aldrig snapshottet."""
+    ud = {}
+    try:
+        r = SP.spx_fra_top(series_data["SP500"]) if "SP500" in series_data else None
+        ud["spx_vs_hi"] = (r | dict(kilde="FRED SP500: seneste luk mod hoejeste luk de seneste 12 maaneder")
+                           if r else dict(fejl="SP500 blev ikke hentet"))
+    except Exception as e:
+        ud["spx_vs_hi"] = dict(fejl=str(e)[:200])
+    try:
+        f = outdir / "multpl_cape.html"
+        r = SP.multpl_live(f.read_bytes()) if f.exists() else None
+        ud["cape"] = r | dict(kilde="multpl.com/shiller-pe, seneste raekke") if r else dict(fejl="multpl-siden mangler eller har intet live-tal")
+    except Exception as e:
+        ud["cape"] = dict(fejl=str(e)[:200])
+    if hent_finra:
+        try:
+            b = fetch_finra()
+            (outdir / "finra_margin.xlsx").write_bytes(b)
+            ud["margin_yoy"] = SP.finra_margin(b) | dict(kilde="FINRA margin statistics (debit balances, samme maaned aaret foer)",
+                                                          sha256=sha256(b))
+        except Exception as e:
+            ud["margin_yoy"] = dict(fejl=str(e)[:200])
+    return ud
+
 
 def read_yale(path):
     """{YYYY-MM: (sp500, cpi, ltr, cape)} fra den uforanderlige Yale-kopi (tomme felter -> None)."""
@@ -463,6 +510,10 @@ def main():
     meta["spine"] = spine_info
     if spine_info.get("sidste"):
         sidste_dato["spine"] = spine_info["sidste"] + "-01"
+    meta["afledte"] = afledte_tal(outdir, series_data, hent_finra="--uden-finra" not in sys.argv)
+    for k, v in meta["afledte"].items():
+        print(f"automatisk {k:<10} " + (f"FEJL: {v['fejl']} (motor bruger manual.json)" if "fejl" in v else
+                                        f"{v['vaerdi']} ({v.get('dato') or v.get('periode')}; {v['kilde']})"))
     stale = SP.staleness(sidste_dato, idag)
     if stale:
         meta["stale"] = stale

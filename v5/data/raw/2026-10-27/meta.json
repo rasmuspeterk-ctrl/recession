@@ -1,5 +1,5 @@
 {
- "retrieved_utc": "2026-10-27T12:14:28+00:00",
+ "retrieved_utc": "2026-10-27T12:31:38+00:00",
  "series": {
   "GS10": {
    "rows": 882,
@@ -679,6 +679,29 @@
   },
   "refit_klar": true
  },
+ "afledte": {
+  "spx_vs_hi": {
+   "vaerdi": -0.025,
+   "dato": "2026-10-23",
+   "luk": 7623.68,
+   "top": 7818.93,
+   "top_dato": "2026-10-06",
+   "kilde": "FRED SP500: seneste luk mod hoejeste luk de seneste 12 maaneder"
+  },
+  "cape": {
+   "vaerdi": 40.66,
+   "dato": "2026-10-26",
+   "kilde": "multpl.com/shiller-pe, seneste raekke"
+  },
+  "margin_yoy": {
+   "vaerdi": 31.4,
+   "periode": "2026-09",
+   "saldo": 1480054.0,
+   "saldo_aaret_foer": 1126494.0,
+   "kilde": "FINRA margin statistics (debit balances, samme maaned aaret foer)",
+   "sha256": "fae9f873d7388eff7ba0f08f7f5b2eaea0a54df6aab311503fda4025d25fb796"
+  }
+ },
  "complete": true,
  "lokale_filer": {
   "serier": [
@@ -688,7 +711,8 @@
   ],
   "filer": [
    "multpl_cape.html",
-   "cape_multpl.csv"
+   "cape_multpl.csv",
+   "finra_margin.xlsx"
   ],
   "note": "licensbegraensede kilder: hashet her, committes aldrig (.gitignore; README 'Datakilder og vilkaar')"
  },

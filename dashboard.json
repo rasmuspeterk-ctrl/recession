@@ -1072,7 +1072,7 @@
     {
       "navn": "S&P dagsluk vs 52u-top < -20%",
       "tilstand": "inaktiv",
-      "vaerdi": "-2% (manuel, 2026-10-23)",
+      "vaerdi": "-2% (FRED SP500, 2026-10-23)",
       "klasse": "fuldmodel-feature (kalibreringens dd i sektion 2)"
     },
     {
@@ -1122,8 +1122,8 @@
     {
       "navn": "CP-spaend 3m > 75bp i 2+ uger",
       "tilstand": "inaktiv",
-      "vaerdi": "0bp (2026-10-20); >75bp 0/10 seneste dage; efter 2026-10-06: max 5bp (2026-10-16), 0/3 dage over",
-      "klasse": "svaerm-tripwire, 1-2 kanaler (funding); atlas-def. alle 10 seneste faelles handelsdage"
+      "vaerdi": "0bp (2026-10-20); >75bp 0/3 maalinger de seneste 14 dage; efter 2026-10-06: max 5bp (2026-10-16), 0/3 dage over",
+      "klasse": "svaerm-tripwire, 1-2 kanaler (funding); alle maalinger de seneste 14 dage over 75bp (mindst 3 maalinger)"
     },
     {
       "navn": "10Y > 5,25%",
@@ -1472,20 +1472,608 @@
     "cape": {
       "dato": "2026-10-26",
       "alder_dage": 1,
-      "stale": false
+      "stale": false,
+      "kilde": "automatisk"
     },
     "spx_vs_hi": {
       "dato": "2026-10-23",
       "alder_dage": 4,
-      "stale": false
+      "stale": false,
+      "kilde": "automatisk"
     },
     "margin_yoy": {
       "periode": "2026-09",
       "forventet_nyeste": "2026-09",
-      "foraeldet": false
+      "foraeldet": false,
+      "kilde": "automatisk"
     }
   },
   "utilgaengelige": [],
+  "datastatus": [
+    {
+      "serie": "A191RL1Q225SBEA",
+      "navn": "BNP-vaekst",
+      "frekvens": "q",
+      "sidste": "2026-04-01",
+      "periode": "2. kvartal 2026",
+      "naeste_ventes": "2026-11-01",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 2. kvartal 2026; det naeste ventes omkring 1. november.",
+      "rolle": "refit"
+    },
+    {
+      "serie": "AWHMAN",
+      "navn": "Arbejdstimer i industrien",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-11-10",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 10. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "BAA10Y",
+      "navn": "Kreditspaend, Baa minus 10-aarig",
+      "frekvens": "d",
+      "sidste": "2026-10-23",
+      "periode": "23. okt.",
+      "naeste_ventes": "2026-10-26",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 23. okt.; det naeste kan komme naar som helst.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "BAMLH0A0HYM2",
+      "navn": "Kreditspaend, high yield",
+      "frekvens": "d",
+      "sidste": "2026-10-23",
+      "periode": "23. okt.",
+      "naeste_ventes": "2026-10-26",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 23. okt.; det naeste kan komme naar som helst.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "CCLACBW027SBOG",
+      "navn": "Kreditkortlaan i banker",
+      "frekvens": "u",
+      "sidste": "2026-10-14",
+      "periode": "uge til 14. okt.",
+      "naeste_ventes": "2026-10-30",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra uge til 14. okt.; det naeste ventes omkring 30. oktober.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "CCSA",
+      "navn": "Fortsatte ledighedsansoegninger",
+      "frekvens": "u",
+      "sidste": "2026-10-10",
+      "periode": "uge til 10. okt.",
+      "naeste_ventes": "2026-10-30",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra uge til 10. okt.; det naeste ventes omkring 30. oktober.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "CE16OV",
+      "navn": "Beskaeftigede (husstande)",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-11-10",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 10. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "CMRMTSPL",
+      "navn": "Salg i handel og industri",
+      "frekvens": "m",
+      "sidste": "2026-07-01",
+      "periode": "juli 2026",
+      "naeste_ventes": "2026-10-28",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra juli 2026; det naeste ventes omkring 28. oktober.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "CORCCACBS",
+      "navn": "Kreditkort afskrevet",
+      "frekvens": "q",
+      "sidste": "2026-04-01",
+      "periode": "2. kvartal 2026",
+      "naeste_ventes": "2026-11-29",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 2. kvartal 2026; det naeste ventes omkring 29. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "CPIAUCNS",
+      "navn": "Forbrugerpriser (CPI)",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-11-16",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 16. november.",
+      "rolle": "refit"
+    },
+    {
+      "serie": "CPIAUCSL",
+      "navn": "Forbrugerpriser, saesonkorrigeret",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-11-16",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 16. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "DCOILBRENTEU",
+      "navn": "Oliepris, Brent",
+      "frekvens": "d",
+      "sidste": "2026-10-20",
+      "periode": "20. okt.",
+      "naeste_ventes": "2026-10-29",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 20. okt.; det naeste ventes omkring 29. oktober.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "DCOILWTICO",
+      "navn": "Oliepris, WTI",
+      "frekvens": "d",
+      "sidste": "2026-10-20",
+      "periode": "20. okt.",
+      "naeste_ventes": "2026-10-29",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 20. okt.; det naeste ventes omkring 29. oktober.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "DFF",
+      "navn": "Styrerenten, dagligt",
+      "frekvens": "d",
+      "sidste": "2026-10-23",
+      "periode": "23. okt.",
+      "naeste_ventes": "2026-10-26",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 23. okt.; det naeste kan komme naar som helst.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "DGS1",
+      "navn": "1-aarig rente",
+      "frekvens": "d",
+      "sidste": "2026-10-23",
+      "periode": "23. okt.",
+      "naeste_ventes": "2026-10-26",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 23. okt.; det naeste kan komme naar som helst.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "DGS10",
+      "navn": "10-aarig rente, dagligt",
+      "frekvens": "d",
+      "sidste": "2026-10-23",
+      "periode": "23. okt.",
+      "naeste_ventes": "2026-10-26",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 23. okt.; det naeste kan komme naar som helst.",
+      "rolle": "P"
+    },
+    {
+      "serie": "DGS2",
+      "navn": "2-aarig rente",
+      "frekvens": "d",
+      "sidste": "2026-10-23",
+      "periode": "23. okt.",
+      "naeste_ventes": "2026-10-26",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 23. okt.; det naeste kan komme naar som helst.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "DGS3MO",
+      "navn": "3-maaneders statsobligation",
+      "frekvens": "d",
+      "sidste": "2026-10-23",
+      "periode": "23. okt.",
+      "naeste_ventes": "2026-10-26",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 23. okt.; det naeste kan komme naar som helst.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "DHHNGSP",
+      "navn": "Naturgaspris",
+      "frekvens": "d",
+      "sidste": "2026-10-20",
+      "periode": "20. okt.",
+      "naeste_ventes": "2026-10-29",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 20. okt.; det naeste ventes omkring 29. oktober.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "DRCCLACBS",
+      "navn": "Kreditkort i restance",
+      "frekvens": "q",
+      "sidste": "2026-04-01",
+      "periode": "2. kvartal 2026",
+      "naeste_ventes": "2026-11-29",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 2. kvartal 2026; det naeste ventes omkring 29. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "DRSFRMACBS",
+      "navn": "Boliglaan i restance",
+      "frekvens": "q",
+      "sidste": "2026-04-01",
+      "periode": "2. kvartal 2026",
+      "naeste_ventes": "2026-11-29",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 2. kvartal 2026; det naeste ventes omkring 29. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "DTB3",
+      "navn": "3-maaneders rente, dagligt",
+      "frekvens": "d",
+      "sidste": "2026-10-23",
+      "periode": "23. okt.",
+      "naeste_ventes": "2026-10-26",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 23. okt.; det naeste kan komme naar som helst.",
+      "rolle": "P"
+    },
+    {
+      "serie": "EBP",
+      "navn": "Kreditpraemie (EBP)",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-12-05",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 5. december.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "FEDFUNDS",
+      "navn": "Styrerenten, maanedssnit",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-11-03",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 3. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "GASDESW",
+      "navn": "Dieselpris",
+      "frekvens": "u",
+      "sidste": "2026-10-19",
+      "periode": "uge til 19. okt.",
+      "naeste_ventes": "2026-10-28",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra uge til 19. okt.; det naeste ventes omkring 28. oktober.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "GASREGW",
+      "navn": "Benzinpris",
+      "frekvens": "u",
+      "sidste": "2026-10-19",
+      "periode": "uge til 19. okt.",
+      "naeste_ventes": "2026-10-28",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra uge til 19. okt.; det naeste ventes omkring 28. oktober.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "GDPC1",
+      "navn": "BNP, niveau",
+      "frekvens": "q",
+      "sidste": "2026-04-01",
+      "periode": "2. kvartal 2026",
+      "naeste_ventes": "2026-11-01",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 2. kvartal 2026; det naeste ventes omkring 1. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "GS10",
+      "navn": "10-aarig rente, maanedssnit",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-11-03",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 3. november.",
+      "rolle": "P"
+    },
+    {
+      "serie": "HPIPONM226S",
+      "navn": "Huspriser (FHFA)",
+      "frekvens": "m",
+      "sidste": "2026-07-01",
+      "periode": "juli 2026",
+      "naeste_ventes": "2026-10-30",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra juli 2026; det naeste ventes omkring 30. oktober.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "ICSA",
+      "navn": "Nye ledighedsansoegninger",
+      "frekvens": "u",
+      "sidste": "2026-10-17",
+      "periode": "uge til 17. okt.",
+      "naeste_ventes": "2026-10-30",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra uge til 17. okt.; det naeste ventes omkring 30. oktober.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "INDPRO",
+      "navn": "Industriproduktion",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-11-20",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 20. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "MORTGAGE30US",
+      "navn": "30-aarig realkreditrente",
+      "frekvens": "u",
+      "sidste": "2026-10-22",
+      "periode": "uge til 22. okt.",
+      "naeste_ventes": "2026-10-30",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra uge til 22. okt.; det naeste ventes omkring 30. oktober.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "MSACSR",
+      "navn": "Udbud af nye huse",
+      "frekvens": "m",
+      "sidste": "2026-08-01",
+      "periode": "august 2026",
+      "naeste_ventes": "2026-10-28",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra august 2026; det naeste ventes omkring 28. oktober.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "MSPUS",
+      "navn": "Median huspris, solgte huse",
+      "frekvens": "q",
+      "sidste": "2026-04-01",
+      "periode": "2. kvartal 2026",
+      "naeste_ventes": "2026-10-30",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 2. kvartal 2026; det naeste ventes omkring 30. oktober.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "PAYEMS",
+      "navn": "Loenmodtagere i job",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-11-10",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 10. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "PCEC96",
+      "navn": "Realt privatforbrug",
+      "frekvens": "m",
+      "sidste": "2026-08-01",
+      "periode": "august 2026",
+      "naeste_ventes": "2026-11-01",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra august 2026; det naeste ventes omkring 1. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "PCEPI",
+      "navn": "Forbrugspriser (PCE)",
+      "frekvens": "m",
+      "sidste": "2026-08-01",
+      "periode": "august 2026",
+      "naeste_ventes": "2026-11-01",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra august 2026; det naeste ventes omkring 1. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "PERMIT",
+      "navn": "Byggetilladelser",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-11-20",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 20. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "RECPROUSM156N",
+      "navn": "Chauvet-Piger-nowcast",
+      "frekvens": "m",
+      "sidste": "2026-08-01",
+      "periode": "august 2026",
+      "naeste_ventes": "2026-11-09",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra august 2026; det naeste ventes omkring 9. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "REVOLSL",
+      "navn": "Forbrugerkredit (kort og lignende)",
+      "frekvens": "m",
+      "sidste": "2026-08-01",
+      "periode": "august 2026",
+      "naeste_ventes": "2026-11-09",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra august 2026; det naeste ventes omkring 9. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "RIFSPPFAAD90NB",
+      "navn": "Rente paa virksomhedspapirer (CP)",
+      "frekvens": "d",
+      "sidste": "2026-10-20",
+      "periode": "20. okt.",
+      "naeste_ventes": "2026-10-26",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 20. okt.; det naeste kan komme naar som helst.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "SAHMREALTIME",
+      "navn": "Sahm-reglen",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-11-10",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 10. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "SP500",
+      "navn": "S&P 500-indekset",
+      "frekvens": "d",
+      "sidste": "2026-10-23",
+      "periode": "23. okt.",
+      "naeste_ventes": "2026-10-26",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 23. okt.; det naeste kan komme naar som helst.",
+      "rolle": "rygrad"
+    },
+    {
+      "serie": "TB3MS",
+      "navn": "3-maaneders rente, maanedssnit",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-11-03",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 3. november.",
+      "rolle": "P"
+    },
+    {
+      "serie": "TEMPHELPS",
+      "navn": "Vikarer i job",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-11-10",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 10. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "THREEFYTP10",
+      "navn": "Term-praemie (Kim-Wright)",
+      "frekvens": "d",
+      "sidste": "2026-10-16",
+      "periode": "16. okt.",
+      "naeste_ventes": "2026-10-29",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra 16. okt.; det naeste ventes omkring 29. oktober.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "UNRATE",
+      "navn": "Ledighed",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-11-10",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 10. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "USREC",
+      "navn": "NBER's recessionsmaaneder",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-11-05",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 5. november.",
+      "rolle": "refit"
+    },
+    {
+      "serie": "W875RX1",
+      "navn": "Realindkomst uden overfoersler",
+      "frekvens": "m",
+      "sidste": "2026-08-01",
+      "periode": "august 2026",
+      "naeste_ventes": "2026-11-01",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra august 2026; det naeste ventes omkring 1. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "WPU012",
+      "navn": "Kornpriser (producent)",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-11-18",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 18. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "WPU0652",
+      "navn": "Goedningspriser (producent)",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-11-18",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 18. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "WPU065201",
+      "navn": "Kvaelstofgoedning (producent)",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-11-18",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 18. november.",
+      "rolle": "kontekst"
+    },
+    {
+      "serie": "WPU102",
+      "navn": "Metalpriser (producent)",
+      "frekvens": "m",
+      "sidste": "2026-09-01",
+      "periode": "september 2026",
+      "naeste_ventes": "2026-11-18",
+      "status": "aktuel",
+      "tekst": "Nyeste tal er fra september 2026; det naeste ventes omkring 18. november.",
+      "rolle": "kontekst"
+    }
+  ],
   "sti": {
     "punkter": [
       [

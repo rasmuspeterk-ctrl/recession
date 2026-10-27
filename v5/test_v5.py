@@ -36,6 +36,10 @@ import ablation4_features as A4
 
 REAL_SNAP = sorted(d for d in C.RAW.iterdir() if d.is_dir() and C.snapshot_complete(d))[-1]
 
+def _finra_offline(attempts=3):
+    raise RuntimeError("ingen netvaerk i testsuiten")
+F.fetch_finra = _finra_offline          # 2026-10-27: fetch.main henter FINRA-filen; testene koerer uden netvaerk
+
 def sha(b):
     return hashlib.sha256(b).hexdigest()
 
@@ -751,6 +755,10 @@ class TestMotor(unittest.TestCase):
         if dd is not None:
             man = json.loads((snap / "manual.json").read_text(encoding="utf-8")); man["spx_vs_hi"] = dd
             (snap / "manual.json").write_text(json.dumps(man), encoding="utf-8")
+            mt = json.loads((snap / "meta.json").read_text(encoding="utf-8"))
+            if (mt.get("afledte") or {}).get("spx_vs_hi", {}).get("vaerdi") is not None:    # 2026-10-27: fetch beregner tallet
+                mt["afledte"]["spx_vs_hi"]["vaerdi"] = dd
+                (snap / "meta.json").write_text(json.dumps(mt), encoding="utf-8")
         return raw, here
 
     def _orakel(self, curve):
@@ -2975,6 +2983,154 @@ class TestKontekstProtokol20261024(unittest.TestCase):
             F.skift_paa_plads(ny, gammel)
         self.assertEqual((gammel / "meta.json").read_text(encoding="utf-8"), "gammel")   # intakt, ikke toemt
         self.assertEqual((ny / "meta.json").read_text(encoding="utf-8"), "ny")           # det nye er bevaret
+
+
+
+class TestDatastatus(unittest.TestCase):
+    """2026-10-27: udgivelseskalenderen skelner almindelig udgivelsesforsinkelse fra en serie, der er gaaet i staa."""
+
+    def test_alle_serier_har_en_kalender(self):
+        for sid in list(S.SERIER) + list(S.EKSTERNE):
+            self.assertIn(sid, S.UDGIVELSE, sid)
+            frekv, lag, navn = S.UDGIVELSE[sid]
+            self.assertIn(frekv, ("d", "u", "m", "q"))
+            self.assertTrue(0 < lag < 100 and navn)
+
+    def test_maanedlig_aktuel_og_forsinket(self):
+        # CPI: september-tallet stemples 2026-09-01; oktober ventes 31/10 + 16 = 16/11; forsinket efter 16/11 + 7
+        st = lambda d: S.datastatus("CPIAUCNS", "2026-09-01", d)
+        self.assertEqual(st(date(2026, 11, 10))["status"], "aktuel")
+        self.assertEqual(st(date(2026, 11, 10))["naeste_ventes"], "2026-11-16")
+        self.assertIn("ventes omkring 16. november", st(date(2026, 11, 10))["tekst"])
+        self.assertEqual(st(date(2026, 11, 23))["status"], "aktuel")
+        self.assertIn("kan komme naar som helst", st(date(2026, 11, 20))["tekst"])
+        self.assertEqual(st(date(2026, 11, 24))["status"], "forsinket")
+        self.assertIn("Forsinket", st(date(2026, 11, 24))["tekst"])
+
+    def test_kvartal_uge_og_dag(self):
+        self.assertEqual(S.datastatus("A191RL1Q225SBEA", "2026-04-01", date(2026, 10, 27))["naeste_ventes"], "2026-11-01")
+        self.assertEqual(S.datastatus("A191RL1Q225SBEA", "2026-04-01", date(2026, 11, 12))["status"], "forsinket")
+        self.assertIn("2. kvartal 2026", S.datastatus("A191RL1Q225SBEA", "2026-04-01", date(2026, 10, 27))["tekst"])
+        self.assertEqual(S.datastatus("ICSA", "2026-10-17", date(2026, 10, 27))["naeste_ventes"], "2026-10-30")
+        self.assertEqual(S.datastatus("DGS10", "2026-10-23", date(2026, 10, 27))["status"], "aktuel")      # weekend
+        self.assertEqual(S.datastatus("DGS10", "2026-10-16", date(2026, 10, 27))["status"], "forsinket")
+        self.assertIsNone(S.datastatus("UKENDT", "2026-10-01", date(2026, 10, 27)))
+        self.assertIsNone(S.datastatus("DGS10", None, date(2026, 10, 27)))
+
+    def test_det_committede_snapshot_har_ingen_forsinkede_serier_paa_sin_egen_dato(self):
+        m = json.loads((REAL_SNAP / "meta.json").read_text(encoding="utf-8"))
+        idag = date.fromisoformat(REAL_SNAP.name)
+        forsinket = [k for k, v in m["series"].items() if (S.datastatus(k, v["last"], idag) or {}).get("status") == "forsinket"]
+        self.assertEqual(forsinket, [], "en serie er gaaet i staa — eller kalenderen er forkert")
+
+
+class TestAutomatiskeTal(unittest.TestCase):
+    """2026-10-27: S&P vs 12m-top, CAPE og marginlaan beregnes af fetch; manual.json er kun reserve."""
+
+    def test_spx_fra_top(self):
+        rk = [("2025-10-01", "100"), ("2026-03-02", "120"), ("2026-10-20", "."), ("2026-10-23", "108")]
+        r = S.spx_fra_top(rk)
+        self.assertEqual((r["vaerdi"], r["dato"], r["top_dato"]), (-0.1, "2026-10-23", "2026-03-02"))
+        self.assertEqual(S.spx_fra_top([("2024-01-02", "200"), ("2026-10-23", "100")])["vaerdi"], 0.0)   # top for over et aar siden
+        self.assertIsNone(S.spx_fra_top([]))
+
+    def test_multpl_live(self):
+        html = b"<table><tr><td>Oct 26, 2026</td>\n<td>\n&#x2002;\n40.66\n</td></tr><tr><td>Oct 1, 2026</td><td>40.81</td></tr></table>"
+        self.assertEqual(S.multpl_live(html), dict(vaerdi=40.66, dato="2026-10-26"))
+        self.assertIsNone(S.multpl_live(b"<html>intet</html>"))
+
+    def _xlsx(self, raekker):
+        import zipfile as _zf
+        celler = "".join(f'<row r="{i + 2}"><c r="A{i + 2}" t="inlineStr"><is><t>{m}</t></is></c><c r="B{i + 2}"><v>{v}</v></c></row>'
+                         for i, (m, v) in enumerate(raekker))
+        ark = ('<worksheet><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>Year-Month</t></is></c></row>'
+               + celler + "</sheetData></worksheet>")
+        b = io.BytesIO()
+        with _zf.ZipFile(b, "w") as z:
+            z.writestr("xl/worksheets/sheet1.xml", ark)
+        return b.getvalue()
+
+    def test_finra_margin(self):
+        r = S.finra_margin(self._xlsx([("2026-09", 1480054), ("2026-08", 1453832), ("2025-09", 1126494)]))
+        self.assertEqual((r["vaerdi"], r["periode"]), (31.4, "2026-09"))
+        with self.assertRaisesRegex(RuntimeError, "mangler 2025-09"):
+            S.finra_margin(self._xlsx([("2026-09", 1), ("2026-08", 1)]))
+        with self.assertRaisesRegex(RuntimeError, "formatet"):
+            S.finra_margin(self._xlsx([]))
+
+    def test_det_nyeste_tal_vinder_og_kilden_vises(self):
+        man = dict(spx_vs_hi=-0.02, spx_dato="2026-10-22", cape=40.0, cape_dato="2026-10-27", margin_yoy=30.0, margin_periode="2026-09")
+        auto = dict(spx_vs_hi=dict(vaerdi=-0.025, dato="2026-10-23"), cape=dict(vaerdi=40.66, dato="2026-10-26"),
+                    margin_yoy=dict(fejl="ingen netvaerk"))
+        ud, kilde = M.manuelle_tal(man, auto)
+        self.assertEqual((ud["spx_vs_hi"], ud["spx_dato"], kilde["spx_vs_hi"]), (-0.025, "2026-10-23", "automatisk"))
+        self.assertEqual((ud["cape"], kilde["cape"]), (40.0, "manuel"))           # manual.json er nyere
+        self.assertEqual((ud["margin_yoy"], kilde["margin_yoy"]), (30.0, "manuel"))  # automatisk fejlede
+        self.assertEqual(M.manuelle_tal(man, {}), (man, dict(spx_vs_hi="manuel", cape="manuel", margin_yoy="manuel")))
+
+    def test_fetch_afledte_tal_fejler_aldrig_snapshottet(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            (d / "multpl_cape.html").write_bytes(b"<td>Oct 26, 2026</td><td>40.66</td>")
+            ud = F.afledte_tal(d, {"SP500": [("2026-10-06", "7818.93"), ("2026-10-23", "7623.68")]})
+            self.assertEqual(ud["spx_vs_hi"]["vaerdi"], -0.025)
+            self.assertEqual(ud["cape"]["vaerdi"], 40.66)
+            self.assertIn("fejl", ud["margin_yoy"])                                # offline i testen
+            ud = F.afledte_tal(Path(tmp) / "findes_ikke", {}, hent_finra=False)
+            self.assertIn("fejl", ud["spx_vs_hi"]); self.assertIn("fejl", ud["cape"]); self.assertNotIn("margin_yoy", ud)
+
+
+class TestCPOgDatastatusIMotor(unittest.TestCase):
+    """CP-renten mangler paa ca. halvdelen af dagene: tripwiren maaler over 14 dage og siger til, naar der er for faa maalinger."""
+
+    @classmethod
+    def setUpClass(cls):
+        TestMotor.setUpClass.__func__(cls)
+
+    @classmethod
+    def tearDownClass(cls):
+        TestMotor.tearDownClass.__func__(cls)
+
+    _motor = TestMotor._motor
+    _scenario = TestMotor._scenario
+
+    def _cp_linje(self, raw, here):
+        ud = here.parent / "d.json"
+        self._motor(["--json", str(ud)], raw=raw, here=here)
+        d = json.loads(ud.read_text(encoding="utf-8"))
+        return next(m for m in d["scenarie"] if m["navn"].startswith("CP-spaend")), d
+
+    def test_tyndt_udfyldt_cp_bliver_data_mangler(self):
+        raw, here = self._scenario(y10=4.5, tb3=3.0, cp=6.0)          # 40 dage med CP 300bp over T-bill
+        linje, d = self._cp_linje(raw, here)
+        self.assertEqual(linje["tilstand"], "aktiv")
+        self.assertIn("maalinger de seneste 14 dage", linje["vaerdi"])
+        snap = raw / self.today
+        rk = (snap / "RIFSPPFAAD90NB.csv").read_text(encoding="utf-8").splitlines()
+        sidste_tb3 = C.read_fred_daily(snap, "DTB3")[-1][0]
+        fra = (date.fromisoformat(sidste_tb3) - timedelta(days=13)).isoformat()
+        behold, n = [], 0
+        for ln in rk:                                                   # kun 2 maalinger tilbage i de seneste 14 dage
+            dt = ln.split(",")[0]
+            if dt[:1].isdigit() and dt >= fra:
+                n += 1
+                if n > 2:
+                    continue
+            behold.append(ln)
+        (snap / "RIFSPPFAAD90NB.csv").write_text(chr(10).join(behold) + chr(10), encoding="utf-8")
+        linje, d = self._cp_linje(raw, here)
+        self.assertEqual(linje["tilstand"], "utilgaengelig")
+        self.assertIn("for faa maalinger", linje["vaerdi"])
+
+    def test_dashboard_har_datastatus_for_alle_serier(self):
+        ud = self.here.parent / "d_ds.json"
+        self._motor(["--allow-stale", "--json", str(ud)])
+        d = json.loads(ud.read_text(encoding="utf-8"))
+        m = json.loads((REAL_SNAP / "meta.json").read_text(encoding="utf-8"))
+        self.assertEqual({x["serie"] for x in d["datastatus"]}, set(m["series"]))
+        for x in d["datastatus"]:
+            self.assertIn(x["status"], ("aktuel", "forsinket"))
+            self.assertIn(x["rolle"], ("P", "refit", "rygrad", "kontekst"))
 
 
 if __name__ == "__main__":

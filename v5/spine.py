@@ -14,9 +14,13 @@ Guards (alle rene funktioner, stdlib, testet i test_v5.py):
   outlier_check    — CAPE-niveau [5,60] og |m/m| < 15 % (§1.6)
   staleness        — udgivelses-bevidst friskhed pr. serie (§1.7): den test der ville have
                      fanget den frosne rygrad i oktober 2023
+  datastatus       — udgivelseskalender for ALLE serier (2026-10-27): "nyeste tal" / "naeste tal ventes ca."
+                     / "forsinket", saa en serie der gaar i staa kan skelnes fra almindelig udgivelsesforsinkelse
+  spx_fra_top, multpl_live, finra_margin — de tal manual.json foer blev tastet ind i haanden, beregnet af
+                     snapshottets egne filer (2026-10-27)
 """
-import re, statistics
-from datetime import date
+import io, re, statistics, zipfile
+from datetime import date, timedelta
 
 SEAM = "2023-07"                        # sidste Shiller-raekke der beholdes
 PRELIMINAERE = ("2023-08", "2023-09")   # Shillers egne forloebige raekker (erstattes)
@@ -152,7 +156,135 @@ EKSTERNE = {
 VETO = tuple(s for s, v in SERIER.items() if v[0] in ("P", "refit"))       # fetch-fejl -> snapshot ukomplet
 P_SERIER = tuple(s for s, v in SERIER.items() if v[0] == "P")
 LOKALE = tuple(s for s, v in SERIER.items() if v[1] == "lokal")              # committes aldrig
-LOKALE_FILER = ("multpl_cape.html", "cape_multpl.csv")                       # multpl-siden ordret (F12)
+LOKALE_FILER = ("multpl_cape.html", "cape_multpl.csv", "finra_margin.xlsx")  # multpl-siden og FINRA's fil ordret (F12)
+
+# ---- udgivelseskalender (2026-10-27): hvornaar kommer naeste tal normalt? ----
+# sid: (frekvens, normal forsinkelse i dage efter periodens slutning, navn i almindeligt dansk)
+# frekvens "d" daglig, "u" ugentlig, "m" maanedlig, "q" kvartal. Forsinkelserne er kildernes normale
+# udgivelsesrytme paa FRED (fx CPI ca. 2 uger efter maanedens slutning, BNP ca. 1 maaned efter kvartalet).
+UDGIVELSE = {
+    "GS10": ("m", 3, "10-aarig rente, maanedssnit"), "TB3MS": ("m", 3, "3-maaneders rente, maanedssnit"),
+    "DGS10": ("d", 2, "10-aarig rente, dagligt"), "DTB3": ("d", 2, "3-maaneders rente, dagligt"),
+    "USREC": ("m", 5, "NBER's recessionsmaaneder"), "A191RL1Q225SBEA": ("q", 32, "BNP-vaekst"),
+    "GDPC1": ("q", 32, "BNP, niveau"), "CPIAUCNS": ("m", 16, "Forbrugerpriser (CPI)"),
+    "CPIAUCSL": ("m", 16, "Forbrugerpriser, saesonkorrigeret"), "SP500": ("d", 2, "S&P 500-indekset"),
+    "UNRATE": ("m", 10, "Ledighed"), "SAHMREALTIME": ("m", 10, "Sahm-reglen"),
+    "ICSA": ("u", 6, "Nye ledighedsansoegninger"), "CCSA": ("u", 13, "Fortsatte ledighedsansoegninger"),
+    "PERMIT": ("m", 20, "Byggetilladelser"), "BAMLH0A0HYM2": ("d", 2, "Kreditspaend, high yield"),
+    "BAA10Y": ("d", 2, "Kreditspaend, Baa minus 10-aarig"), "FEDFUNDS": ("m", 3, "Styrerenten, maanedssnit"),
+    "DFF": ("d", 2, "Styrerenten, dagligt"), "PCEPI": ("m", 32, "Forbrugspriser (PCE)"),
+    "THREEFYTP10": ("d", 12, "Term-praemie (Kim-Wright)"), "RECPROUSM156N": ("m", 40, "Chauvet-Piger-nowcast"),
+    "AWHMAN": ("m", 10, "Arbejdstimer i industrien"), "RIFSPPFAAD90NB": ("d", 5, "Rente paa virksomhedspapirer (CP)"),
+    "MORTGAGE30US": ("u", 1, "30-aarig realkreditrente"), "DGS1": ("d", 2, "1-aarig rente"),
+    "DGS2": ("d", 2, "2-aarig rente"), "DGS3MO": ("d", 2, "3-maaneders statsobligation"),
+    "PAYEMS": ("m", 10, "Loenmodtagere i job"), "CE16OV": ("m", 10, "Beskaeftigede (husstande)"),
+    "INDPRO": ("m", 20, "Industriproduktion"), "W875RX1": ("m", 32, "Realindkomst uden overfoersler"),
+    "PCEC96": ("m", 32, "Realt privatforbrug"), "CMRMTSPL": ("m", 58, "Salg i handel og industri"),
+    "TEMPHELPS": ("m", 10, "Vikarer i job"), "DCOILWTICO": ("d", 8, "Oliepris, WTI"),
+    "DCOILBRENTEU": ("d", 8, "Oliepris, Brent"), "DHHNGSP": ("d", 8, "Naturgaspris"),
+    "GASREGW": ("u", 2, "Benzinpris"), "GASDESW": ("u", 2, "Dieselpris"),
+    "WPU0652": ("m", 18, "Goedningspriser (producent)"), "WPU065201": ("m", 18, "Kvaelstofgoedning (producent)"),
+    "WPU012": ("m", 18, "Kornpriser (producent)"), "WPU102": ("m", 18, "Metalpriser (producent)"),
+    "REVOLSL": ("m", 40, "Forbrugerkredit (kort og lignende)"), "CCLACBW027SBOG": ("u", 9, "Kreditkortlaan i banker"),
+    "DRCCLACBS": ("q", 60, "Kreditkort i restance"), "CORCCACBS": ("q", 60, "Kreditkort afskrevet"),
+    "HPIPONM226S": ("m", 60, "Huspriser (FHFA)"), "MSPUS": ("q", 30, "Median huspris, solgte huse"),
+    "MSACSR": ("m", 28, "Udbud af nye huse"), "DRSFRMACBS": ("q", 60, "Boliglaan i restance"),
+    "EBP": ("m", 35, "Kreditpraemie (EBP)"),
+}
+SLAEK = {"d": 4, "u": 4, "m": 7, "q": 10}       # dage ekstra foer en serie kaldes forsinket (weekender, helligdage)
+MAANED_NAVN = "januar februar marts april maj juni juli august september oktober november december".split()
+
+
+def _periodens_slut(d, frekv):
+    """Sidste dag i den periode, observationen d (FRED-stempel) daekker."""
+    if frekv == "m":
+        n = date(d.year + (d.month == 12), d.month % 12 + 1, 1)
+        return n - timedelta(days=1)
+    if frekv == "q":
+        m = ((d.month - 1) // 3) * 3 + 3
+        n = date(d.year + (m == 12), m % 12 + 1, 1)
+        return n - timedelta(days=1)
+    return d
+
+
+def periode_tekst(d, frekv, idag):
+    """'september 2026', '2. kvartal 2026', 'uge til 17. okt.', '23. okt.' — til folk, ikke til koden."""
+    if frekv == "m":
+        return f"{MAANED_NAVN[d.month - 1]} {d.year}"
+    if frekv == "q":
+        return f"{(d.month - 1) // 3 + 1}. kvartal {d.year}"
+    kort = MAANED_NAVN[d.month - 1][:3] + "."
+    return (f"uge til {d.day}. {kort}" if frekv == "u" else f"{d.day}. {kort}") + ("" if d.year == idag.year else f" {d.year}")
+
+
+def datastatus(sid, sidste, idag):
+    """Udgivelseskalenderen for een serie: hvornaar burde naeste tal vaere kommet, og er det kommet?
+    -> dict(serie, navn, frekvens, sidste, periode, naeste_ventes, status, tekst) eller None (ukendt serie).
+    status: 'aktuel' (naeste tal er endnu ikke forfaldent) eller 'forsinket' (forfaldent + slaek er passeret)."""
+    if sid not in UDGIVELSE or not sidste:
+        return None
+    frekv, lag, navn = UDGIVELSE[sid]
+    d = date.fromisoformat(sidste[:10] if len(sidste) >= 10 else sidste + "-01")
+    if frekv in ("d", "u"):
+        naeste_slut = d + timedelta(days=1 if frekv == "d" else 7)
+    else:
+        naeste_slut = _periodens_slut(_periodens_slut(d, frekv) + timedelta(days=1), frekv)
+    ventes = naeste_slut + timedelta(days=lag)
+    forsinket = idag > ventes + timedelta(days=SLAEK[frekv])
+    per = periode_tekst(d, frekv, idag)
+    vt = f"{ventes.day}. {MAANED_NAVN[ventes.month - 1]}" + ("" if ventes.year == idag.year else f" {ventes.year}")
+    if forsinket:
+        tekst = f"Forsinket: nyeste tal er fra {per}; det naeste burde vaere kommet omkring {vt}."
+    elif idag >= ventes:
+        tekst = f"Nyeste tal er fra {per}; det naeste kan komme naar som helst."
+    else:
+        tekst = f"Nyeste tal er fra {per}; det naeste ventes omkring {vt}."
+    return dict(serie=sid, navn=navn, frekvens=frekv, sidste=sidste[:10], periode=per, naeste_ventes=ventes.isoformat(),
+                status="forsinket" if forsinket else "aktuel", tekst=tekst)
+
+
+# ---- tal der foer blev tastet ind i manual.json, nu beregnet af snapshottets egne filer (2026-10-27) ----
+def spx_fra_top(rows):
+    """S&P 500's seneste luk mod hoejeste luk de seneste 365 dage (samme regel som manual.json brugte).
+    rows = [(YYYY-MM-DD, vaerdi)]. -> dict(vaerdi, dato, top, top_dato) eller None."""
+    rk = [(d, float(v)) for d, v in rows if v not in (None, "", ".")]
+    if not rk:
+        return None
+    d0, v0 = rk[-1]
+    fra = (date.fromisoformat(d0) - timedelta(days=365)).isoformat()
+    top_d, top_v = max(((d, v) for d, v in rk if d > fra), key=lambda t: t[1])
+    return dict(vaerdi=round(v0 / top_v - 1, 4), dato=d0, luk=v0, top=top_v, top_dato=top_d)
+
+
+def multpl_live(html):
+    """multpl's seneste (live) CAPE-raekke, fx 'Oct 26, 2026'. -> dict(vaerdi, dato) eller None."""
+    if isinstance(html, bytes):
+        html = html.decode("utf-8", "replace")
+    m = re.search(r"<td>([A-Z][a-z]{2}) (\d{1,2}), (\d{4})</td>\s*<td>\s*(?:&#x2002;)?\s*([\d.]+)", html)
+    if not m:
+        return None
+    MON = {k: i for i, k in enumerate("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(), 1)}
+    return dict(vaerdi=float(m.group(4)), dato=f"{m.group(3)}-{MON[m.group(1)]:02d}-{int(m.group(2)):02d}")
+
+
+def finra_margin(xlsx):
+    """FINRA's margin-statistics.xlsx (raa bytes) -> laanesaldo i seneste maaned mod samme maaned aaret foer.
+    Laeses med stdlib (xlsx er en zip med XML). -> dict(vaerdi (%), periode, saldo, saldo_aaret_foer)."""
+    z = zipfile.ZipFile(io.BytesIO(xlsx))
+    ark = z.read("xl/worksheets/sheet1.xml").decode("utf-8")
+    rk = {}
+    for raekke in re.findall(r"<row[^>]*>(.*?)</row>", ark, re.S):
+        a = re.search(r'<c r="A\d+"[^>]*>(?:<is><t>|<v>)([^<]*)<', raekke)
+        b = re.search(r'<c r="B\d+"[^>]*><v>([^<]*)</v>', raekke)
+        if a and b and re.fullmatch(r"\d{4}-\d{2}", a.group(1).strip()):
+            rk[a.group(1).strip()] = float(b.group(1))
+    if not rk:
+        raise RuntimeError("FINRA-filen har ingen 'YYYY-MM'-raekker med debit balances — formatet er aendret?")
+    sidst = max(rk)
+    foer = f"{int(sidst[:4]) - 1}{sidst[4:]}"
+    if foer not in rk:
+        raise RuntimeError(f"FINRA-filen mangler {foer} (samme maaned aaret foer {sidst})")
+    return dict(vaerdi=round((rk[sidst] / rk[foer] - 1) * 100, 1), periode=sidst, saldo=rk[sidst], saldo_aaret_foer=rk[foer])
 
 
 def _mk(d):

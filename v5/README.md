@@ -18,7 +18,7 @@ blev til, ikke hvordan den koeres i dag.
 | `calibrate.py` | Hjaelpefunktioner for hele kaeden (read_fred, live_kurve, fit ...). Som script HISTORISK (trin 1): skriver `calibrate_resultat.json`; `weights.json` kun med `--overskriv` (bevidst) |
 | `ablation2_nber.py` | NBER-labelen, annonceringstabellen, USREC-krydstjekket, eligibility og den forklarede origin-audit. Som script (`--promote`) HISTORISK — koer ikke i drift |
 | `ablation3/4/7/8_*.py`, `audit5_alfred.py` | Historiske, afsluttede tests (frekvens, features, curve+cape, AWHMAN, ALFRED) — koer ikke i drift |
-| `test_v5.py` | 209 tests, stdlib unittest, ingen netvaerk (~4 min) |
+| `test_v5.py` | 220 tests, stdlib unittest, ingen netvaerk (~4 min) |
 | `nber_announcements.csv` | NBER's annonceringsdatoer (top/bund) — se *NBER-vedligehold* nedenfor |
 | `manual/` | `manual.json` (S&P vs 52u-top, live-CAPE, marginlaan y/y + deres datoer), `shiller_yale_2023-09.csv` (uforanderlig Yale-kopi), `seam_check_2023.json`, evt. `outliers_accepteret.json` |
 | `kalibreringer/` | Kalibreringsmanifester (v5.0.1 §3.3): et pr. kalibrering, index.json, legacy_mapping.json |
@@ -29,12 +29,21 @@ blev til, ikke hvordan den koeres i dag.
 
 ## Maanedligt ritual (~5 min) — logdag: foerste hverdag fra den 10. (+ 3 dage)
 
+**Datahuller rettet 2026-10-27.** (1) Udgivelseskalender for alle serier (`spine.UDGIVELSE`): motor og dashboard
+skriver for hver serie, hvornaar naeste tal ventes, og kalder den kun *forsinket*, naar kilden er bagud i forhold til
+sin normale rytme. (2) S&P vs 12m-top, CAPE og marginlaan beregnes af `fetch.py` fra FRED SP500, multpl-siden og
+FINRA's `margin-statistics.xlsx` (gemmes lokalt, committes ikke); `manual.json` bruges kun, hvis den er nyere eller
+det automatiske tal fejler, og motor viser kilden. (3) CP-spaendet: CP-renten mangler paa ca. halvdelen af dagene, saa
+tripwiren maaler nu alle maalinger de seneste 14 dage (mindst 3) i stedet for "10 seneste faelles dage", der strakte
+sig over ca. en maaned. (4) Dashboardet siger "ikke krydset" / "ingen taerskel" / "data mangler" i stedet for
+inaktiv/kontekst/utilgaengelig. `manual/acm.csv` (NY Fed ACM, sidste raekke 2026-07) er arkiv: motor bruger den kun,
+hvis Kim-Wright-serien mangler.
+
 ```
-python fetch.py                  # hent + rygrad + guards + diff-tjek med oejnene
-# opdater manual/manual.json: spx_vs_hi + spx_dato, cape + cape_dato, margin_yoy + margin_periode
-python fetch.py                  # igen, saa snapshottet baerer de manuelle tal
+python fetch.py                  # hent + rygrad + guards + diff-tjek med oejnene; beregner selv S&P vs 12m-top,
+                                 # CAPE og marginlaan (meta.json -> "afledte"); manual/manual.json er kun reserve
 python motor.py --log --json     # aflaesning, prospektiv raekke i ../LOG.md + ../hovedbog.jsonl, dashboard.json
-python -m unittest test_v5       # 209 tests
+python -m unittest test_v5       # 220 tests
 ```
 Hovedbogen (`../LOG.md`) er den eneste fuldt prospektive test: een raekke pr. maaned, skrevet FOER
 udfaldet kendes; historiske raekker roeres aldrig. Den beskytter mod look-ahead, men er statistisk
