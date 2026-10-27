@@ -3133,29 +3133,47 @@ class TestCPOgDatastatusIMotor(unittest.TestCase):
             self.assertIn(x["rolle"], ("P", "refit", "rygrad", "kontekst"))
 
 
-class TestReviewRettelser20261027(unittest.TestCase):
-    """Eksterne reviews 2026-10-27: maerke-taerskel, tandem i benchmark-tabellen, BNP-vintage. Kun tekst, aldrig P."""
+class TestRaadetsSpec7(unittest.TestCase):
+    """RAADETS_SPEC7 (7/7, 2026-10-27): maerke-taerskel, §1.2 i benchmark-raekken, BNP 'foerst set af os', ingen
+    forventningsdel-advarsel, oracle-fri bootstrap foer den orakel-censurerede, BEY-formlen. Kun tekst, aldrig P."""
 
     def test_kurve_maerke_taerskel(self):
-        self.assertEqual(M.kurve_maerke(0.08, 0.06, 0.0143), "parallelt skift op (kurven flyttede sig under 5bp)")
-        self.assertTrue(M.kurve_maerke(-0.08, -0.06, -0.01).startswith("parallelt skift ned"))
-        self.assertTrue(M.kurve_maerke(0.0, 0.0, 0.0).startswith("naesten uaendret"))
+        self.assertEqual(M.kurve_maerke(0.08, 0.06, 0.0143), "kurveaendring under 5bp (naesten parallel)")
+        self.assertEqual(M.kurve_maerke(-0.08, -0.06, -0.01), "kurveaendring under 5bp (naesten parallel)")
+        self.assertEqual(M.MAERKE_MIN_DK, 0.05)                           # frosset til refitten 2027 (§3.1)
         self.assertEqual(M.kurve_maerke(0.20, 0.05, 0.15), "lang-ende-drevet (bear steepening)")
         self.assertEqual(M.kurve_maerke(0.01, -0.20, 0.21), "kort-ende-drevet (bull steepening)")
 
-    def test_bnp_efter_advance(self):
-        self.assertTrue(M.bnp_efter_advance((2026, 1), "2026-08-09"))      # Q1 foerst set efter third estimate
-        self.assertFalse(M.bnp_efter_advance((2026, 4), "2026-08-09"))     # Q2: ritualet ligger efter advance
-        self.assertFalse(M.bnp_efter_advance((2025, 10), "2026-02-10"))    # Q4: kvartalsslut 12-31 + 42 dage
+    def test_dage_efter_kvartal(self):
+        self.assertEqual(M.dage_efter_kvartal((2026, 1), "2026-08-09"), 131)     # 2026-03-31 -> 08-09
+        self.assertEqual(M.dage_efter_kvartal((2026, 4), "2026-08-09"), 40)      # 2026-06-30 -> 08-09
+        self.assertEqual(M.dage_efter_kvartal((2025, 10), "2026-02-10"), 41)     # 2025-12-31 -> 02-10
+
+    def test_bey_formlen_spec_7A(self):
+        self.assertAlmostEqual(P27.bey(4.04), 4.138, places=3)
+        self.assertAlmostEqual(P27.bey(15.0) - 15.0, 0.808, places=3)
 
     def test_tandem_note_og_dashboardets_benchmark_raekke(self):
-        self.assertIsNone(M.tandem_note(None))
-        self.assertIsNone(M.tandem_note({"oracle_fri": {}}))
+        self.assertIsNone(M.tandem_note(None, {"wf_improvement": 27.05}, None))
         d = json.loads((HERE.parent / "dashboard.json").read_text(encoding="utf-8"))
         of = d["diagnostik"]["oracle_fri"]["alle_live_publicerbare"]
-        raekke = next(b for b in d["benchmarks"] if b.get("status") == "OPERATIONEL")
-        self.assertIn(f"+{of['improvement']}%", raekke["note"])              # RAADETS_2027 §1.2: aldrig +27,05 alene
+        note = next(b for b in d["benchmarks"] if b.get("status") == "OPERATIONEL")["note"]
+        i_of, i_or, i_ne = (note.index(f"+{of['improvement']}%"), note.index(f"+{d['wf_log_loss']}%"),
+                            note.index("nested lambda"))
+        self.assertLess(i_of, i_or); self.assertLess(i_or, i_ne)        # §1.2-raekkefoelgen; +27,05 aldrig alene
 
+    def test_dashboard_uden_forventningsdel_og_med_oraclefri_interval(self):
+        d = json.loads((HERE.parent / "dashboard.json").read_text(encoding="utf-8"))
+        self.assertNotIn("forventningsdel", d["advarsler"])               # §3.6: C6 fjernet
+        tekst = json.dumps(d, ensure_ascii=False)
+        for forbudt in ("98 %", "Rosenberg", "17.9", "senere vintage end advance", "parallelt skift"):
+            self.assertNotIn(forbudt, tekst)
+        of = d["diagnostik"]["parret_loss_bootstrap_oraclefri"]
+        self.assertEqual(of["n_origins"], d["diagnostik"]["oracle_fri"]["alle_live_publicerbare"]["n"])
+        self.assertEqual(of["n_draws"], 10000)
+        kt = next(x["vaerdi"] for x in d["pengepolitik"] if x["navn"].startswith("10y = term"))
+        self.assertIn("ikke et input", kt)
+        self.assertIn("giver ikke P og vises ikke", d["live_input"]["konvention"]["tekst"])
 
 if __name__ == "__main__":
     unittest.main()

@@ -18,7 +18,7 @@ blev til, ikke hvordan den koeres i dag.
 | `calibrate.py` | Hjaelpefunktioner for hele kaeden (read_fred, live_kurve, fit ...). Som script HISTORISK (trin 1): skriver `calibrate_resultat.json`; `weights.json` kun med `--overskriv` (bevidst) |
 | `ablation2_nber.py` | NBER-labelen, annonceringstabellen, USREC-krydstjekket, eligibility og den forklarede origin-audit. Som script (`--promote`) HISTORISK — koer ikke i drift |
 | `ablation3/4/7/8_*.py`, `audit5_alfred.py` | Historiske, afsluttede tests (frekvens, features, curve+cape, AWHMAN, ALFRED) — koer ikke i drift |
-| `test_v5.py` | 223 tests, stdlib unittest, ingen netvaerk (~4 min) |
+| `test_v5.py` | 225 tests, stdlib unittest, ingen netvaerk (~4 min) |
 | `nber_announcements.csv` | NBER's annonceringsdatoer (top/bund) — se *NBER-vedligehold* nedenfor |
 | `manual/` | `manual.json` (S&P vs 52u-top, live-CAPE, marginlaan y/y + deres datoer), `shiller_yale_2023-09.csv` (uforanderlig Yale-kopi), `seam_check_2023.json`, evt. `outliers_accepteret.json` |
 | `kalibreringer/` | Kalibreringsmanifester (v5.0.1 §3.3): et pr. kalibrering, index.json, legacy_mapping.json |
@@ -43,7 +43,7 @@ hvis Kim-Wright-serien mangler.
 python fetch.py                  # hent + rygrad + guards + diff-tjek med oejnene; beregner selv S&P vs 12m-top,
                                  # CAPE og marginlaan (meta.json -> "afledte"); manual/manual.json er kun reserve
 python motor.py --log --json     # aflaesning, prospektiv raekke i ../LOG.md + ../hovedbog.jsonl, dashboard.json
-python -m unittest test_v5       # 223 tests
+python -m unittest test_v5       # 225 tests
 ```
 Hovedbogen (`../LOG.md`) er den eneste fuldt prospektive test: een raekke pr. maaned, skrevet FOER
 udfaldet kendes; historiske raekker roeres aldrig. Den beskytter mod look-ahead, men er statistisk
@@ -821,6 +821,15 @@ P, baand, vaegte (manifest 72c3371d), hovedbogens raekker og dashboard.json er u
 | 10.4 | Live-censureringens regeltekst, byte-identisk med noeglens §1 (d), skrevet i protokollen; motor stopper under en 2027-kalibrering, hvis de afviger | [spec2027/5_live_censurering.md](spec2027/5_live_censurering.md) (ab18a24) | 1affc5c | gennemfoert |
 | 1.2 | Ved refitten: nested λ oracle-fri (diagnostik.py; selvtjek: fast oracle-fri 20,37/219 og orakel-nested 18,32/198 reproduceres uden at beregne det nye tal) og styrkeklausulen re-afledt af den konfigurationsspecifikke replay (`replay2027.py`), maerket stoerrelsesorden; skill-saetningen skifter kun, naar tallene findes for kalibreringen i drift | [spec2027/6_skill_saetning_refit.md](spec2027/6_skill_saetning_refit.md) (d142b7b) | 1389d74 | gennemfoert (beregnes ved refitten) |
 
+**Tilfoejet af RAADETS_SPEC7 (7/7, 2026-10-27).** Specs'ene er forseglet og pushet (d1049ac) foer koden; sha256
+laases i `protokol2027.SPECS`. Intet af det roerer P foer refitten.
+
+| § | Hvad | Forseglet spec (commit) | Kode | Status |
+|---|---|---|---|---|
+| SPEC7 §1 | Del A: 3m-benet paa obligationsaekvivalent basis (`protokol2027.bey`) som uscoret diagnostik i `diagnostik.json` → `uscorede.konvention_bey`: fit, walk-forward (oracle-fri foerst), parret Δ (10.000 traek, seed 42, 5.–95.), rentebin-tabel (beskrivende), BEY-P kun i diagnostikken; ubetinget dagsordenspunkt, ingen skifteregel | [spec2027/7A_konvention_bey.md](spec2027/7A_konvention_bey.md) (d1049ac) | `bey()` findes; selve diagnostikken skrives foer refitten | afventer (skal vaere klar foer 2027-09) |
+| SPEC7 §2 | Del B: ingen historisk test af forventningsdelen; prospektiv Kim-Wright-revisionsaudit over 12 hovedbogs-snapshots fra 2026-11-raekken; kolonne kun ved max revision af E < 10bp (visningsstabilitet) OG raadets godkendelse | [spec2027/7B_forventningsdel_audit.md](spec2027/7B_forventningsdel_audit.md) (d1049ac) | `analyser/b3_revisionsaudit.py` skrives foer 12. aargang (ca. 2027-10); aargangene gemmes allerede i hvert snapshot | afventer |
+| husholdning | BNP-monitoren: hent BEA's udgivelseskalender eller ALFRED-vintage-metadata, saa "foerste print" kan siges verificeret (Fable, Argon, forbehold runde 4) | — | — | foer refitten |
+
 **Ritualet ved september-refitten 2027** (efter NBER-vedligehold og maanedsritualets fetch): bump VERSION i finalize6.py;
 `python finalize6.py` (gate, L_R-audit, uscorede fit); `python diagnostik.py` (parret maanedlig diagnostik, nested λ
 oracle-fri); `python replay2027.py` (replay + styrkeklausul); `python motor.py --log --json` i logvinduet; commit og push.
@@ -874,31 +883,40 @@ dashboard-replay er uafhaengig af lokale filer.
   det ikke flyttes, er intet roert, det nye ligger komplet i `<dato>.ny`, og fetch stopper hoejlydt.
 
 
-## Rettelser efter de eksterne reviews 2026-10-27 (kun tekst; P, baand, vaegte og hovedbog uroerte)
+## De eksterne reviews 2026-10-27 og raadet (RAADETS_SPEC7) — kun tekst; P, baand, vaegte og hovedbog uroerte
 
-To eksterne gennemgange (en rapportlaesning og en kodegennemgang) blev tjekket punkt for punkt mod koden.
-Tre paastande holdt ikke: gate-tallet 3,9pp er fuldmodel mod curve-only paa samme fulde sti (27,05 − 23,16),
-ikke curve+cape mod referencen; Estrella-Mishkin beregnes paa DGS10 − DGS3MO (+0,95pp), ikke paa modellens
-+1,12pp; og de 12 onsets er rigtige, fordi panelet starter 1947Q2. Det, der holdt, er rettet:
-- **Maerket paa maanedens aendring** (`motor.kurve_maerke`): under `MAERKE_MIN_DK` = 5bp kurveaendring hedder
-  det "parallelt skift op/ned" i stedet for steepening/flattening. 2026-10 var +0,08/+0,06 med kurve +0,01.
-- **Tandem i benchmark-tabellen** (`motor.tandem_note`): curve-only-raekkens +27,05 % staar aldrig alene
-  (RAADETS_2027 §1.2); noten baerer den oracle-fri +20,37 % (219 origins). Dashboardet viser nu raekke-noter.
-- **Estrella-Mishkin** viser det brugte spaend (CMT) i status-teksten.
-- **BNP-monitoren** skriver "foerst set af os" og maerker en kvartalsvaerdi "senere vintage end advance",
-  naar vores foerste snapshot kom efter advance-vinduet (`motor.bnp_efter_advance`: kvartalsslut + 32 + 10 dage).
-- **Konventionsnoten** under P (`live_input.konvention`): modellen bruger DTB3 paa diskontobasis som
-  kalibreringens TB3MS; FRED's T10Y3M (DGS3MO, CMT) giver +0,95pp paa samme vindue. De frosne vaegte er
-  estimeret paa diskontobasis, saa CMT-kurven kan ikke saettes ind i dem.
-- **Staaende advarsel om forventningsdelen** (`advarsler.forventningsdel`): Kim-Wright 2026-10-16 giver
-  forventningsdel minus 3m paa +0,02pp (DTB3) / −0,16pp (DGS3MO); 98 % af kurven den dag er term-praemie.
-  En ACM-version blev testet og afvist i trin 4 (−77,9pp).
-- **Dashboardet** viser gaten som "fuldmodel mod curve-only, samme fulde sti" og 4.4-intervallet (historisk
-  parret loss-bootstrap over 9 cyklusblokke: middel +0,120, 90 %-interval [−0,042; +0,239], 8,9 % af
-  traekkene <= 0) ved skill-tallene.
+To eksterne gennemgange (en rapportlaesning og en kodegennemgang) blev tjekket punkt for punkt mod koden. Tre
+paastande holdt ikke: gate-tallet 3,89pp er fuldmodel mod curve-only paa samme fulde sti (27,05 − 23,16);
+Estrella-Mishkin beregnes paa DGS10 − DGS3MO (+0,95pp), ikke paa modellens +1,12pp; og de 12 onsets er rigtige,
+fordi panelet starter 1947Q2. Rettelserne fra samme dag (2e22ac5) blev lagt for raadet
+([RAADETS_SPEC7.md](../RAADETS_SPEC7.md), 7/7 i runde 4) og er nu som raadet besluttede:
+- **Maerket paa maanedens aendring** (`motor.kurve_maerke`): under `MAERKE_MIN_DK` = 5bp hedder det
+  "kurveaendring under 5bp (naesten parallel)"; begge ben printes altid ved siden af. 5bp blev sat EFTER at have
+  set +1,4bp (2026-10) og er frosset til refitten 2027.
+- **§1.2 i benchmark-tabellen:** den fulde skill-saetning med styrkeklausulen staar lige over tabellen (dashboard og
+  konsol), og curve-only-raekkens note baerer alle tre tal i §1.2-raekkefoelgen (`motor.tandem_note`).
+- **Estrella-Mishkin** viser det brugte CMT-spaend.
+- **BNP-monitoren** skriver "foerst set af os dd-mm (N dage efter kvartalets udgang)" (`motor.dage_efter_kvartal`)
+  og paastaar intet om BEA-vintage. Navnet er uaendret af hensyn til hovedbogens antaendingskolonne.
+- **Konventionsnoten** (`live_input.konvention`): modellens 3m-ben er DTB3/TB3MS paa diskontobasis; CMT-kurven paa
+  samme vindue staar ved siden af; BEY-omregningen (`protokol2027.bey`, spec 7A) forklarer ca. 0,10pp, resten er
+  forskellige papirer og kurvetilpasning. Intet substitueret P vises nogen steder.
+- **Advarslen om forventningsdelen er fjernet.** Kontekstblokkens "10y = term-praemie + forventet" (siden a7a5207)
+  har faaet "modelafhaengig, revideres; ikke et input" og intet andet.
+- **Gaten** vises som "curve-only minus F5 = +3,89 pp, orakel-censureret fuld sti".
+- **4.4 i begge varianter** (`diagnostik.parret_loss_boot`; 10.000 traek, seed 42, 5.–95. percentil, cykelblokke),
+  oracle-fri foerst: oracle-fri (219 origins) middel +0,085 log-loss pr. origin (= +20,37 % af basisratens
+  log-loss), 90 %-interval [−0,062; +0,172], 13,9 % af traekkene <= 0; orakel-censureret (198) +0,120,
+  [−0,042; +0,239], 8,9 %. Traekandele, ikke p-vaerdier.
+- **Dommen** paa dashboardet har "Primaer baandregel:" foran; hovedbogens streng er uaendret.
 
-To foelsomheds-/feature-spoergsmaal er skrevet som et **udkast til raadet**, ikke forseglet og ikke koert:
-[spec2027/udkast/7_konvention_og_forventningsdel.md](spec2027/udkast/7_konvention_og_forventningsdel.md)
-(del A: 3m-benet paa obligationsaekvivalent basis; del B: forventningsdelen, hvor udkastet anbefaler en
-prospektiv, uscoret linje frem for en ny historisk test, fordi ACM-ideen allerede er testet og afvist).
+**Metode: kurvens forventningsdel og ACM-testen.** Kim-Wright deler 10-aars-renten i term-praemie og forventet
+rente; i oktober 2026 var naesten hele den positive kurve term-praemie, og litteraturen (Rosenberg & Maurer 2008)
+finder, at det er forventningsdelen, der forudsiger recessioner. Ideen er testet een gang. Raadets ordlyd (spec 7B
+§0): "The idea was tested once (v5.0 blueprint section 5, run in step 4: dLL −77.88 pp, dBrier −30.82 pp, 192
+paired origins, 0 % positive folds). That result is on an implementation — inside F5, with a pre-1961 base-rate
+penalty, the secondary truncated comparison never run — not on the hypothesis; it is not evidence for or against
+the expectations component. The historical search nevertheless stays closed: the result has been seen, a redesign
+could now be aimed around it, and with 8 onsets since 1961 MDE80 ≈ 30 pp." I stedet koerer en prospektiv
+revisionsaudit (spec 7B). Udkastet `spec2027/udkast/7` er afloest af 7A/7B og slettet; det ligger i 2e22ac5.
 `../hovedbog.jsonl` findes endnu ikke: den oprettes ved naeste logfoerte raekke (raekke 4).

@@ -95,7 +95,7 @@
     "manifest_hash": "72c3371d",
     "snapshot": "2026-09-19",
     "refit_maaned": "2026-09",
-    "created_utc": "2026-10-15T13:37:24+00:00",
+    "created_utc": "2026-10-27T22:21:50+00:00",
     "primaer": {
       "n": 198,
       "n_pos": 32,
@@ -350,6 +350,18 @@
       "andel_ikke_positiv": 0.0893,
       "n_blokke": 9,
       "n_draws": 10000
+    },
+    "parret_loss_bootstrap_oraclefri": {
+      "middel_pp": 0.0847,
+      "interval_90": [
+        -0.062,
+        0.1716
+      ],
+      "andel_ikke_positiv": 0.139,
+      "n_blokke": 9,
+      "n_draws": 10000,
+      "n_origins": 219,
+      "saet": "oracle-fri, alle live-publicerbare (realtidscensurering)"
     },
     "domsregler_backtest": {
       "n_origins": 198,
@@ -890,7 +902,7 @@
     },
     "konvention": {
       "kurve_cmt": 0.949,
-      "tekst": "Konvention: 3m-renten er DTB3 paa diskontobasis, ligesom kalibreringens TB3MS. FRED's T10Y3M bruger DGS3MO (CMT, obligationsaekvivalent); paa samme vindue er den kurve +0.95pp. Forskellen (0.18pp) er konvention, ikke data. De frosne vaegte er estimeret paa diskontobasis, saa CMT-kurven kan ikke saettes ind i dem; en foelsomhedstest er foreslaaet til refitten 2027 (spec2027/udkast/7, kraever raadets mandat)."
+      "tekst": "Konvention: modellens 3m-ben er DTB3/TB3MS paa diskontobasis. Paa dette vindue er DGS10 - DGS3MO (CMT) +0.95pp mod +1.12pp med DTB3. Den fastlaaste BEY-omregning (spec2027/7A) loefter DTB3 fra 4.06% til 4.16% i vinduets middel; de resterende ca. 0.08pp til DGS3MO (4.24%) skyldes forskellige papirer og kurvetilpasning. At saette CMT- eller BEY-kurven ind i de frosne vaegte giver ikke P og vises ikke; del A er en uscoret foelsomhed ved refitten 2027."
     }
   },
   "trigger": "manuel/reparation (foerste kalibrering efter v5.0)",
@@ -993,7 +1005,7 @@
       "live_p": 0.148392,
       "status": "OPERATIONEL",
       "panel": "fuld sti t.o.m. 2024Q1",
-      "note": "fast lambda=1 (arvet fra v4); fuld-sti-valg mellem to modeller, ikke nested; wf-kolonnen er orakel-censureret som de oevrige raekker; citeres kun sammen med oracle-fri +20.37% (219 origins), RAADETS_2027 §1.2"
+      "note": "fast lambda=1 (arvet fra v4); fuld-sti-valg mellem to modeller, ikke nested; §1.2: oracle-fri +20.37% (219) | orakel-censureret +27.05% (198) | nested lambda +18.32% (198, orakel-censureret); wf-kolonnen er orakel-censureret som de oevrige raekker; hele saetningen med styrkeklausulen staar lige over tabellen"
     },
     {
       "navn": "fuldmodel (5 features)",
@@ -1082,7 +1094,7 @@
     {
       "navn": "Advance-estimat: 2 neg. BNP-print",
       "tilstand": "inaktiv",
-      "vaerdi": "2026Q1 +2.1% (foerst set af os 08-09; senere vintage end advance), 2026Q2 +1.5% (foerst set af os 08-09)",
+      "vaerdi": "2026Q1 +2.1% (foerst set af os 08-09, 131 dage efter kvartalets udgang), 2026Q2 +1.5% (foerst set af os 08-09, 40 dage efter kvartalets udgang)",
       "klasse": "uvalideret realtidsdiagnostik paa foerste print i vores snapshots (vintage-flip dokumenteret, trin 5)"
     },
     {
@@ -1199,7 +1211,7 @@
     },
     {
       "navn": "10y = term-praemie + forventet",
-      "vaerdi": "5.09 = 0.99 + 4.10 (2026-10-16, Kim-Wright)"
+      "vaerdi": "5.09 = 0.99 + 4.10 (2026-10-16, Kim-Wright; modelafhaengig, revideres; ikke et input)"
     },
     {
       "navn": "Kurve = front (2y-3m) + bag (10y-2y)",
@@ -2147,7 +2159,7 @@
     "d3m_pp": 0.0579,
     "bidrag_10Y_pp": -1.23,
     "bidrag_3m_pp": 0.92,
-    "maerke": "parallelt skift op (kurven flyttede sig under 5bp)",
+    "maerke": "kurveaendring under 5bp (naesten parallel)",
     "input_foer": "daglig",
     "dTP_pp": -0.099,
     "dTP_datoer": [
@@ -2162,7 +2174,6 @@
     },
     "sti_advarsel": "Modellen laeser kurvens NIVEAU; +1.12pp behandles som +1.12pp uden forhistorie. Seneste inversion: sluttede 2024-11 (22 mdr siden), dybde -1.57pp. Historisk (diagnostik): P var under sin top ved sidste origin foer onset i 6/8 onsets — median 21pp fald, median 9 mdr fra top til onset. 2007Q4: P 16.7% [10.4-27.4%], ikke skelnelig — onset kom maaneden efter. Balance-sheet-drevne recessioner uden frisk inversion er usynlige for modellen.",
     "lang_ende": "En stigning i den lange ende saenker P mekanisk (ca. 1.6pp pr. 10bp ved nuvaerende kurve); atlassets kanal 5 laeser samme bevaegelse som risiko. Dommen er uaendret.",
-    "forventningsdel": "Kurvens sammensaetning (Kim-Wright, 2026-10-16): 10Y 5.09 = term-praemie 0.99 + forventet 4.10. Forventningsdelen minus 3m er +0.02pp mod DTB3 (diskonto, modellens konvention) og -0.16pp mod DGS3MO (CMT); 98 % af kurven den dag (+1.01pp) er term-praemie. Litteraturen (Rosenberg-Maurer 2008) finder, at det er forventningsdelen, der forudsiger recessioner; modellen laeser kun summen. En ACM-version blev testet og afvist i trin 4 (-77,9pp fuld sti, primaert straffen for aarene foer 1961). Kontekst, ikke i P; et forslag til raadet ligger i spec2027/udkast/7.",
     "eksogen": "Eksogene chok kan ikke forudsiges."
   },
   "hovedbog": [

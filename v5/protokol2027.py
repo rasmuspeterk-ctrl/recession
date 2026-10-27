@@ -19,6 +19,10 @@ R >= IKRAFT (2027-09). En kalibrering med R < IKRAFT (fx reproduktionen af 72c33
                             §10.4     live-censureringens regeltekst, byte-identisk med noeglens §1 (d)
   spec2027/6_skill_saetning_refit.md
                             §1.2      ved refitten: nested lambda oracle-fri; styrkeklausul re-afledt af replayen
+  spec2027/7A_konvention_bey.md
+                            SPEC7 §1  3m-benet paa obligationsaekvivalent basis: uscoret diagnostik ved refitten
+  spec2027/7B_forventningsdel_audit.md
+                            SPEC7 §2  ingen historisk test af forventningsdelen; prospektiv KW-revisionsaudit
 
 Kun stdlib + numpy.
 """
@@ -42,6 +46,8 @@ SPECS = {
     "4_maanedligt_fit_uscorede.md": "c2c988c97b4c5f516b31fb2d8ebf4d8deccc09f21ab7de9ef5666fa428fa0e33",
     "5_live_censurering.md": "95cbe669709ca2c868c741d6280f2e81add84c665e115a063b3c253929c67f17",
     "6_skill_saetning_refit.md": "42b5f63e1144b5de49f32ed61de6fbb554b6639405f3733fc3983ede4f00c1c0",
+    "7A_konvention_bey.md": "fc43ef43c32eef6eb281a911ea63eb2c79385a3a069ff89b3dcdcd7fc2183295",      # RAADETS_SPEC7
+    "7B_forventningsdel_audit.md": "0ceff66abafeac9d0a6d016b1e736168d434aa50fa4817c4864ed9a514c0c560",
 }
 
 Z_975, Z_80 = 1.959964, 0.841621   # spec 1 §4.1: 80 %-MDE = (z_0,975 + z_0,80) x SD_block (normalteori)
@@ -58,6 +64,12 @@ def i_kraft_maaned(refit_maaned):
     if not refit_maaned:
         return False
     return i_kraft(A2.midx(int(refit_maaned[:4]), int(refit_maaned[5:7])))
+
+
+def bey(d):
+    """Spec 7A §2: 91-dages obligationsaekvivalent proxy for en diskontorente d (procent): 365d/(360 - 91d)."""
+    x = d / 100.0
+    return 100.0 * 365.0 * x / (360.0 - 91.0 * x)
 
 
 def spec_sha256(navn):

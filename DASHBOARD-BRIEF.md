@@ -296,8 +296,8 @@ eksempler, ikke den aktuelle læsning. Feltrækkefølgen er motorens.
   - `fed_funds` er seneste effektive rente med kilde. `sammensaetning` er kurvens front/bag-
     opdeling på samme vindue (`null` hvis 2-års-renten mangler).
   - `konvention` (fra 2026-10-27, ellers `null`): `kurve_cmt` er samme vindue med DGS3MO (FRED's
-    T10Y3M-konvention) og `tekst` forklarer, hvorfor modellen bruger DTB3. Vises ordret under P,
-    aldrig som et alternativt tal.
+    T10Y3M-konvention) og `tekst` forklarer, hvorfor modellen bruger DTB3 (RAADETS_SPEC7 §3.5). Vises
+    ordret under P. Intet substitueret P (CMT- eller BEY-kurven i de frosne vægte) vises nogen steder.
 - `stale`: `null`, eller `{serie: {sidste, alder_dage, graense, kritisk}}` for serier der var
   for gamle, da snapshottet blev hentet. `kritisk: true` skal være synligt ved læsningen.
 - `manual_friskhed`: dato og alder for de manuelle input (`cape`, `spx_vs_hi`, `margin_yoy`).
@@ -389,13 +389,19 @@ eksempler, ikke den aktuelle læsning. Feltrækkefølgen er motorens.
 - `maanedens_aendring`: ændring mod sidste logførte række. `dP_pp` og `dK_pp` er ændringen i
   P og kurve. Dekompositionen ved frosne vægte er `d10Y_pp`, `d3m_pp`, `bidrag_10Y_pp`,
   `bidrag_3m_pp` og `maerke` (fx "lang-ende-drevet (bear steepening)"; under 5bp kurveændring
-  "parallelt skift op/ned"). `input_foer` siger om
+  "kurveaendring under 5bp (naesten parallel)" — de to ben vises altid ved siden af). `input_foer` siger om
   den forrige række brugte daglige eller månedlige data. Feltet er `null` uden en tidligere
   række.
 - `advarsler`: `vaerste_fejlalarm`, `sti_advarsel`, `lang_ende` (en stigning i den lange ende
-  sænker P mekanisk, mens atlassets kanal 5 læser samme bevægelse som risiko), `forventningsdel`
-  (fra 2026-10-27: hvor meget af kurven der er term-præmie, Kim-Wright; `null` uden data) og
-  `eksogen`. Alle vises ordret.
+  sænker P mekanisk, mens atlassets kanal 5 læser samme bevægelse som risiko) og `eksogen`. Alle
+  vises ordret. (Advarslen om kurvens forventningsdel blev fjernet af RAADETS_SPEC7 §3.6; ingen
+  linje ved P viser term-præmie, forventningsdel, andele eller litteratur.)
+- `diagnostik.parret_loss_bootstrap_oraclefri` og `diagnostik.parret_loss_bootstrap`: 4.4-intervallet
+  for den oracle-fri (219 origins) og den orakel-censurerede (198) variant. Den oracle-fri vises
+  først; mangler den, står den censurerede som fodnote med "det oracle-fri interval afventer".
+  Andelen af træk ≤ 0 er en trækandel, ikke en p-værdi. Gaten vises som "curve-only minus F5 =
+  +3,89 pp, orakel-censureret fuld sti", aldrig med +27,1 % alene. Dommen får "Primær båndregel:"
+  foran på siden; strengen i JSON'en og hovedbogen er uændret.
 
 **Hovedbogen**
 
@@ -447,7 +453,7 @@ Felter der styrer betinget visning og ikke må ignoreres: `baand_udelukker_basis
    testet, ikke bestaaet / svaerm-tripwire / uvalideret / ineligible / fuldmodel-feature / utestet monitor).
 7. **Market conditions** (inkl. forudsætnings-tripwires), **Pengepolitik & inflation**,
    **Kredit** og **NBER-indikatorer**. Alle med deres firewall-mærkat synlig.
-8. **De stående advarsler.** Værste fejlalarm, sti-advarsel, lang ende, forventningsdel, eksogene chok.
+8. **De stående advarsler.** Værste fejlalarm, sti-advarsel, lang ende, eksogene chok.
    Permanent synlige, ikke bag en fold-ud.
 9. **Scenarie-appendiks** (`scenarie`). Til sidst og visuelt adskilt fra monitorerne
    (regel 15).

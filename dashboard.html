@@ -313,7 +313,7 @@ button, input[type=file] { font: inherit; }
         el("p", { class: "lille", text: "Estimations-sensitivitetsbånd, ikke et konfidensinterval. " }, el("span", { lang: "en", text: ENGELSK(d.baand_fodnote) })));
       if (d.baand_udelukker_basisrate === true && d.ratio !== null && d.ratio !== undefined)
         læs.append(el("p", { class: "mono", text: `Forhold til basisraten: ${fmt(d.ratio, 2)}×` }));
-      læs.append(el("p", { class: "dom", text: T(d.dom) }));
+      læs.append(el("p", { class: "dom", text: "Primær båndregel: " + T(d.dom) }));   // RAADETS_SPEC7 §4
       if (d.parret) {
         læs.append(el("div", { class: "parret" },
           el("span", {}, "Parret supplement (P minus basisrate pr. bootstrap-træk, 10–90 %): ",
@@ -375,8 +375,11 @@ button, input[type=file] { font: inherit; }
 
     // 4. benchmark-tabel
     const bm = Array.isArray(d.benchmarks) ? d.benchmarks : [];
-    const plb = d.diagnostik && d.diagnostik.parret_loss_bootstrap && Array.isArray(d.diagnostik.parret_loss_bootstrap.interval_90)
-      ? d.diagnostik.parret_loss_bootstrap : null;
+    const bootOk = b => b && Array.isArray(b.interval_90) ? b : null;
+    const plbo = bootOk(d.diagnostik && d.diagnostik.parret_loss_bootstrap_oraclefri);   // RAADETS_SPEC7 §3.7: oracle-fri først
+    const plb = bootOk(d.diagnostik && d.diagnostik.parret_loss_bootstrap);
+    const bootTekst = (b, hvad) => `Historisk parret loss-bootstrap, ${hvad} (${b.n_blokke} cyklusblokke, ${fmt(b.n_draws, 0)} træk): middel ${fortegn(b.middel_pp, 3)} log-loss pr. origin, 90 %-interval [${fortegn(b.interval_90[0], 3)}; ${fortegn(b.interval_90[1], 3)}], ${pct(b.andel_ikke_positiv)} af trækkene ≤ 0 (en trækandel, ikke en p-værdi).`;
+    const gt = d.gate || {};
     const tabel = el("table", {},
       el("thead", {}, el("tr", {}, el("th", { text: "Model" }), el("th", { class: "tal", text: "Wf-skill" }), el("th", { text: "Panel" }), el("th", { class: "tal", text: "Live-P" }), el("th", { text: "Status" }))),
       el("tbody", {}, bm.map(b => {
@@ -394,10 +397,11 @@ button, input[type=file] { font: inherit; }
       el("p", { text: T(d.skill_saetning) }),
       el("div", { class: "rul" }, tabel),
       el("p", { class: "lille", text: "Wf-skill sammenlignes kun inden for samme panel. De afviste kandidater er målt på panelet t.o.m. 2023Q2 og sammenlignes med referencerækken lige over dem." }),
-      plb ? el("p", { class: "lille", text: `Historisk parret loss-bootstrap over ${plb.n_blokke} cyklusblokke (orakel-censureret, ${fmt(plb.n_draws, 0)} træk): middel ${fortegn(plb.middel_pp, 3)} log-loss pr. origin, 90 %-interval [${fortegn(plb.interval_90[0], 3)}; ${fortegn(plb.interval_90[1], 3)}], ${pct(plb.andel_ikke_positiv)} af trækkene ≤ 0. Selv den historiske skill kan altså ikke skelnes sikkert fra nul på blokniveau.` }) : null,
-      d.gate && d.gate.note ? el("p", { class: "lille", text: (d.gate.fuldmodel_wf !== undefined && d.gate.curve_only_wf !== undefined
-        ? `Gaten (fuldmodel ${fortegn(d.gate.fuldmodel_wf, 1)} % mod curve-only ${fortegn(d.gate.curve_only_wf, 1)} %, samme fulde sti): `
-        : "Gaten: ") + T(d.gate.note) }) : null));
+      plbo ? el("p", { class: "lille", text: bootTekst(plbo, `oracle-fri, ${plbo.n_origins} origins`) }) : null,
+      plb ? el("p", { class: "lille", text: bootTekst(plb, "orakel-censureret") + (plbo ? "" : " Det oracle-fri interval afventer.") }) : null,
+      gt.note ? el("p", { class: "lille", text: (gt.fuldmodel_wf !== undefined && gt.curve_only_wf !== undefined
+        ? `Gaten: curve-only minus F5 = ${fortegn(gt.curve_only_wf - gt.fuldmodel_wf, 2)} pp, orakel-censureret fuld sti. `
+        : "Gaten: ") + T(gt.note) }) : null));
 
     // 5. model-inputs
     if (Array.isArray(d.inputs) && d.inputs.length)
@@ -448,7 +452,6 @@ button, input[type=file] { font: inherit; }
       a.vaerste_fejlalarm ? el("p", { text: `Værste fejlalarm i walk-forward: ${pct(a.vaerste_fejlalarm.p)} (${a.vaerste_fejlalarm.origin}) uden onset.` }) : null,
       a.sti_advarsel ? el("p", { text: T(a.sti_advarsel) }) : null,
       a.lang_ende ? el("p", { text: T(a.lang_ende) }) : null,
-      a.forventningsdel ? el("p", { text: T(a.forventningsdel) }) : null,
       a.eksogen ? el("p", { text: T(a.eksogen) }) : null)));
 
     // datastatus: hvor nye er tallene? (udgivelseskalender pr. serie, as-of snapshottet)

@@ -310,33 +310,36 @@ def bnp_foerste_print(raw, snap):
 
 
 def kurve_maerke(d10, d3, dK):
-    """F10-maerket paa maanedens aendring. Review 2026-10-27: under MAERKE_MIN_DK er skiftet parallelt (ingen
-    steepening/flattening), ellers det ben, der flyttede sig mest."""
+    """F10-maerket paa maanedens aendring. RAADETS_SPEC7 §3.1: under MAERKE_MIN_DK intet steepening/flattening-maerke
+    (begge ben printes altid ved siden af), ellers det ben, der flyttede sig mest."""
     if abs(dK) < MAERKE_MIN_DK:
-        retning = "op" if d10 > 0 and d3 > 0 else "ned" if d10 < 0 and d3 < 0 else None
-        return (f"parallelt skift {retning}" if retning else "naesten uaendret") + \
-            f" (kurven flyttede sig under {MAERKE_MIN_DK * 100:.0f}bp)"
+        return f"kurveaendring under {MAERKE_MIN_DK * 100:.0f}bp (naesten parallel)"
     if abs(d10) >= abs(d3):
         return "lang-ende-drevet (" + ("bear steepening" if d10 > 0 and dK > 0 else "bull flattening" if d10 < 0 and dK < 0 else "blandet") + ")"
     return "kort-ende-drevet (" + ("bull steepening" if d3 < 0 and dK > 0 else "bear flattening" if d3 > 0 and dK < 0 else "blandet") + ")"
 
 
-def tandem_note(diag):
-    """RAADETS_2027 §1.2: den orakel-censurerede wf-skill staar aldrig alene — benchmark-raekken faar den oracle-fri med."""
+def tandem_note(diag, op, a9):
+    """RAADETS_2027 §1.2 / RAADETS_SPEC7 §3.2: benchmark-raekkens +27,05 % staar aldrig alene — noten baerer alle tre
+    tal i §1.2-raekkefoelgen og peger paa den fulde saetning (med styrkeklausulen) lige over tabellen."""
     of = ((diag or {}).get("oracle_fri") or {}).get("alle_live_publicerbare") or {}
     if of.get("improvement") is None:
         return None
-    return (f"wf-kolonnen er orakel-censureret som de oevrige raekker; citeres kun sammen med oracle-fri "
-            f"+{of['improvement']}% ({of['n']} origins), RAADETS_2027 §1.2")
+    n_or = ((diag or {}).get("primaer") or {}).get("n")
+    nest = (((a9 or {}).get("skill") or {}).get("curve_nested") or {}).get("improvement")
+    return (f"§1.2: oracle-fri +{of['improvement']}% ({of['n']}) | orakel-censureret +{op['wf_improvement']}%"
+            + (f" ({n_or})" if n_or else "")
+            + (f" | nested lambda +{nest}% ({a9.get('n_origins', '?')}, orakel-censureret)" if nest is not None else "")
+            + "; wf-kolonnen er orakel-censureret som de oevrige raekker; hele saetningen med styrkeklausulen staar "
+              "lige over tabellen")
 
 
-def bnp_efter_advance(kvt, snapshot_navn):
-    """Review 2026-10-27: 'foerste print' er den foerste vintage i VORES snapshots. Kom snapshottet efter BEA's
-    advance-vindue (kvartalsslut + udgivelseslag + slaek, spine.UDGIVELSE/SLAEK), er det en senere vintage."""
+def dage_efter_kvartal(kvt, snapshot_navn):
+    """RAADETS_SPEC7 §3.4: 'foerste print' er den foerste vintage i VORES snapshots; monitoren oplyser kun, hvor
+    mange dage efter kvartalets udgang vi foerst saa den (ingen paastand om BEA-vintage)."""
     md = kvt[1] + 2                                                     # kvartalets sidste maaned
     slut = date(kvt[0] + md // 12, md % 12 + 1, 1) - timedelta(days=1)
-    frist = slut + timedelta(days=SP.UDGIVELSE["A191RL1Q225SBEA"][1] + SP.SLAEK["q"])
-    return date.fromisoformat(snapshot_navn) > frist
+    return (date.fromisoformat(snapshot_navn) - slut).days
 
 
 def siden_sidst(daily, fra_dato, taerskel, over=True):
@@ -439,7 +442,8 @@ def em_probit(snap, vindue):
     if not vin:
         return None
     s = float(np.mean([a[d] - c[d] for d in vin]))
-    return dict(spread=round(s, 4), p=round(0.5 * (1 + math.erf((-0.5333 - 0.6330 * s) / math.sqrt(2))), 6), n_dage=len(vin))
+    return dict(spread=round(s, 4), p=round(0.5 * (1 + math.erf((-0.5333 - 0.6330 * s) / math.sqrt(2))), 6), n_dage=len(vin),
+                dgs3mo=round(float(np.mean([c[d] for d in vin])), 4))
 
 
 def _paar_foer(rows, dage=365):
@@ -825,12 +829,15 @@ def main():
     if LI["kilde"] == "daglig":
         print(f"   (paa publicerede maanedstal GS10-TB3MS {LI['maanedlig']['maaned']}, kurve "
               f"{LI['maanedlig']['curve']:+.2f}pp: {p_maanedlig*100:.1f}% — samme vaegte, aeldre input)")
-        if em:                                              # review 2026-10-27: T10Y3M-forvirringen
-            konv_txt = (f"Konvention: 3m-renten er DTB3 paa diskontobasis, ligesom kalibreringens TB3MS. FRED's T10Y3M "
-                        f"bruger DGS3MO (CMT, obligationsaekvivalent); paa samme vindue er den kurve {em['spread']:+.2f}pp. "
-                        f"Forskellen ({LI['curve'] - em['spread']:.2f}pp) er konvention, ikke data. De frosne vaegte er "
-                        "estimeret paa diskontobasis, saa CMT-kurven kan ikke saettes ind i dem; en foelsomhedstest er "
-                        "foreslaaet til refitten 2027 (spec2027/udkast/7, kraever raadets mandat).")
+        tb_vin = [v for d, v in (C.read_fred_daily(snap, "DTB3") or []) if LI["vindue"][0] <= d <= LI["vindue"][1]]
+        if em and tb_vin:                                   # RAADETS_SPEC7 §3.5: T10Y3M-forvirringen, uden substitueret P
+            tb_m, bey_m = float(np.mean(tb_vin)), float(np.mean([P27.bey(v) for v in tb_vin]))   # 7A: omregn, saa middel
+            konv_txt = (f"Konvention: modellens 3m-ben er DTB3/TB3MS paa diskontobasis. Paa dette vindue er DGS10 - DGS3MO "
+                        f"(CMT) {em['spread']:+.2f}pp mod {LI['curve']:+.2f}pp med DTB3. Den fastlaaste BEY-omregning "
+                        f"(spec2027/7A) loefter DTB3 fra {tb_m:.2f}% til {bey_m:.2f}% i vinduets middel; de resterende "
+                        f"ca. {em['dgs3mo'] - bey_m:.2f}pp til DGS3MO ({em['dgs3mo']:.2f}%) skyldes forskellige papirer og "
+                        "kurvetilpasning. At saette CMT- eller BEY-kurven ind i de frosne vaegte giver ikke P og vises "
+                        "ikke; del A er en uscoret foelsomhed ved refitten 2027.")
             print(f"   ({konv_txt})")
     print(f"   Estimation-sensitivity-baand (10-90%)   {lo*100:.1f}% - {hi*100:.1f}%")
     print(f"   Basisrate                               {base*100:.1f}%")
@@ -878,11 +885,12 @@ def main():
               "   interpoleret log-lineaert mellem nabomaanederne. Roerer kun realrate/d_infl (fuldmodellen), ikke P.")
 
     print("\n3) BENCHMARK-TABEL (printes ogsaa naar den er usmigrende):")
+    print(f"   [{skill_tekst}]")                                      # RAADETS_SPEC7 §3.2: lige over tabellen
     print(f"   {'model':<34}{'wf-skill':>10}{'live-P':>9}   panel")
     print(f"   {'intercept (basisrate)':<34}{'+0.0%':>10}{base*100:>8.1f}%")
     print(f"   {'curve-only-logit (NY Fed-stil-bm.)':<34}{'+'+format(W['benchmarks']['curve_only']['wf_improvement'],'.1f')+'%':>10}{p_curve*100:>8.1f}%"
           f"   fuld sti t.o.m. {op.get('estimering_slut', '?')}" + ("   <- OPERATIONEL" if W["operationel"] == "curve_only" else ""))
-    tandem_txt = tandem_note(diag)
+    tandem_txt = tandem_note(diag, op, a9)
     if tandem_txt:
         print(f"   {'':<34}({tandem_txt})")
     if fm_ok:
@@ -959,9 +967,8 @@ def main():
     fp = bnp_foerste_print(C.RAW, snap)
     sidste2 = [k for k, _ in gq[-2:]]
     foerste = [fp.get(k, (v, snap.name)) for k, v in gq[-2:]]
-    adv_txt = ", ".join(f"{k[0]}Q{(k[1]-1)//3+1} {v:+.1f}% (foerst set af os {d[5:]}"
-                        + ("; senere vintage end advance" if bnp_efter_advance(k, d) else "") + ")"
-                        for k, (v, d) in zip(sidste2, foerste))
+    adv_txt = ", ".join(f"{k[0]}Q{(k[1]-1)//3+1} {v:+.1f}% (foerst set af os {d[5:]}, {dage_efter_kvartal(k, d)} dage "
+                        "efter kvartalets udgang)" for k, (v, d) in zip(sidste2, foerste))
     adv_aktiv = len(foerste) == 2 and all(v < 0 for v, _ in foerste)
 
     if oas and oas[2] != "fil":
@@ -1138,7 +1145,8 @@ def main():
         _d10 = dict(d10 or [])
         _prior = [d for d in _d10 if d <= tp_dato]
         _y = _d10[max(_prior)] if _prior else y10_niveau
-        pol.append(("10y = term-praemie + forventet", f"{_y:.2f} = {tp10:.2f} + {_y - tp10:.2f} ({tp_dato}, Kim-Wright)"))
+        pol.append(("10y = term-praemie + forventet", f"{_y:.2f} = {tp10:.2f} + {_y - tp10:.2f} ({tp_dato}, Kim-Wright; "
+                    "modelafhaengig, revideres; ikke et input)"))              # RAADETS_SPEC7 §3.6
     # F38: kurvens sammensaetning paa SAMME trailing vindue som live-inputtet
     sammensaetning = None
     d2, d1, d3mo = C.read_fred_daily(snap, "DGS2"), C.read_fred_daily(snap, "DGS1"), C.read_fred_daily(snap, "DGS3MO")
@@ -1156,21 +1164,6 @@ def main():
                     ntfs = float(np.mean([2 * c2[d] - e1[d] - f3[d] for d in vn]))
                     sammensaetning["ntfs_approks"] = round(ntfs, 4)
                     pol.append(("Near-term forward spread (approks.)", f"{ntfs:+.2f}pp (2*2y - 1y - 3m; negativ = lempelser prissat)"))
-    forv_txt = None                                          # review 2026-10-27: forventningsdel mod term-praemie
-    if tp10 is not None:
-        paa = lambda s: ([v for d, v in (s or []) if d <= tp_dato] or [None])[-1]       # samme dag som TP, ellers foer
-        b3_tp, c3_tp, forv = paa(_tbd), paa(d3mo), _y - tp10
-        if b3_tp is not None:
-            kurve_tp = _y - b3_tp
-            forv_txt = (f"Kurvens sammensaetning (Kim-Wright, {tp_dato}): 10Y {_y:.2f} = term-praemie {tp10:.2f} + forventet "
-                        f"{forv:.2f}. Forventningsdelen minus 3m er {forv - b3_tp:+.2f}pp mod DTB3 (diskonto, modellens konvention)"
-                        + (f" og {forv - c3_tp:+.2f}pp mod DGS3MO (CMT)" if c3_tp is not None else "")
-                        + (f"; {tp10 / kurve_tp * 100:.0f} % af kurven den dag ({kurve_tp:+.2f}pp) er term-praemie"
-                           if kurve_tp > 0 and tp10 > 0 else "")
-                        + ". Litteraturen (Rosenberg-Maurer 2008) finder, at det er forventningsdelen, der forudsiger "
-                          "recessioner; modellen laeser kun summen. En ACM-version blev testet og afvist i trin 4 "
-                          "(-77,9pp fuld sti, primaert straffen for aarene foer 1961). Kontekst, ikke i P; et forslag "
-                          "til raadet ligger i spec2027/udkast/7.")
     print()
     print("   PENGEPOLITIK, INFLATION & KURVENS SAMMENSAETNING   [kontekst — ingen indflydelse paa P]")
     for navn, vaerdi in pol:
@@ -1261,8 +1254,6 @@ def main():
                  "atlassets kanal 5 laeser samme bevaegelse som risiko. Dommen er uaendret.")
     print(f"   STI-ADVARSEL (raadsreview 2026-08, enstemmig): {sti_txt}")
     print(f"   LANG ENDE (F10): {lang_ende}")
-    if forv_txt:
-        print(f"   FORVENTNINGSDEL: {forv_txt}")
 
     # ---- 7) hovedbogen: diff mod sidste log (med dekomposition) + evt. --log-append ----
     logf = HERE.parent / "LOG.md"
@@ -1477,9 +1468,13 @@ def main():
               f"parret {bt['parret_skelnelig']}, uenige {bt['uenige']} ({bt['uenighedsrate']*100:.1f} %)"
               + (": " + ", ".join(u["origin"] for u in bt["uenige_origins"][:6]) + (" ..." if len(bt["uenige_origins"]) > 6 else "") if bt["uenige"] else ""))
         print("       Ingen automatisk migration af domsreglen: et skift er en separat raadsbeslutning mod praeregistrerede kriterier.")
-        pl = diag["parret_loss_bootstrap"]
-        print(f"   4.4 Historisk parret loss-bootstrap: middel {pl['middel_pp']:+.3f}, 90 %-interval [{pl['interval_90'][0]:+.3f}, {pl['interval_90'][1]:+.3f}], "
-              f"P(<=0) = {pl['andel_ikke_positiv']:.3f}  (skill-diagnostik ved siden af MDE)")
+        pl, plo = diag["parret_loss_bootstrap"], diag.get("parret_loss_bootstrap_oraclefri")
+        if plo:                                             # RAADETS_SPEC7 §3.7: oracle-fri foerst
+            print(f"   4.4 Historisk parret loss-bootstrap, oracle-fri ({plo['n_origins']} origins): middel {plo['middel_pp']:+.3f}, "
+                  f"90 %-interval [{plo['interval_90'][0]:+.3f}, {plo['interval_90'][1]:+.3f}], andel traek <= 0: {plo['andel_ikke_positiv']:.3f}")
+        print(f"   4.4 Historisk parret loss-bootstrap, orakel-censureret: middel {pl['middel_pp']:+.3f}, 90 %-interval "
+              f"[{pl['interval_90'][0]:+.3f}, {pl['interval_90'][1]:+.3f}], andel traek <= 0: {pl['andel_ikke_positiv']:.3f}"
+              + ("" if plo else " (oracle-fri interval afventer)") + "  (en traekandel, ikke en p-vaerdi)")
         oc = diag["oracle_fri"]; a = oc["additional_live_publishable"]
         print(f"   4.5 Oracle-fri (censurering som af origin-datoen, modellens egen label): alle live-publicerbare "
               f"{oc['alle_live_publicerbare']['n']} origins +{oc['alle_live_publicerbare']['improvement']}% | ekskl. {a['n']} additional "
@@ -1593,7 +1588,7 @@ def main():
             utilgaengelige=sorted(set(utilg)),
             datastatus=datastatus,
             sti=sti, maanedens_aendring=aendring,
-            advarsler=dict(vaerste_fejlalarm=fa, sti_advarsel=sti_txt, lang_ende=lang_ende, forventningsdel=forv_txt,
+            advarsler=dict(vaerste_fejlalarm=fa, sti_advarsel=sti_txt, lang_ende=lang_ende,
                            eksogen="Eksogene chok kan ikke forudsiges."),
             hovedbog=hb,
             hovedbog_reference=dict(improvement=ref_tal, kilde="diagnostik 4.5 alle live-publicerbare (realtidscensurering)",

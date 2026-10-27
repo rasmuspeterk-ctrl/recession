@@ -3,7 +3,7 @@
  "manifest_hash": "72c3371d",
  "snapshot": "2026-09-19",
  "refit_maaned": "2026-09",
- "created_utc": "2026-10-15T13:37:24+00:00",
+ "created_utc": "2026-10-27T22:21:50+00:00",
  "primaer": {
   "n": 198,
   "n_pos": 32,
@@ -258,6 +258,18 @@
   "andel_ikke_positiv": 0.0893,
   "n_blokke": 9,
   "n_draws": 10000
+ },
+ "parret_loss_bootstrap_oraclefri": {
+  "middel_pp": 0.0847,
+  "interval_90": [
+   -0.062,
+   0.1716
+  ],
+  "andel_ikke_positiv": 0.139,
+  "n_blokke": 9,
+  "n_draws": 10000,
+  "n_origins": 219,
+  "saet": "oracle-fri, alle live-publicerbare (realtidscensurering)"
  },
  "domsregler_backtest": {
   "n_origins": 198,

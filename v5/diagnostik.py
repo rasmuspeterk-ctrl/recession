@@ -134,6 +134,21 @@ def skill(recs, base=None):
                 improvement=round(imp, 2), brier=round(br, 2))
 
 
+def parret_loss_boot(recs, eps, base):
+    """4.4: per-origin log-loss-forbedring mod den poolede basisrate; episode-blok-bootstrap over cykelblokkene,
+    10.000 traek, seed 42, 5.-95. percentil. -> (resultat, d, blokke)."""
+    d = np.array([loss(base, r["Y"]) - loss(r["p"], r["Y"]) for r in recs])
+    bl = np.array([blok_af(A2.qend_idx(r["y"], r["q"]), eps) for r in recs])
+    rng = np.random.default_rng(SEED)
+    keys = np.unique(bl); means = []
+    for _ in range(10000):
+        rows = np.concatenate([np.where(bl == g)[0] for g in rng.choice(keys, size=len(keys), replace=True)])
+        means.append(d[rows].mean())
+    means = np.array(means)
+    return (dict(middel_pp=round(float(d.mean()), 4), interval_90=[round(float(np.percentile(means, 5)), 4), round(float(np.percentile(means, 95)), 4)],
+                 andel_ikke_positiv=round(float(np.mean(means <= 0)), 4), n_blokke=int(len(keys)), n_draws=10000), d, bl)
+
+
 def skill_expanding(recs):
     """§3.6: expanding-intercept-baseline (intercept-modellens egen wf-prognose = traeningsbasisraten)."""
     lm = np.mean([loss(r["p"], r["Y"]) for r in recs]); l0 = np.mean([loss(r["base_tr"], r["Y"]) for r in recs])
@@ -307,16 +322,7 @@ def main():
           f"positive {sum(i > 0 for i in imps)}/{len(imps)}" + (f"; udefineret: {udef}" if udef else ""))
 
     # 4.4 historisk parret loss-bootstrap (Gemini)
-    d = np.array([loss(base, r["Y"]) - loss(r["p"], r["Y"]) for r in recs])
-    bl = np.array([blok_af(A2.qend_idx(r["y"], r["q"]), eps) for r in recs])
-    rng = np.random.default_rng(SEED)
-    keys = np.unique(bl); means = []
-    for _ in range(10000):
-        rows = np.concatenate([np.where(bl == g)[0] for g in rng.choice(keys, size=len(keys), replace=True)])
-        means.append(d[rows].mean())
-    means = np.array(means)
-    hist = dict(middel_pp=round(float(d.mean()), 4), interval_90=[round(float(np.percentile(means, 5)), 4), round(float(np.percentile(means, 95)), 4)],
-                andel_ikke_positiv=round(float(np.mean(means <= 0)), 4), n_blokke=int(len(keys)), n_draws=10000)
+    hist, d, bl = parret_loss_boot(recs, eps, base)
     print(f"4.4 parret loss-bootstrap: middel {hist['middel_pp']}, 90 %-interval {hist['interval_90']}, P(<=0) = {hist['andel_ikke_positiv']}")
 
     # 4.3 backtest af begge domsregler
@@ -350,6 +356,11 @@ def main():
     ekstra = [r for r in rt if r["in_rec_final"]]                  # additional live-publishable origins
     uden = [r for r in rt if not r["in_rec_final"]]
     s_alle, s_uden = skill(rt), skill(uden)
+    # RAADETS_SPEC7 §3.7: 4.4's procedure paa det oracle-fri saet, printet FOER det orakel-censurerede interval
+    hist_of, _, _ = parret_loss_boot(rt, eps, float(np.mean([r["Y"] for r in rt])))
+    hist_of.update(n_origins=len(rt), saet="oracle-fri, alle live-publicerbare (realtidscensurering)")
+    print(f"4.4 oracle-fri ({len(rt)} origins): middel {hist_of['middel_pp']}, 90 %-interval {hist_of['interval_90']}, "
+          f"andel traek <= 0: {hist_of['andel_ikke_positiv']}")
     l0e = sum(loss(np.mean([r["Y"] for r in rt]), r["Y"]) for r in ekstra); lme = sum(loss(r["p"], r["Y"]) for r in ekstra)
     konv = [f"{o // 12}-{o % 12 + 1:02d}" for o, _ in eps if o < A2.midx(1979, 1)]
     oracle = dict(alle_live_publicerbare=s_alle, ekskl_additional=s_uden,
@@ -429,7 +440,7 @@ def main():
                                  blokdefinition="blok k = origins fra forrige onset frem til onset k (finalize6.boot_weights); k indekserer HELE USREC-episodelisten (1854-), saa sidste blok = efter sidste onset"),
               loeo=dict(blokke=loeo, median=round(float(np.median(imps)), 2), min=round(float(min(imps)), 2),
                         udefinerede=udef, status="sensitivitet, aldrig co-primaer"),
-              parret_loss_bootstrap=hist, domsregler_backtest=bt, oracle_fri=oracle, skill_73=s73,
+              parret_loss_bootstrap=hist, parret_loss_bootstrap_oraclefri=hist_of, domsregler_backtest=bt, oracle_fri=oracle, skill_73=s73,
               gate_mde=gate_mde, sti=sti, pre_onset_analoger=analoger, start_sensitivitet=start, flips=flips, kimi_r6=r6, styrke=styrke,
               **({"maanedlig_parret": maanedlig_parret} if maanedlig_parret else {}),
               **({"nested_oracle_fri": nested_of} if nested_of else {}),
