@@ -1,0 +1,53 @@
+=== 1. Svar pr. kanal ===
+kontrol_fri          Q1: 34  Q2: 34  Q3: 34  unikke personaer: 17
+inflation_fed        Q1: 26  Q2: 26  Q3: 26  unikke personaer: 13
+kredit_refi          Q1: 24  Q2: 24  Q3: 24  unikke personaer: 12
+aktie_repricing      Q1: 0  Q2: 0  Q3: 32  unikke personaer: 16
+arbejdsmarked        Q1: 24  Q2: 24  Q3: 24  unikke personaer: 12
+fiskal_termpraemie   Q1: 20  Q2: 20  Q3: 20  unikke personaer: 10
+eksogent_chok        Q1: 18  Q2: 18  Q3: 18  unikke personaer: 9
+
+=== 2. Dataserier naevnt i Q2 (tidligste varsel): personaer pr. kanal ===
+serie                          kontrol_f inflation kredit_re aktie_rep arbejdsma fiskal_te eksogent_  kanaler
+EBP (excess bond premium)              9        10        11         0         7         8         4        6
+Inflation (CPI/PCE)                   11         7         6         0         9         3         5        6
+CP/funding-spaend                      6         6        10         0         8         1         7        6
+Loenmodtagere (payrolls)              10         6         2         0        10         6         3        6
+Styrerente/Fed                        10         4         6         0         7         2         8        6
+10-aarig rente/term-praemie            8         6         3         0         6         7         3        6
+Detail/forbrug                        10         3         5         0         6         1         5        6
+Baa/IG-kreditspaend                    9         2         4         0         4         7         2        6
+Rentekurve (10y-3m/2y)                 7         4         2         0         3         5         3        6
+PMI/ISM/LEI                            8         3         3         0         6         2         2        6
+Olie/energi                            9         3         1         0         2         1         5        6
+Sahm/ledighed                          7         4         1         0         2         2         3        6
+HY-kreditspaend                        2         4         1         0         1         4         2        6
+Restancer (kort/realkredit)            9         0         3         0         4         2         2        5
+Aktier/VIX                             5         3         2         0         0         3         2        5
+Boligmarked                            2         0         1         0         0         0         2        3
+Vikarer/timer                          0         0         1         0         1         0         1        3
+Nye ledighedsansoegninger              3         0         0         0         0         8         0        2
+Marginlaan                             1         0         1         0         0         0         0        2
+Bankudlaan (SLOOS)                     1         0         0         0         0         0         1        2
+Realkreditrente                        5         0         0         0         0         0         0        1
+Fortsatte ansoegninger                 0         0         0         0         0         0         0        0
+
+=== 3. Taerskeltal i Q2 ved de vigtigste serier (vaerdi: antal personaer, kanaler) ===
+HY-kreditspaend: 338 (2 pers., 1 kan.)
+CP/funding-spaend: 150 (1 pers., 1 kan.); 155 (1 pers., 1 kan.); 45 (1 pers., 1 kan.); 10 (1 pers., 1 kan.); 05 (1 pers., 1 kan.); 20 (1 pers., 1 kan.); 25 (1 pers., 1 kan.)
+Nye ledighedsansoegninger: 250 (1 pers., 1 kan.)
+Sahm/ledighed: 0.39 (3 pers., 3 kan.); 4.2 (2 pers., 1 kan.); 1.11 (1 pers., 1 kan.); 4.8 (1 pers., 1 kan.); 1.47 (1 pers., 1 kan.); 1.0 (1 pers., 1 kan.); 4.3 (1 pers., 1 kan.); 4.5 (1 pers., 1 kan.)
+10-aarig rente/term-praemie: 1.47 (5 pers., 3 kan.); 5.00 (4 pers., 3 kan.); 1.0 (6 pers., 2 kan.); 0.00 (2 pers., 2 kan.); 5.31 (2 pers., 2 kan.); 1.40 (2 pers., 2 kan.); 2.5 (2 pers., 1 kan.); 3.88 (2 pers., 1 kan.)
+Realkreditrente: 7.32 (5 pers., 1 kan.); 3.88 (3 pers., 1 kan.); 1.86 (2 pers., 1 kan.)
+Olie/energi: 108 (5 pers., 3 kan.); 115 (2 pers., 2 kan.)
+Inflation (CPI/PCE): 3.4 (4 pers., 3 kan.); 3.7 (4 pers., 3 kan.); 2.5 (3 pers., 3 kan.); 0.5 (2 pers., 1 kan.); 4.8 (1 pers., 1 kan.); 0.3 (1 pers., 1 kan.); 4.3 (1 pers., 1 kan.); 4.5 (1 pers., 1 kan.)
+
+=== 4. Seed-ekko i Q2 (svar der gentager seedets nutidstal) ===
+HY 338bp                5 af 146 Q2-svar
+claims 198k             0 af 146 Q2-svar
+10Y 5.00/5.31 %         4 af 146 Q2-svar
+realkredit 7.32 %       2 af 146 Q2-svar
+CPI 3.7 %               4 af 146 Q2-svar
+olie $108/115           8 af 146 Q2-svar
+CAPE 40.7               1 af 146 Q2-svar
+margin +31 %            7 af 146 Q2-svar

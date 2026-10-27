@@ -4,6 +4,8 @@
 
 > **STATUS (tilføjet 2026-10-15, F41):** Kolonnerne "Nu" og "Status" i tabellen nedenfor er **historiske pr. 2026-08-10** og opdateres ikke. Aktuelle værdier og status for alle atlas-linjer står i motor-outputtet og i `dashboard.json` (`scenarie`, `forudsaetninger`, `monitors`). Dokumentet har siden 2026-10-15 et proveniens-erratum (nedenfor), der går forud for tabellen og kanalteksterne.
 
+> **NY KØRSEL 2026-10-27:** Sværmen er kørt igen med et neutralt faktagrundlag (oktober-tal, ingen flag eller tærskler) og tal-frie styringstekster. Ingen af tærsklerne nedenfor (10Y 5,25 %, realkredit 7,8 %, CP 75bp, HY 350-450bp) blev genfundet. Agenterne brugte i stedet dagens niveauer som "tærskler". Tærsklerne er derfor uændrede og stadig uvaliderede. Se [mirofish-sim/atlas_2026-10/RESULTAT.md](mirofish-sim/atlas_2026-10/RESULTAT.md).
+
 > **VAREDEKLARATION (firewall):** Alt i dette dokument er narrativ scenarie-analyse fra en agent-sværm — IKKE sandsynligheder, IKKE valideret, IKKE input til MOTOR's P. Atlassets funktion er at gøre monitorerne skarpere: hvilke observerbare serier ville flippe FØRST i hvert scenarie, og ved hvilke tærskler. MOTOR's validerede læsning står uanfægtet; den aktuelle læsning står i hovedbogen ([LOG.md](LOG.md)), ikke her. *[Rettet 2026-10-15, F41: sætningen citerede tidligere læsningen fra 10/8 — "MOTOR v5.0 … P(NBER-onset 4 kvt) = 20,1% [14,4-29,2%], ikke skelnelig fra basisraten" — samme tal som hovedbogens første række (2026-08-12).]*
 
 ## Erratum 2026-10-15 (kode-review: proveniens)

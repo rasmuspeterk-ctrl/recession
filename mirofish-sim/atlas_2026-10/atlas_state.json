@@ -1,0 +1,65 @@
+{
+ "kontrol_fri": {
+  "project_id": "proj_af6fe7b7f235",
+  "graph_done": true,
+  "simulation_id": "sim_28c4c50999d0",
+  "prepared": true,
+  "sim_done": true,
+  "interviewed": true,
+  "done": true
+ },
+ "inflation_fed": {
+  "project_id": "proj_1973554e9ead",
+  "graph_done": true,
+  "simulation_id": "sim_6f4f3e203e78",
+  "prepared": true,
+  "sim_done": true,
+  "interviewed": true,
+  "done": true
+ },
+ "kredit_refi": {
+  "project_id": "proj_61247322dd8c",
+  "graph_done": true,
+  "simulation_id": "sim_3196f64edf12",
+  "prepared": true,
+  "sim_done": true,
+  "interviewed": true,
+  "done": true
+ },
+ "aktie_repricing": {
+  "project_id": "proj_c9a53868694d",
+  "graph_done": true,
+  "simulation_id": "sim_1860ef08f2fd",
+  "prepared": true,
+  "sim_done": true,
+  "interviewed": true,
+  "done": true
+ },
+ "arbejdsmarked": {
+  "project_id": "proj_5217803fc38a",
+  "graph_done": true,
+  "simulation_id": "sim_8ba89f7fc325",
+  "prepared": true,
+  "sim_done": true,
+  "interviewed": true,
+  "done": true
+ },
+ "fiskal_termpraemie": {
+  "project_id": "proj_f4501d791dcc",
+  "graph_done": true,
+  "simulation_id": "sim_63e8c8f7e87e",
+  "prepared": true,
+  "sim_done": true,
+  "interviewed": true,
+  "done": true
+ },
+ "eksogent_chok": {
+  "project_id": "proj_0280eb3707d2",
+  "graph_done": true,
+  "simulation_id": "sim_2195abc729ba",
+  "prepared": true,
+  "sim_done": true,
+  "interviewed": true,
+  "done": true
+ }
+}
