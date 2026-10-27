@@ -16,6 +16,24 @@ nested λ (orakel-censureret) +18,3 % — og 80 % styrke kræver størrelsesorde
 mens naive tests forkaster en sand nulhypotese 36–53 % af gangene ved 5–20 år.** Hovedbogen er derfor et
 ærlighedsinstrument, ikke en test.
 
+Det historiske parrede loss-bootstrap viser usikkerheden om den gennemsnitlige forskel
+`L0 − Lm`, hvor `L0` er basisratens og `Lm` modellens log-loss; positivt betyder lavere tab for modellen.
+Begge varianter bruger fast λ = 1 og vises i rækkefølgen fra
+[RAADETS_SPEC7 §3.7](RAADETS_SPEC7.md#3-the-presentation-changes-of-2026-10-27-now):
+
+| Variant | Origins | Middel `L0 − Lm` | 90 %-bootstrap-interval | Andel træk ≤ 0 |
+|---|---:|---:|---:|---:|
+| Oracle-fri, alle live-publicerbare | 219 | +0,0847 | [−0,0620; +0,1716] | 13,90 % |
+| Orakel-censureret | 198 | +0,1197 | [−0,0420; +0,2388] | 8,93 % |
+
+Beregnet på kalibrering `72c3371d` (snapshot `2026-09-19`) med
+[diagnostik.py §4.4](v5/diagnostik.py): 9 cyklusblokke, 10.000 træk, seed 42 og 5.–95. percentil.
+Basisraten beregnes på hver variants samlede origins og holdes fast under resamplingen.
+Middel og interval er i **log-loss-enheder (naturlig logaritme), ikke procentpoint** og ikke et interval
+for P eller den relative skill ovenfor. Begge intervaller indeholder nul; dette er diagnostik, ikke en
+signifikanstest, og andelen af træk ≤ 0 er ikke en p-værdi. 10.000 træk mindsker Monte Carlo-støj,
+men giver ikke flere uafhængige cyklusblokke. P, bånd, dom, vægte og hovedbog er uændrede.
+
 λ = 1 er arvet fra v4 og ikke valgt nested; det er en erklæret afvigelse fra blueprintet. En nested
 modelselektion ville have valgt fuldmodellen og scoret +8,5 % (se
 [v5/README.md](v5/README.md#afvigelser-fra-blueprintet-erklaeret-2026-10-15)). Syv feature-kandidater er
