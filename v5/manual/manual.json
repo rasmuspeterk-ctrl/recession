@@ -1,16 +1,16 @@
 {
-  "spx_vs_hi": -0.0199,
-  "spx_dato": "2026-10-22",
-  "cape": 40.58,
-  "cape_dato": "2026-10-22",
+  "spx_vs_hi": -0.025,
+  "spx_dato": "2026-10-23",
+  "cape": 40.66,
+  "cape_dato": "2026-10-26",
   "margin_yoy": 31.4,
   "margin_periode": "2026-09",
-  "as_of": "2026-10-23",
+  "as_of": "2026-10-27",
   "_kilder": {
-    "spx_vs_hi": "S&P 500 luk 2026-10-22 7663.43 (AP/Hawaii Tribune-Herald 2026-10-23; FRED SP500 har kun t.o.m. 2026-10-21 = 7757.17) vs 12m-hoej 2026-10-06 7818.93 (FRED SP500): -1.99 %",
-    "cape": "multpl.com/shiller-pe live-raekke 'Oct 22, 2026': 40.58 (fra snapshottets multpl_cape.html; multpl reviderede samtidig 2026-08 41.13->41.00 og 2026-09 40.90->40.42)",
+    "spx_vs_hi": "FRED SP500 luk 2026-10-23 7623.68 vs 12m-hoej 2026-10-06 7818.93 (FRED SP500, snapshot 2026-10-27): -2.50 %",
+    "cape": "multpl.com/shiller-pe live-raekke 'Oct 26, 2026': 40.66 (fra snapshot 2026-10-27's multpl_cape.html; 'Oct 1, 2026' 40.81)",
     "margin_yoy": "FINRA margin statistics (margin-statistics.xlsx, hentet 2026-10-23): debit balances sep-26 1,480,054 mio. USD vs sep-25 1,126,494 = +31.4 % (aug-26 1,453,832 vs aug-25 1,059,723 = +37.2 % bekraeftet)",
-    "_note": "Opdateret 2026-10-23 (mellemlaesning, ikke logfoert). Foer: -0.0128 / 41.38 / 37.2 (as_of 2026-10-15).",
+    "_note": "Opdateret 2026-10-27 (mellemlaesning, ikke logfoert). Foer: -0.0199 / 40.58 (as_of 2026-10-23). Margin uaendret: FINRA okt publiceres ca. 25/11.",
     "_felter": "spx_dato/cape_dato = handelsdagen tallet gaelder; margin_periode = FINRA-datamaaneden (publiceres ca. 25 dage efter maanedens udgang). Indfoert 2026-10-15 (kode-review F30): motor flager foraeldede manuelle input, men blokerer ikke."
   }
 }
