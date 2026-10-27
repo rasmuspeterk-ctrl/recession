@@ -39,6 +39,12 @@ REAL_SNAP = sorted(d for d in C.RAW.iterdir() if d.is_dir() and C.snapshot_compl
 def _finra_offline(attempts=3):
     raise RuntimeError("ingen netvaerk i testsuiten")
 F.fetch_finra = _finra_offline          # 2026-10-27: fetch.main henter FINRA-filen; testene koerer uden netvaerk
+_fetch_bnp_kalender_rigtig = F.fetch_bnp_kalender
+
+
+def _bnp_kalender_offline(gdp_rows, idag):
+    raise RuntimeError("ingen netvaerk i testsuiten")
+F.fetch_bnp_kalender = _bnp_kalender_offline   # fetch.main henter BNP-kalenderen (FRED + ALFRED); offline i testene
 
 def sha(b):
     return hashlib.sha256(b).hexdigest()
@@ -3340,6 +3346,56 @@ class TestSpec7BRevisionsaudit(unittest.TestCase):
             ud = B3.audit([self._raekke("2026-10-10")], Path(t))
             self.assertEqual(ud["n_aargange"], 0)
             self.assertIn("2026-11-raekken", ud["status"])
+
+
+class TestBnpKalender(unittest.TestCase):
+    """BNP-monitorens verificerede vintage (RAADETS_SPEC7-forbehold, Fable/Argon): FRED-kalenderen (release 53) +
+    ALFRED. Uden kalender i snapshottet: kun 'foerst set af os' (§3.4) — saa replayet af gamle snapshots er uaendret."""
+
+    KAL = dict(udgivelser=["2026-04-30", "2026-05-28", "2026-06-25", "2026-07-30", "2026-08-26"],
+               advance={"2026Q1": {"dato": "2026-04-30", "vaerdi": 2.0}, "2026Q2": {"dato": "2026-07-30", "vaerdi": 1.5}})
+
+    def test_fred_kalenderen_parses(self):
+        html = ('<span style="font-weight: bold;">Thursday July 30, 2026</span> <span>Updated</span>'
+                '<span style="font-weight: bold;">Wednesday August 26, 2026</span>'
+                '<span>Thursday July 30, 2026 er ikke fed og taeller ikke</span>')
+        self.assertEqual(S.fred_udgivelser(html), ["2026-07-30", "2026-08-26"])
+        self.assertEqual(S.fred_udgivelser(html.encode("utf-8")), ["2026-07-30", "2026-08-26"])
+
+    def test_vintage_klassifikation(self):
+        self.assertEqual(S.bnp_vintage((2026, 4), "2026-08-09", self.KAL), (1, "advance-estimatet"))
+        self.assertEqual(S.bnp_vintage((2026, 4), "2026-08-27", self.KAL), (2, "andet estimat"))
+        self.assertEqual(S.bnp_vintage((2026, 1), "2026-06-25", self.KAL), (3, "tredje estimat"))
+        self.assertEqual(S.bnp_vintage((2026, 1), "2026-08-09", self.KAL)[1], "senere revision (efter tredje estimat)")
+        self.assertIsNone(S.bnp_vintage((2025, 10), "2026-08-09", self.KAL))     # kvartal uden verificeret advance
+        self.assertIsNone(S.bnp_vintage((2026, 4), "2026-07-29", self.KAL))      # foer advance-dagen
+        self.assertIsNone(S.bnp_vintage((2026, 4), "2026-08-09", dict(fejl="offline")))
+
+    def test_monitorteksten_med_og_uden_kalender(self):
+        med = M.bnp_tekst((2026, 4), 1.5, "2026-08-09", self.KAL)
+        self.assertIn("= advance-estimatet; verificeret mod FRED-kalenderen og ALFRED", med)
+        uden = M.bnp_tekst((2026, 4), 1.5, "2026-08-09", None)
+        self.assertEqual(uden, "2026Q2 +1.5% (foerst set af os 08-09, 40 dage efter kvartalets udgang)")
+
+    def test_fetch_finder_advance_dagen_i_alfred(self):
+        kal_html = {2025: "", 2026: "".join(f'<span style="font-weight: bold;">Thursday {m} {d}, 2026</span>'
+                                             for m, d in (("April", 30), ("May", 28), ("July", 30), ("August", 26),
+                                                          ("November", 25)))}
+        vintager = {"2026-04-30": ["2026-01-01"], "2026-05-28": ["2026-01-01"],
+                    "2026-07-30": ["2026-01-01", "2026-04-01"], "2026-08-26": ["2026-01-01", "2026-04-01"]}
+
+        def falsk(url, attempts=3):
+            if "calendar" in url:
+                return kal_html[int(url.split("y=")[1])].encode("utf-8")
+            dato = url.split("vintage_date=")[1]
+            return ("observation_date,A191RL1Q225SBEA" + chr(10) + "".join(f"{q},1.5" + chr(10) for q in vintager[dato])).encode("utf-8")
+
+        rows = [("2026-01-01", "2.1"), ("2026-04-01", "1.5")]
+        with mock.patch.object(F, "hent_url", falsk):
+            kal = _fetch_bnp_kalender_rigtig(rows, date(2026, 10, 27))
+        self.assertEqual(kal["udgivelser"], ["2026-04-30", "2026-05-28", "2026-07-30", "2026-08-26"])   # 25/11 er ikke afholdt
+        self.assertEqual(kal["advance"]["2026Q1"]["dato"], "2026-04-30")
+        self.assertEqual(kal["advance"]["2026Q2"]["dato"], "2026-07-30")          # foerste udgivelse, hvor Q2 findes
 
 if __name__ == "__main__":
     unittest.main()

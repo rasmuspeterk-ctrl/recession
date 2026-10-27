@@ -269,6 +269,34 @@ def multpl_live(html):
     return dict(vaerdi=float(m.group(4)), dato=f"{m.group(3)}-{MON[m.group(1)]:02d}-{int(m.group(2)):02d}")
 
 
+# ---- BEA's BNP-udgivelser (RAADETS_SPEC7, forbehold fra Fable og Argon): verificeret vintage for BNP-monitoren ----
+FRED_BNP_RID = 53                     # FRED-releasen "Gross Domestic Product" (BEA)
+MAANEDSNAVNE = {n: i for i, n in enumerate(("January", "February", "March", "April", "May", "June", "July", "August",
+                                            "September", "October", "November", "December"), start=1)}
+BNP_ESTIMAT = {1: "advance-estimatet", 2: "andet estimat", 3: "tredje estimat"}
+
+
+def fred_udgivelser(html):
+    """FRED's udgivelseskalender (releases/calendar?rid=..&y=..) -> sorterede ISO-datoer for udgivelsesdagene."""
+    t = html.decode("utf-8", "replace") if isinstance(html, bytes) else html
+    fund = re.findall(r'font-weight: bold;">[A-Z][a-z]+day ([A-Z][a-z]+) (\d{1,2}), (\d{4})</span>', t)
+    return sorted({f"{a}-{MAANEDSNAVNE[m]:02d}-{int(d):02d}" for m, d, a in fund if m in MAANEDSNAVNE})
+
+
+def bnp_vintage(kvt, foerst_set, kal):
+    """Hvilket BEA-estimat var gaeldende for kvartalet kvt = (aar, kvartalets foerste maaned) paa datoen foerst_set?
+    kal = meta['bnp_kalender'] (fetch). n = antal BNP-udgivelser fra kvartalets advance-dag til og med foerst_set.
+    -> (n, navn) eller None, hvis kalenderen ikke daekker kvartalet."""
+    if not kal or "fejl" in kal:
+        return None
+    adv = ((kal.get("advance") or {}).get(f"{kvt[0]}Q{(kvt[1] - 1) // 3 + 1}") or {}).get("dato")
+    udg = kal.get("udgivelser") or []
+    if not adv or adv > foerst_set or adv not in udg:
+        return None
+    n = sum(1 for r in udg if adv <= r <= foerst_set)
+    return n, BNP_ESTIMAT.get(n, "senere revision (efter tredje estimat)")
+
+
 def finra_margin(xlsx):
     """FINRA's margin-statistics.xlsx (raa bytes) -> laanesaldo i seneste maaned mod samme maaned aaret foer.
     Laeses med stdlib (xlsx er en zip med XML). -> dict(vaerdi (%), periode, saldo, saldo_aaret_foer)."""

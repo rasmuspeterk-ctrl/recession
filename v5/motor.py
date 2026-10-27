@@ -345,6 +345,16 @@ def diag_til_dashboard(diag):
     return ud
 
 
+def bnp_tekst(kvt, v, foerst_set, kal):
+    """BNP-monitorens tekst pr. kvartal. Med snapshottets BNP-kalender (fetch: FRED-kalenderen + ALFRED) navngives det
+    BEA-estimat, der var gaeldende, da vi foerst saa tallet; uden den kun 'foerst set af os' (RAADETS_SPEC7 §3.4)."""
+    navn = f"{kvt[0]}Q{(kvt[1] - 1) // 3 + 1} {v:+.1f}%"
+    vint = SP.bnp_vintage(kvt, foerst_set, kal)
+    if vint:
+        return f"{navn} (foerst set af os {foerst_set[5:]} = {vint[1]}; verificeret mod FRED-kalenderen og ALFRED)"
+    return f"{navn} (foerst set af os {foerst_set[5:]}, {dage_efter_kvartal(kvt, foerst_set)} dage efter kvartalets udgang)"
+
+
 def dage_efter_kvartal(kvt, snapshot_navn):
     """RAADETS_SPEC7 §3.4: 'foerste print' er den foerste vintage i VORES snapshots; monitoren oplyser kun, hvor
     mange dage efter kvartalets udgang vi foerst saa den (ingen paastand om BEA-vintage)."""
@@ -978,8 +988,7 @@ def main():
     fp = bnp_foerste_print(C.RAW, snap)
     sidste2 = [k for k, _ in gq[-2:]]
     foerste = [fp.get(k, (v, snap.name)) for k, v in gq[-2:]]
-    adv_txt = ", ".join(f"{k[0]}Q{(k[1]-1)//3+1} {v:+.1f}% (foerst set af os {d[5:]}, {dage_efter_kvartal(k, d)} dage "
-                        "efter kvartalets udgang)" for k, (v, d) in zip(sidste2, foerste))
+    adv_txt = ", ".join(bnp_tekst(k, v, d, meta.get("bnp_kalender")) for k, (v, d) in zip(sidste2, foerste))
     adv_aktiv = len(foerste) == 2 and all(v < 0 for v, _ in foerste)
 
     if oas and oas[2] != "fil":

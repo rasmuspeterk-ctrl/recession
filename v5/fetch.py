@@ -40,7 +40,7 @@ Kun stdlib. Koer:  python fetch.py
 """
 import csv, hashlib, io, json, re, shutil, sys, time, urllib.error, urllib.request
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import spine as SP
@@ -220,6 +220,45 @@ def fetch_finra(attempts=3):
             last_err = e
             time.sleep(3 * (k + 1))
     raise RuntimeError(f"FINRA opgivet efter {attempts} forsoeg ({last_err})")
+
+
+FRED_KALENDER_URL = "https://fred.stlouisfed.org/releases/calendar?rid={rid}&y={aar}"
+ALFRED_URL = "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id={sid}&vintage_date={dato}"
+
+
+def hent_url(url, attempts=3):
+    """GET med genforsoeg -> bytes (BNP-kalenderen og ALFRED)."""
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (MOTOR v5 fetch)"})
+    last_err = None
+    for k in range(attempts):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return r.read()
+        except Exception as e:
+            last_err = e
+            time.sleep(3 * (k + 1))
+    raise RuntimeError(f"{url} opgivet efter {attempts} forsoeg ({last_err})")
+
+
+def fetch_bnp_kalender(gdp_rows, idag):
+    """BEA's BNP-udgivelser (FRED-kalenderen, release 53, sidste og indevaerende aar) og de seneste fire kvartalers
+    advance-dag, verificeret i ALFRED: den foerste udgivelsesdag, hvor kvartalet findes i A191RL1Q225SBEA's vintage.
+    Ikke-veto: en fejl koster kun BNP-monitorens verificerede vintage-tekst."""
+    udg = sorted({d for aar in (idag.year - 1, idag.year)
+                  for d in SP.fred_udgivelser(hent_url(FRED_KALENDER_URL.format(rid=SP.FRED_BNP_RID, aar=aar)))})
+    udg = [d for d in udg if d <= idag.isoformat()]                  # kun afholdte udgivelser
+    kvt = sorted({(int(d[:4]), int(d[5:7])) for d, v in gdp_rows if v not in (None, "", ".")})[-4:]
+    adv = {}
+    for y, m in kvt:
+        slut = (date(y + (m + 2) // 12, (m + 2) % 12 + 1, 1) - timedelta(days=1)).isoformat()
+        for r in [d for d in udg if d > slut][:4]:
+            vint = dict(csv.reader(io.StringIO(hent_url(ALFRED_URL.format(sid="A191RL1Q225SBEA", dato=r)).decode("utf-8-sig"))))
+            v = vint.get(f"{y}-{m:02d}-01")
+            if v not in (None, "", "."):
+                adv[f"{y}Q{(m - 1) // 3 + 1}"] = dict(dato=r, vaerdi=float(v))
+                break
+    return dict(kilde="FRED-udgivelseskalender (release 53, BEA) + ALFRED-vintages af A191RL1Q225SBEA",
+                rid=SP.FRED_BNP_RID, udgivelser=udg, advance=adv, hentet=idag.isoformat())
 
 
 def afledte_tal(outdir, series_data, hent_finra=True):
@@ -511,6 +550,14 @@ def main():
     if spine_info.get("sidste"):
         sidste_dato["spine"] = spine_info["sidste"] + "-01"
     meta["afledte"] = afledte_tal(outdir, series_data, hent_finra="--uden-finra" not in sys.argv)
+    if "--uden-bnp-kalender" not in sys.argv and "A191RL1Q225SBEA" in series_data:
+        try:
+            meta["bnp_kalender"] = fetch_bnp_kalender(series_data["A191RL1Q225SBEA"], idag)
+            print(f"BNP-kalender: {len(meta['bnp_kalender']['udgivelser'])} udgivelser; advance verificeret i ALFRED for "
+                  + ", ".join(f"{k} ({v['dato']})" for k, v in meta["bnp_kalender"]["advance"].items()))
+        except Exception as e:
+            meta["bnp_kalender"] = dict(fejl=str(e)[:200])
+            print(f"BNP-kalender: FEJL ({meta['bnp_kalender']['fejl']}) — BNP-monitoren viser kun 'foerst set af os'")
     for k, v in meta["afledte"].items():
         print(f"automatisk {k:<10} " + (f"FEJL: {v['fejl']} (motor bruger manual.json)" if "fejl" in v else
                                         f"{v['vaerdi']} ({v.get('dato') or v.get('periode')}; {v['kilde']})"))
