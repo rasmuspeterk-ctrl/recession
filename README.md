@@ -73,11 +73,12 @@ ud af repoet, sværm-tripwires ud af hovedbogens antændings-kolonne (rådets R3
 | [RAADETS_REVIEW.md](RAADETS_REVIEW.md) | Grand review med 18 modeller |
 | [RAADETS_V501.md](RAADETS_V501.md) | Rådets konsensus om v5.0.1 — den første rekalibrering (4/4, 19. sept. 2026) |
 | [RAADETS_2027.md](RAADETS_2027.md) | Rådets konsensus om dagsordenen til september-refitten 2027 (7/7, 15. okt. 2026) |
+| [RAADETS_SPEC7.md](RAADETS_SPEC7.md) | Rådets konsensus om de eksterne reviews, præsentationsrettelserne og spec 7 (rentekonvention, forventningsdel) (7/7, 27. okt. 2026) |
 | [REVIEW-2026-10-15.md](REVIEW-2026-10-15.md) | Kode-reviewet af hele setuppet (85 fund) |
 | [TRIGGER-ATLAS.md](TRIGGER-ATLAS.md) | Sværm-simulerede recessionskanaler og tripwires — narrativ kontekst, ikke input til P |
 | [DASHBOARD-BRIEF.md](DASHBOARD-BRIEF.md) | Designregler for et dashboard der ikke kan oversælge |
 | [dashboard.html](dashboard.html) | Dashboardet: én selvstændig side, der læser `dashboard.json` fra samme mappe (`python -m http.server` i repo-roden, åbn `/dashboard.html`; direkte fra disken vælges filen i siden) |
-| [debat/](debat/) | Transkripter af rådsdebatterne (blueprint, v5.0.1 og 2027; grand reviewets runde A+B blev ikke arkiveret — se RAADETS_REVIEW.md) |
+| [debat/](debat/) | Transkripter af rådsdebatterne (blueprint, v5.0.1, 2027 og spec 7; grand reviewets runde A+B blev ikke arkiveret — se RAADETS_REVIEW.md) |
 | [mirofish-sim/](mirofish-sim/) | Sværm-simulationernes rådata og resuméer |
 | [v4/](v4/) | Forgængeren |
 

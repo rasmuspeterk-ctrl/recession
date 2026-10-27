@@ -1,0 +1,11 @@
+VOTE: APPROVE
+
+The draft meets both my veto conditions (no outcome-conditioned switch in §1.4; the censored interval never alone under the §1.2 sentence in §3.7) and the compromises I offered in Round 3. Three reservations for the record, none blocking:
+
+**R1 — §3.6 is silent on what happens to the decomposition after the audit.** I accepted removal of C6 from the standing warnings on the condition that the audit starts at the next ledger row (it does, §2.2) and that the question of a numbers-only line returns to the council with the 12th vintage. The draft specifies when a ledger column may open (§2.3) but not whether the context block may then carry E = (y10 − TP) − 3m. It should: the same sign-off that opens the column decides the context line; absent sign-off, the block stays as §3.6 writes it. Otherwise "removed until the audit" quietly becomes "removed".
+
+**R2 — §1.3(4), the rate-bin table.** The ≥ 12 % bin holds essentially 1980–81 and the 8–12 % bin 1973 plus fragments; per-bin fitted α and β there are near-unidentified and will have standard errors wider than the coefficients. The sealed spec should label the bin fits "descriptive, no inference", or the 2027 council will be handed a bin coefficient that looks like evidence of regime dependence. The origin-level paired loss by bin is the informative part; the fits are decoration.
+
+**R3 — §3.4 (C4).** I argued for keeping the quarter-end + 42 days inference as a labelled heuristic; the majority drops it. I accept that, but note the residual defect: a reader of the GDP monitor still cannot tell whether our first-seen print predates or postdates BEA's second estimate, and "N days after quarter end" only helps a reader who knows BEA's calendar. The cheap fix — scraping the BEA release calendar once a quarter — should go on the refit's housekeeping list so the inference can be restored verified rather than guessed.
+
+On the post hoc question, I concur with §§1.6, 2.4 and 3.8 as written: nothing ratified here selects a configuration, scores a hypothesis, or moves a number that decides anything.
