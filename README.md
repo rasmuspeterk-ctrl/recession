@@ -1,146 +1,168 @@
-# MOTOR v5.0.1 — sandsynlighed for amerikansk recessionsstart
+# MOTOR v5.0.1 — probability of a US recession onset
+
+**English** · [Español](README.es.md) · [中文](README.zh-CN.md) · [Français](README.fr.md) · [Dansk](README.da.md)
 
 [![tests](https://github.com/rasmuspeterk-ctrl/recession/actions/workflows/tests.yml/badge.svg)](https://github.com/rasmuspeterk-ctrl/recession/actions/workflows/tests.yml)
 
-*A US recession-onset probability model: one feature (the 10y–3m yield curve), an
-L2-logit on the NBER-onset label, purged expanding-origin walk-forward validation, and a
-prospective ledger where every reading is logged before the outcome is known. Free data
-only. Every failed candidate is published next to the one that survived. Documentation
-is in Danish.*
+*A US recession-onset probability model: one feature (the 10y–3m yield curve), an L2-logit on the NBER-onset
+label, purged expanding-origin walk-forward validation, and a prospective ledger where every reading is logged
+before the outcome is known. Free data only. Every failed candidate is published next to the one that survived.*
 
-Modellen estimerer P(NBER-dateret recession begynder inden for fire kvartaler). Den
-operationelle model er en curve-only-logit, låst af rådet (RAADETS_V501 §6); fuldmodellen med fem features
-er kun benchmark. **Walk-forward-skill (log-loss-forbedring over basisraten, RAADETS_2027 §1.2): oracle-fri,
-fast λ = 1 +20,4 % (219 origins; det tal, hovedbogen bedømmes mod); orakel-censureret, fast λ = 1 +27,1 %;
-nested λ (orakel-censureret) +18,3 % — og 80 % styrke kræver størrelsesordenen 150 kalenderårs hovedbog,
-mens naive tests forkaster en sand nulhypotese 36–53 % af gangene ved 5–20 år.** Hovedbogen er derfor et
-ærlighedsinstrument, ikke en test.
+The model estimates P(an NBER-dated recession begins within the next four quarters). The operational model is a
+curve-only logit, locked by the council (RAADETS_V501 §6); the five-feature full model is a benchmark only.
+**Walk-forward skill (log-loss improvement over the base rate, RAADETS_2027 §1.2): oracle-free, fixed λ = 1
++20.4 % (219 origins; the figure the ledger is judged against); oracle-censored, fixed λ = 1 +27.1 %; nested λ
+(oracle-censored) +18.3 % — and 80 % power requires on the order of 150 calendar years of ledger, while naive
+tests reject a true null hypothesis 36–53 % of the time at 5–20 years.** The ledger is therefore an honesty
+instrument, not a test.
 
-λ = 1 er arvet fra v4 og ikke valgt nested; det er en erklæret afvigelse fra blueprintet. En nested
-modelselektion ville have valgt fuldmodellen og scoret +8,5 % (se
-[v5/README.md](v5/README.md#afvigelser-fra-blueprintet-erklaeret-2026-10-15)). Syv feature-kandidater er
-testet, publiceret og afvist; søgningen er lukket.
+λ = 1 is inherited from v4 and not selected in a nested way; that is a declared deviation from the blueprint. A
+nested model selection would have chosen the full model and scored +8.5 % (see
+[v5/README.md](v5/README.md#afvigelser-fra-blueprintet-erklaeret-2026-10-15)). Seven feature candidates were
+tested, published and rejected; the search is closed.
 
-**Seneste logførte læsning (2026-10-10, v5.0.1, daglig kurve):** P = 15,1 % [10,4–21,6 %] mod basisrate
-18,0 % — ikke skelnelig fra basisraten. Se [LOG.md](LOG.md).
+**Latest logged reading (2026-10-10, v5.0.1, daily curve):** P = 15.1 % [10.4–21.6 %] against a base rate of
+18.0 % — not distinguishable from the base rate. See [LOG.md](LOG.md). A mid-month reading on 2026-10-27 (not
+logged) gave 14.8 % [10.2–21.2 %]; the current reading is on the [dashboard](dashboard.html).
 
-**Rekalibrering v5.0.1 (2026-09-19):** kalibreringsrygraden var frosset ved 2023 (Yales Shiller-fil), så
-tre modne kvartaler manglede i fittet. Rådet ratificerede reparationen 4/4; samme inputs giver nu 17,7 %,
-orakel-censureret walk-forward-skill +27,1 % (fra +34,3 %) fordi de tre tilføjede kvartaler er 2023–24-inversionens
-fejlalarmer. *"A lower or higher recalibrated probability is changed estimation, not changed economic
-risk."* Detaljer: [v5/README.md](v5/README.md#v501--foerste-rekalibrering-raadets_v501md-ratificeret-44-2026-09-19).
+### Language
 
-**Fra 2026-09-28 måles kurven på daglige data** (trailing måned af DGS10 − DTB3, uden op til en måneds
-forsinkelse). Det er et erklæret instrumentskifte, ikke målemæssigt identisk med GS10 − TB3MS; rådet
-ratificerede det ex post (RAADETS_2027 §10.1). P på de publicerede månedstal står ved siden af i hver række.
+The front page is available in five languages. The detailed documentation ([v5/README.md](v5/README.md), the
+scoring key, the dashboard brief), the code's identifiers, comments and printed output, and the ledger are in
+Danish (written in ASCII: `aa` = å, `ae` = æ, `oe` = ø). The operative texts of the council decisions
+(`RAADETS_*.md`) and the council transcripts in [debat/](debat/) are in English. The Danish originals of sealed or
+preregistered documents govern; they are never rewritten, because their hashes are part of the protocol.
 
-**Kontekst-protokollen (2026-10-24):** råvarer (olie, naturgas, benzin, diesel, gødning, korn, metaller),
-kreditkortgæld og boligpriser i USA hentes nu ved hver kørsel, vises i motoren og dashboardet og gemmes i hver
-hovedbogsrækkes fulde record — som kontekst uden indflydelse på P og uden tærskler. Alle er officielle
-public domain-serier (EIA, BLS, Fed, FHFA, Census). Se
+## How the model has changed
+
+**Recalibration v5.0.1 (2026-09-19):** the calibration backbone was frozen at 2023 (Yale's Shiller file), so
+three mature quarters were missing from the fit. The council ratified the repair 4/4; the same inputs now give
+17.7 %, oracle-censored walk-forward skill +27.1 % (from +34.3 %), because the three added quarters are the false
+alarms of the 2023–24 inversion. *"A lower or higher recalibrated probability is changed estimation, not changed
+economic risk."* Details: [v5/README.md](v5/README.md#v501--foerste-rekalibrering-raadets_v501md-ratificeret-44-2026-09-19).
+
+**Since 2026-09-28 the curve is measured on daily data** (a trailing month of DGS10 − DTB3, without the up to
+one month publication lag). This is a declared change of instrument, not measurement-identical to GS10 − TB3MS;
+the council ratified it ex post (RAADETS_2027 §10.1). P on the published monthly figures is shown next to it in
+every row.
+
+**Context protocol (2026-10-24):** commodities (oil, natural gas, gasoline, diesel, fertiliser, grains, metals),
+credit-card debt and house prices in the US are fetched on every run, shown in the engine and the dashboard and
+stored in each ledger row's full record — as context with no influence on P and no thresholds. All are official
+public-domain series (EIA, BLS, Fed, FHFA, Census). See
 [v5/README.md](v5/README.md#kontekst-protokollen-2026-10-24-raavarer-kreditkort-og-bolig-usa--rettelser-fra-mellemlaesningen-2026-10-23).
 
-**Rådet 2027 (ratificeret 7/7 den 2026-10-15):** syv analyser og fem debatrunder med seks af de nyeste
-flagskibsmodeller afgjorde de ti spørgsmål, kode-reviewet sendte til "rådet før september 2027":
-- λ = 1 og kvartalsfittet bevares — og protokollen siger ligeud, at blueprintets frekvensgate *som skrevet*
-  bestod, og at rådet afviste at anvende den;
-- ingen modelselektor; 1947Q2 bevares;
-- én NBER-indholdstrigger pr. recession;
-- bedømmelsesnøglen ændres ikke;
-- EBP's historiske test lukkes.
+**The 2027 council (ratified 7/7 on 2026-10-15):** seven analyses and five debate rounds with six of the newest
+flagship models settled the ten questions the code review sent to "the council before September 2027":
+- λ = 1 and the quarterly fit are kept — and the protocol says plainly that the blueprint's frequency gate *as
+  written* passed, and that the council declined to apply it;
+- no model selector; 1947Q2 is kept;
+- one NBER content trigger per recession;
+- the scoring key is not amended;
+- the historical test of the excess bond premium (EBP) is closed.
 
-Intet ændrer P før september-refitten 2027. Se [RAADETS_2027.md](RAADETS_2027.md) og
-[v5/analyser/](v5/analyser/README.md). Beslutningerne er implementeret (2026-10-15) efter seks forseglede specs i
-[v5/spec2027/](v5/spec2027/), hver pushet før koden ([v5/protokol2027.py](v5/protokol2027.py),
-[v5/replay2027.py](v5/replay2027.py)); de virker kun for kalibreringer fra refitten 2027-09 og frem.
+Nothing changes P before the September 2027 refit. See [RAADETS_2027.md](RAADETS_2027.md) and
+[v5/analyser/](v5/analyser/README.md). The decisions were implemented (2026-10-15) from six sealed specs in
+[v5/spec2027/](v5/spec2027/), each pushed before the code ([v5/protokol2027.py](v5/protokol2027.py),
+[v5/replay2027.py](v5/replay2027.py)); they apply only to calibrations from the 2027-09 refit onward.
 
-**Kode-review 2026-10-15:** 85 verificerede fund er rettet, uden at P eller historiske rækker er
-ændret. Ændringerne omfatter seks tidskritiske fejl før november-læsningen, licensbegrænsede filer
-ud af repoet, sværm-tripwires ud af hovedbogens antændings-kolonne (rådets R3), en præregistreret
-[bedømmelsesnøgle](BEDOEMMELSESNOEGLE.md) og en forudsigelse af september-refitten 2027. Se
+**The council of 2026-10-27 (ratified 7/7):** two external reviews were checked claim by claim against the code.
+The presentation fixes that held were put to the council, which also sealed two further specs: an unscored test of
+the 3-month rate's quotation convention (discount vs bond-equivalent basis) at the 2027 refit, and a prospective
+revision audit of the Kim-Wright term premium instead of a new historical test of the curve's expectations
+component (the idea had already been tested once and rejected). The oracle-free skill now carries its own
+uncertainty interval: +0.085 log-loss per origin, 90 % interval [−0.062; +0.172]. See
+[RAADETS_SPEC7.md](RAADETS_SPEC7.md).
+
+**Code review 2026-10-15:** 85 verified findings are fixed without changing P or any historical row. The changes
+include six time-critical bugs before the November reading, licence-restricted files out of the repository, swarm
+tripwires out of the ledger's ignition column (the council's R3), a preregistered
+[scoring key](BEDOEMMELSESNOEGLE.md) and a prediction of the September 2027 refit. See
 [v5/README.md](v5/README.md#kode-review-2026-10-15--alt-rettet-intet-i-p-aendret).
 
-## Hvor er hvad
+## Where things are
 
-| Fil | Indhold |
+| File | Contents |
 |---|---|
-| [v5/README.md](v5/README.md) | Ritualer, filoversigt, afvigelser fra blueprintet, byggelog |
-| [v5/](v5/) | Koden: fetch → (finalize6 → diagnostik ved rekalibrering) → motor (calibrate.py er trin-1-reproduktionen og overskriver ikke driftsvægtene). 238 tests. |
-| [LOG.md](LOG.md) | Hovedbogen — én række pr. måned, logført før udfaldet kendes. Redigeres aldrig. |
-| [BEDOEMMELSESNOEGLE.md](BEDOEMMELSESNOEGLE.md) | Hvordan hovedbogen scores — præregistreret før række 4, med styrketabel |
-| [UDFALD.csv](UDFALD.csv) / [hovedbog.jsonl](hovedbog.jsonl) | Append-only udfald pr. række / fuld record pr. række (hovedbog.jsonl oprettes ved række 4) |
-| [RAADETS_KONSENSUS.md](RAADETS_KONSENSUS.md) | Blueprintet, ratificeret 7/7 af et råd af sprogmodeller efter seks debatrunder |
-| [RAADETS_REVIEW.md](RAADETS_REVIEW.md) | Grand review med 18 modeller |
-| [RAADETS_V501.md](RAADETS_V501.md) | Rådets konsensus om v5.0.1 — den første rekalibrering (4/4, 19. sept. 2026) |
-| [RAADETS_2027.md](RAADETS_2027.md) | Rådets konsensus om dagsordenen til september-refitten 2027 (7/7, 15. okt. 2026) |
-| [RAADETS_SPEC7.md](RAADETS_SPEC7.md) | Rådets konsensus om de eksterne reviews, præsentationsrettelserne og spec 7 (rentekonvention, forventningsdel) (7/7, 27. okt. 2026) |
-| [REVIEW-2026-10-15.md](REVIEW-2026-10-15.md) | Kode-reviewet af hele setuppet (85 fund) |
-| [TRIGGER-ATLAS.md](TRIGGER-ATLAS.md) | Sværm-simulerede recessionskanaler og tripwires — narrativ kontekst, ikke input til P |
-| [DASHBOARD-BRIEF.md](DASHBOARD-BRIEF.md) | Designregler for et dashboard der ikke kan oversælge |
-| [dashboard.html](dashboard.html) | Dashboardet: én selvstændig side, der læser `dashboard.json` fra samme mappe (`python -m http.server` i repo-roden, åbn `/dashboard.html`; direkte fra disken vælges filen i siden) |
-| [debat/](debat/) | Transkripter af rådsdebatterne (blueprint, v5.0.1, 2027 og spec 7; grand reviewets runde A+B blev ikke arkiveret — se RAADETS_REVIEW.md) |
-| [mirofish-sim/](mirofish-sim/) | Sværm-simulationernes rådata og resuméer |
-| [v4/](v4/) | Forgængeren |
+| [v5/README.md](v5/README.md) | Rituals, file map, deviations from the blueprint, build log (Danish) |
+| [v5/](v5/) | The code: fetch → (finalize6 → diagnostik at recalibration) → motor (calibrate.py is the step-1 reproduction and does not overwrite the operational weights). 238 tests. |
+| [LOG.md](LOG.md) | The ledger — one row per month, logged before the outcome is known. Never edited. |
+| [BEDOEMMELSESNOEGLE.md](BEDOEMMELSESNOEGLE.md) | How the ledger is scored — preregistered before row 4, with a power table (Danish) |
+| [UDFALD.csv](UDFALD.csv) / [hovedbog.jsonl](hovedbog.jsonl) | Append-only outcome per row / full record per row (hovedbog.jsonl is created at row 4) |
+| [RAADETS_KONSENSUS.md](RAADETS_KONSENSUS.md) | The blueprint, ratified 7/7 by a council of language models after six debate rounds |
+| [RAADETS_REVIEW.md](RAADETS_REVIEW.md) | Grand review with 18 models |
+| [RAADETS_V501.md](RAADETS_V501.md) | The council's consensus on v5.0.1 — the first recalibration (4/4, 19 Sept 2026) |
+| [RAADETS_2027.md](RAADETS_2027.md) | The council's consensus on the agenda for the September 2027 refit (7/7, 15 Oct 2026) |
+| [RAADETS_SPEC7.md](RAADETS_SPEC7.md) | The council's consensus on the external reviews, the presentation fixes and spec 7 (rate convention, expectations component) (7/7, 27 Oct 2026) |
+| [REVIEW-2026-10-15.md](REVIEW-2026-10-15.md) | The code review of the whole setup (85 findings) |
+| [TRIGGER-ATLAS.md](TRIGGER-ATLAS.md) | Swarm-simulated recession channels and tripwires — narrative context, not an input to P |
+| [DASHBOARD-BRIEF.md](DASHBOARD-BRIEF.md) | Design rules for a dashboard that cannot oversell (Danish) |
+| [dashboard.html](dashboard.html) | The dashboard: one self-contained page that reads `dashboard.json` from the same folder (`python -m http.server` in the repository root, open `/dashboard.html`; opened from disk, choose the file in the page) |
+| [debat/](debat/) | Transcripts of the council debates (blueprint, v5.0.1, 2027 and spec 7; the grand review's rounds A+B were not archived — see RAADETS_REVIEW.md) |
+| [mirofish-sim/](mirofish-sim/) | Raw data and summaries of the swarm simulations |
+| [v4/](v4/) | The predecessor |
 
-## Principper
+## Principles
 
-- Kun gratis data (FRED, Fed Board, Shiller, FINRA, multpl). Hashede snapshots. Ingen API-nøgler i ritualet.
-- Kun walk-forward-valideret får tal. Kompleksitet skal købe skill.
-- Sproget om resultatet genereres mekanisk og kan ikke blive skarpere end tallene.
-- Fejlslagne forsøg publiceres ved siden af det der virkede.
+- Free data only (FRED, Fed Board, Shiller, FINRA, multpl). Hashed snapshots. No API keys in the ritual.
+- Only walk-forward-validated results get numbers. Complexity has to buy skill.
+- The language describing a result is generated mechanically and cannot be sharper than the numbers.
+- Failed attempts are published next to what worked.
 
-## Månedsritual (logdag: første hverdag fra den 10., + 3 dage)
+## Monthly ritual (log day: first weekday from the 10th, + 3 days)
 
 ```bash
 cd v5
-# tjek nber.org/research/business-cycle-dating — ny top/bund? tilføj række i nber_announcements.csv og commit
-python fetch.py                        # snapshot (FRED + Fed Board EBP), hashet; beregner selv S&P vs 12-mdr-høj,
-                                       # CAPE (multpl) og marginlån (FINRA) — manual/manual.json er kun reserve
-python motor.py --log --json           # læsning, hovedbogsrække (kun i logvinduet), dashboard.json
+# check nber.org/research/business-cycle-dating — new peak/trough? add a row to nber_announcements.csv and commit
+python fetch.py                        # snapshot (FRED + Fed Board EBP), hashed; computes S&P vs 12-month high,
+                                       # CAPE (multpl), margin debt (FINRA) and BEA's GDP release calendar itself
+python motor.py --log --json           # reading, ledger row (only inside the log window), dashboard.json
+python analyser/b3_revisionsaudit.py   # spec 7B: Kim-Wright revision audit (from the 2026-11 row)
 python -m unittest test_v5             # 238 tests
 ```
 
-Vægtene er frosne mellem rekalibreringer (hver september, eller når NBER daterer en ny top/bund):
-`python finalize6.py && python diagnostik.py` (bump først `VERSION` i finalize6.py, §3.3). Se [RAADETS_V501.md](RAADETS_V501.md).
+The weights are frozen between recalibrations (every September, or when NBER dates a new peak/trough):
+`python finalize6.py && python diagnostik.py` (first bump `VERSION` in finalize6.py, §3.3). See
+[RAADETS_V501.md](RAADETS_V501.md).
 
-Kræver Python 3 og numpy. Intet andet.
+Requires Python 3 and numpy. Nothing else.
 
-## Datakilder og vilkår
+## Data sources and terms
 
-"Gratis at hente" er ikke det samme som "frit at videregive". Repoet arkiverer snapshots af hensyn til
-reproducerbarheden. Kilder med licensbegrænsninger hentes og hashes lokalt, men **committes ikke**
-(`.gitignore`). Deres sha256 og sidste værdi står i hvert snapshots `meta.json`, så alle, der henter de
-samme bytes, kan efterprøve hashen.
+"Free to download" is not the same as "free to redistribute". The repository archives snapshots for
+reproducibility. Sources with licence restrictions are fetched and hashed locally but **not committed**
+(`.gitignore`). Their sha256 and last value are in each snapshot's `meta.json`, so anyone who fetches the same
+bytes can verify the hash.
 
-| Kilde | Serier | Vilkår | I repoet |
+| Source | Series | Terms | In the repository |
 |---|---|---|---|
-| Board of Governors of the Federal Reserve System (H.15, G.17, G.19, H.8, CP; Kim-Wright-termpræmien THREEFYTP10; Gilchrist-Zakrajsek EBP) | GS10, TB3MS, DGS10, DTB3, DGS1, DGS2, DGS3MO, DFF, FEDFUNDS, INDPRO, RIFSPPFAAD90NB, THREEFYTP10, EBP; REVOLSL, CCLACBW027SBOG, DRCCLACBS, CORCCACBS, DRSFRMACBS | Public domain; kildeangivelse ønskes | ja |
-| U.S. Bureau of Labor Statistics | CPIAUCNS, CPIAUCSL, UNRATE, PAYEMS, CE16OV, AWHMAN, TEMPHELPS; WPU0652, WPU065201, WPU012, WPU102 | Public domain; kildeangivelse ønskes | ja |
-| U.S. Bureau of Economic Analysis | A191RL1Q225SBEA, GDPC1, PCEPI, PCEC96, W875RX1 | Public domain; kildeangivelse ønskes | ja |
-| U.S. Census Bureau (og HUD); U.S. Employment and Training Administration; U.S. Energy Information Administration; U.S. Federal Housing Finance Agency | PERMIT, MSPUS, MSACSR; ICSA, CCSA; DCOILWTICO, DCOILBRENTEU, DHHNGSP, GASREGW, GASDESW; HPIPONM226S | Public domain; kildeangivelse ønskes | ja |
-| NBER via Federal Reserve Bank of St. Louis | USREC | Copyright, kildeangivelse påkrævet | ja |
-| Federal Reserve Bank of St. Louis | CMRMTSPL | Copyright, kildeangivelse påkrævet | ja |
-| Freddie Mac | MORTGAGE30US | "Freddie Mac, 30-Year Fixed Rate Mortgage Average in the United States" — copyright Freddie Mac; kildeangivelse påkrævet (FRED: Citation Required) | ja |
-| Claudia Sahm; Marcelle Chauvet og Jeremy Piger (via FRED) | SAHMREALTIME; RECPROUSM156N | Public domain; kildeangivelse ønskes | ja |
-| **ICE Data Indices, LLC** | BAMLH0A0HYM2 (HY OAS) | "Copyrighted: Pre-Approval Required" — reproduktion forbudt uden skriftlig tilladelse | **nej (lokal)** |
-| **S&P Dow Jones Indices LLC** | SP500 | "Copyrighted: Pre-Approval Required" | **nej (lokal)**; kun de afledte månedssnit i `spine.csv` (kalibreringen kræver dem) |
-| **Moody's** | BAA10Y | "May not be copied or otherwise reproduced" | **nej (lokal)** |
-| Robert J. Shiller (Yale) | Rygraden t.o.m. 2023-07 (`manual/shiller_yale_2023-09.csv`) | Data courtesy of Robert J. Shiller | ja |
-| multpl.com | Månedlig Shiller-CAPE efter 2023-07 | Siden kopieres ikke; kun afledte månedstal i `spine.csv` | **siden: nej (lokal)** |
-| NY Fed (Adrian, Crump og Moench 2013) | `manual/acm.csv` (ACM-termpræmien, kun trin 4-testen) | © Federal Reserve Bank of New York; videregivet under NY Fed's Terms of Use med kildeangivelse ("Source: Federal Reserve Bank of New York, ACM Treasury term premia") | ja |
-| FINRA | Marginlån y/y i `manual.json` (et afledt tal) | FINRA Margin Statistics | ja |
+| Board of Governors of the Federal Reserve System (H.15, G.17, G.19, H.8, CP; the Kim-Wright term premium THREEFYTP10; the Gilchrist-Zakrajsek EBP) | GS10, TB3MS, GS3M, DGS10, DTB3, DGS1, DGS2, DGS3MO, DFF, FEDFUNDS, INDPRO, RIFSPPFAAD90NB, THREEFYTP10, EBP; REVOLSL, CCLACBW027SBOG, DRCCLACBS, CORCCACBS, DRSFRMACBS | Public domain; citation requested | yes |
+| U.S. Bureau of Labor Statistics | CPIAUCNS, CPIAUCSL, UNRATE, PAYEMS, CE16OV, AWHMAN, TEMPHELPS; WPU0652, WPU065201, WPU012, WPU102 | Public domain; citation requested | yes |
+| U.S. Bureau of Economic Analysis | A191RL1Q225SBEA, GDPC1, PCEPI, PCEC96, W875RX1 | Public domain; citation requested | yes |
+| U.S. Census Bureau (and HUD); U.S. Employment and Training Administration; U.S. Energy Information Administration; U.S. Federal Housing Finance Agency | PERMIT, MSPUS, MSACSR; ICSA, CCSA; DCOILWTICO, DCOILBRENTEU, DHHNGSP, GASREGW, GASDESW; HPIPONM226S | Public domain; citation requested | yes |
+| NBER via Federal Reserve Bank of St. Louis | USREC | Copyright, citation required | yes |
+| Federal Reserve Bank of St. Louis | CMRMTSPL | Copyright, citation required | yes |
+| Freddie Mac | MORTGAGE30US | "Freddie Mac, 30-Year Fixed Rate Mortgage Average in the United States" — copyright Freddie Mac; citation required (FRED: Citation Required) | yes |
+| Claudia Sahm; Marcelle Chauvet and Jeremy Piger (via FRED) | SAHMREALTIME; RECPROUSM156N | Public domain; citation requested | yes |
+| **ICE Data Indices, LLC** | BAMLH0A0HYM2 (HY OAS) | "Copyrighted: Pre-Approval Required" — reproduction prohibited without written permission | **no (local)** |
+| **S&P Dow Jones Indices LLC** | SP500 | "Copyrighted: Pre-Approval Required" | **no (local)**; only the derived monthly averages in `spine.csv` (the calibration needs them) |
+| **Moody's** | BAA10Y | "May not be copied or otherwise reproduced" | **no (local)** |
+| Robert J. Shiller (Yale) | The backbone through 2023-07 (`manual/shiller_yale_2023-09.csv`) | Data courtesy of Robert J. Shiller | yes |
+| multpl.com | Monthly Shiller CAPE after 2023-07 | The page is not copied; only derived monthly figures in `spine.csv` | **page: no (local)** |
+| NY Fed (Adrian, Crump and Moench 2013) | `manual/acm.csv` (the ACM term premium, used only in the step-4 test) | © Federal Reserve Bank of New York; redistributed under the NY Fed's Terms of Use with attribution ("Source: Federal Reserve Bank of New York, ACM Treasury term premia") | yes |
+| FINRA | Margin debt y/y in `manual.json` (a derived figure) | FINRA Margin Statistics | yes |
 
-Kildeangivelse for FRED-serier: *Federal Reserve Bank of St. Louis, [serienavn] [ID], retrieved from FRED,
-Federal Reserve Bank of St. Louis; https://fred.stlouisfed.org/series/[ID]*. Licensmærkerne blev hentet
-fra FRED's seriesider 2026-10-15 og står pr. serie i `v5/spine.py` (`SERIER`) og i hvert snapshots
-`meta.json`.
+Citation for FRED series: *Federal Reserve Bank of St. Louis, [series name] [ID], retrieved from FRED, Federal
+Reserve Bank of St. Louis; https://fred.stlouisfed.org/series/[ID]*. The licence labels were taken from FRED's
+series pages on 2026-10-15 and are listed per series in `v5/spine.py` (`SERIER`) and in each snapshot's
+`meta.json`. BEA's GDP release calendar is read from FRED's release calendar (release 53) and ALFRED vintages.
 
-Licensbegrænsede filer fra før 2026-10-15 findes stadig i git-historikken. Anbefalingen (kode-review F1, udført
-2026-10-15) er IKKE at omskrive historikken nu: det giver alle commits nye SHA'er og svækker hovedbogens
-proveniens (de pushede `ledger-*`-tags peger på de oprindelige commits). Historikken renses kun, hvis en
-rettighedshaver anmoder om det — fremgangsmåden står klar i v5/README.md ("Historik og licensbegrænsede filer").
+Licence-restricted files from before 2026-10-15 are still in the git history. The recommendation (code review F1,
+carried out 2026-10-15) is NOT to rewrite the history now: that would give every commit a new SHA and weaken the
+ledger's provenance (the pushed `ledger-*` tags point at the original commits). The history is cleaned only if a
+rights holder asks; the procedure is ready in v5/README.md ("Historik og licensbegrænsede filer").
 
-Koden er MIT-licenseret, egen tekst CC BY 4.0; tredjepartsdata og modelgenereret tekst er undtaget — se
-[LICENSE](LICENSE) og [NOTICE.md](NOTICE.md).
+The code is MIT-licensed, own text CC BY 4.0; third-party data and model-generated text are excluded — see
+[LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).
 
-Modellen er ikke et handelssignal og ikke investeringsrådgivning.
+The model is not a trading signal and not investment advice.
