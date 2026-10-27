@@ -85,6 +85,7 @@ SERIER = {
     "FEDFUNDS":        ("kontekst", "pd",       "Board of Governors (H.15)",             "effektiv fed funds, maanedssnit (fallback for DFF)"),
     "DFF":             ("kontekst", "pd",       "Board of Governors (H.15)",             "effektiv fed funds, daglig (pengepolitik-blok)"),
     "PCEPI":           ("kontekst", "pd",       "U.S. Bureau of Economic Analysis",      "PCE-prisindeks (realt kontantafkast, inflationsmomentum)"),
+    "GS3M":            ("kontekst", "pd",       "Board of Governors (H.15)",             "3-mdr CMT, maanedssnit (kun kontrol i spec 7A, RAADETS_SPEC7; splejses aldrig ind)"),
     "THREEFYTP10":     ("kontekst", "pd",       "Board of Governors (Kim-Wright)",       "Kim-Wright 10-aars term-praemie, Fed Board (kontekst; ACM-testen trin 4 brugte manual/acm.csv)"),
     "RECPROUSM156N":   ("kontekst", "pd",       "Marcelle Chauvet og Jeremy Piger via FRED", "Chauvet-Piger glattet recessionssandsynlighed (benchmark, coincident nowcast)"),
     "AWHMAN":          ("kontekst", "pd",       "U.S. Bureau of Labor Statistics",       "ugentlige arbejdstimer, industri (v5.2-testen — afvist; vist som kontekst)"),
@@ -164,6 +165,7 @@ LOKALE_FILER = ("multpl_cape.html", "cape_multpl.csv", "finra_margin.xlsx")  # m
 # udgivelsesrytme paa FRED (fx CPI ca. 2 uger efter maanedens slutning, BNP ca. 1 maaned efter kvartalet).
 UDGIVELSE = {
     "GS10": ("m", 3, "10-aarig rente, maanedssnit"), "TB3MS": ("m", 3, "3-maaneders rente, maanedssnit"),
+    "GS3M": ("m", 3, "3-maaneders rente (CMT), maanedssnit"),
     "DGS10": ("d", 2, "10-aarig rente, dagligt"), "DTB3": ("d", 2, "3-maaneders rente, dagligt"),
     "USREC": ("m", 5, "NBER's recessionsmaaneder"), "A191RL1Q225SBEA": ("q", 32, "BNP-vaekst"),
     "GDPC1": ("q", 32, "BNP, niveau"), "CPIAUCNS": ("m", 16, "Forbrugerpriser (CPI)"),

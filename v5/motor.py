@@ -334,6 +334,17 @@ def tandem_note(diag, op, a9):
               "lige over tabellen")
 
 
+def diag_til_dashboard(diag):
+    """Spec 7A §3 (5): BEY-proxyens P skrives kun til diagnostik.json. Den fjernes, foer diagnostikken indlejres i
+    dashboard.json (som publiceres), saa tallet aldrig distribueres ved siden af P."""
+    kb = ((diag or {}).get("uscorede") or {}).get("konvention_bey")
+    if not kb or "p_live_uscoret" not in kb:
+        return diag
+    ud = json.loads(json.dumps(diag))
+    del ud["uscorede"]["konvention_bey"]["p_live_uscoret"]
+    return ud
+
+
 def dage_efter_kvartal(kvt, snapshot_navn):
     """RAADETS_SPEC7 §3.4: 'foerste print' er den foerste vintage i VORES snapshots; monitoren oplyser kun, hvor
     mange dage efter kvartalets udgang vi foerst saa den (ingen paastand om BEA-vintage)."""
@@ -1492,6 +1503,9 @@ def main():
         if diag.get("maanedlig_parret"):
             for ln in P27.parret_linjer(diag["maanedlig_parret"]):
                 print(ln)
+        if (diag.get("uscorede") or {}).get("konvention_bey"):           # spec 7A: kun en henvisning, aldrig BEY-P
+            print("   Spec 7A: konventionsdiagnostikken (uscoret) ligger i diagnostik.json -> uscorede.konvention_bey; "
+                  "ubetinget dagsordenspunkt ved refitten, ikke P.")
         if diag.get("styrke"):
             st = diag["styrke"]
             print(f"   G3.2 Hovedbogens styrke: 80 % styrke kraever ca. {st['blokke_80pct']} cyklusblokke (ca. {st['aar_80pct']} aar). "
@@ -1549,7 +1563,7 @@ def main():
         data = dict(
             version=W.get("version", "5.0"), manifest_hash=W.get("manifest_hash"),
             forrige_manifest=W.get("forrige_manifest"), raa=op.get("raa"), bro=W.get("bro"),
-            gate=W.get("gate"), stale=meta.get("stale"), diagnostik=diag,
+            gate=W.get("gate"), stale=meta.get("stale"), diagnostik=diag_til_dashboard(diag),
             live_input=dict(kilde=LI["kilde"], vindue=LI.get("vindue"), n_dage=LI.get("n_dage"),
                             curve=round(LI["curve"], 4), y10=round(LI["y10"], 4), tb3=round(LI["tb3"], 4),
                             y10_seneste=LI.get("y10_seneste"), tb3_seneste=LI.get("tb3_seneste"),

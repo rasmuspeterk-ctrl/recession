@@ -3175,5 +3175,171 @@ class TestRaadetsSpec7(unittest.TestCase):
         self.assertIn("ikke et input", kt)
         self.assertIn("giver ikke P og vises ikke", d["live_input"]["konvention"]["tekst"])
 
+
+import diagnostik as DG
+sys.path.insert(0, str(HERE / "analyser"))
+import b3_revisionsaudit as B3
+
+
+def _skriv_serie(mappe, sid, raekker):
+    nl = chr(10)
+    (mappe / f"{sid}.csv").write_text("observation_date," + sid + nl + "".join(f"{d},{v}{nl}" for d, v in raekker),
+                                      encoding="utf-8")
+
+
+class TestSpec7ADiagnostik(unittest.TestCase):
+    """Spec 7A (RAADETS_SPEC7 §1): mekanikken testes paa SYNTETISKE data. Diagnostikken koeres aldrig paa de rigtige
+    data foer refitten 2027 — resultatet maa foerst ses dér (raadets beslutning)."""
+
+    @staticmethod
+    def _syntetisk(forskyd=0.0):
+        rng = np.random.default_rng(7)
+        usrec = {i: 0 for i in range(A2.midx(1940, 1), A2.midx(2010, 12) + 1)}
+        for y in range(1953, 2005, 7):
+            for i in range(A2.midx(y, 6), A2.midx(y, 6) + 10):
+                usrec[i] = 1
+        eps = A2.episodes_from_usrec(usrec)
+        avail = {o: o + 9 for o, _ in eps}
+        qk = [(y, q) for y in range(1947, 2009) for q in range(1, 5)][1:]
+        qend = np.array([A2.qend_idx(y, q) for y, q in qk])
+        kurve = [(-0.5 if any(0 < o - e <= 12 for o, _ in eps) else 1.5) + rng.normal(0, 0.6) for e in qend]
+        tb3_q = {k: 2.0 + (6.0 if 1970 <= k[0] <= 1985 else 0.0) + (6.0 if 1979 <= k[0] <= 1982 else 0.0) for k in qk}
+        Dc = dict(F=np.array(kurve).reshape(-1, 1), feats=["curve"], Y_tek=np.zeros(len(qk)), qk=qk, qend=qend,
+                  year=np.array([y for y, _ in qk]))
+        Db = dict(Dc, F=Dc["F"] - np.array([[P27.bey(tb3_q[k]) - tb3_q[k] + forskyd] for k in qk]))
+        return Dc, Db, tb3_q, eps, avail, usrec, A2.midx(2010, 9)
+
+    def test_kernen_paa_syntetiske_data(self):
+        Dc, Db, tb3_q, eps, avail, usrec, R = self._syntetisk()
+        k = DG.konvention_bey_kerne(Dc, Db, tb3_q, eps, avail, usrec, R)
+        self.assertEqual(list(k["walk_forward"]), ["oracle_fri", "orakel_censureret"])          # §1.2-raekkefoelgen
+        for v in k["walk_forward"].values():
+            pa = v["parret"]
+            self.assertEqual(pa["n_draws"], 10000)
+            self.assertLessEqual(pa["interval_90"][0], pa["interval_80"][0])
+            self.assertLessEqual(pa["interval_80"][1], pa["interval_90"][1])
+            self.assertEqual([b["bin"] for b in v["rentebins"]], [b[2] for b in DG.BEY_BINS])
+            self.assertEqual(sum(b["n"] for b in v["rentebins"]), v["n"])
+        self.assertIn("beta_curve_pr_pp", k["fit"]["raa"])
+        self.assertIn("uden inferens", k["rentebin_fit"]["note"])
+        self.assertIsNone(k["rentebin_fit"]["bins"][3]["bey"])      # >= 12 %: for faa raekker -> uidentificeret
+
+    def test_identisk_kurve_giver_nul_og_identitetsbrud_stopper(self):
+        Dc, _, tb3_q, eps, avail, usrec, R = self._syntetisk()
+        k = DG.konvention_bey_kerne(Dc, dict(Dc), tb3_q, eps, avail, usrec, R)
+        for v in k["walk_forward"].values():
+            self.assertEqual(v["parret"]["middel_nats"], 0.0)
+            self.assertEqual(v["delta_pp"], 0.0)
+        Db = dict(Dc, qk=Dc["qk"][1:] + [(2009, 1)])
+        with self.assertRaisesRegex(SystemExit, "univers afviger"):
+            DG.konvention_bey_kerne(Dc, Db, tb3_q, eps, avail, usrec, R)
+
+    def test_live_robusthed_og_gs3m_paa_syntetisk_snapshot(self):
+        with tempfile.TemporaryDirectory() as t:
+            snap = Path(t)
+            dage = [f"2027-08-{d:02d}" for d in range(1, 29)] + [f"2027-09-{d:02d}" for d in range(1, 29)]
+            _skriv_serie(snap, "DGS10", [(d, "5.00") for d in dage])
+            _skriv_serie(snap, "DTB3", [(d, "4.00" if d < "2027-09-15" else "4.20") for d in dage])
+            _skriv_serie(snap, "TB3MS", [("1981-09-01", "15.00"), ("1981-10-01", "14.00"), ("1981-11-01", "13.00"),
+                                         ("1981-12-01", "12.00")])
+            _skriv_serie(snap, "GS3M", [("1981-09-01", "15.80"), ("1981-10-01", "14.70")])
+            live = DG._bey_live(snap, dict(alpha=-0.3, beta_curve_pr_pp=-1.3))
+            vin = [d for d in dage if d > "2027-08-28"]
+            forv = 5.0 - float(np.mean([P27.bey(4.0 if d < "2027-09-15" else 4.2) for d in vin]))
+            self.assertAlmostEqual(live["kurve"], round(forv, 4))
+            self.assertEqual(live["maerke"], "uscoret foelsomhed, ikke P")
+            tb3 = C.read_fred(snap, "TB3MS")
+            g = DG._gs3m_kontrol(snap, tb3)
+            self.assertEqual(g["n"], 2)
+            self.assertAlmostEqual(g["max_abs"], round(max(abs(P27.bey(15.0) - 15.8), abs(P27.bey(14.0) - 14.7)), 4))
+            rb = DG._bey_robusthed(snap, tb3)
+            self.assertEqual(rb["kvartal"]["n"], 1)                    # kun 1981Q4 er komplet
+            jq = P27.bey(13.0) - float(np.mean([P27.bey(x) for x in (14.0, 13.0, 12.0)]))
+            self.assertAlmostEqual(rb["kvartal"]["max_abs"], round(abs(jq), 6))
+            self.assertLess(abs(rb["live"]["forskel"]), 0.003)         # Jensen-graensen
+            (snap / "GS3M.csv").unlink()
+            self.assertTrue(DG._gs3m_kontrol(snap, tb3)["mangler"])
+
+    def test_bey_p_fjernes_foer_dashboardet(self):
+        diag = {"uscorede": {"konvention_bey": {"fit": {}, "p_live_uscoret": {"p": 0.2}}}, "styrke": {}}
+        ud = M.diag_til_dashboard(diag)
+        self.assertNotIn("p_live_uscoret", ud["uscorede"]["konvention_bey"])
+        self.assertIn("p_live_uscoret", diag["uscorede"]["konvention_bey"])    # diagnostik.json beholder feltet
+        d0 = {"styrke": {}}
+        self.assertIs(M.diag_til_dashboard(d0), d0)                         # uden spec 7A: uaendret
+        self.assertIsNone(M.diag_til_dashboard(None))
+
+    def test_intet_foer_refitten_2027(self):
+        d = json.loads((HERE / "diagnostik.json").read_text(encoding="utf-8"))
+        self.assertNotIn("uscorede", d)                                # spec 7A §1: intet skrives foer R >= 2027-09
+        self.assertFalse(P27.i_kraft_maaned(d.get("refit_maaned") or "2026-09"))
+
+    def test_build_dataset_omregner_kun_tb3(self):
+        Dc = A2.build_dataset(REAL_SNAP, ["curve"])
+        Db = A2.build_dataset(REAL_SNAP, ["curve"], tb3_omregning=P27.bey)
+        self.assertEqual(Dc["qk"], Db["qk"])
+        tb3 = C.read_fred(REAL_SNAP, "TB3MS")
+        sidste = {}
+        for (y, m), v in sorted(tb3.items()):
+            sidste[(y, (m - 1) // 3 + 1)] = v
+        for j in (0, len(Dc["qk"]) // 2, len(Dc["qk"]) - 1):
+            v = sidste[tuple(Dc["qk"][j])]
+            self.assertAlmostEqual(float(Dc["F"][j, 0] - Db["F"][j, 0]), P27.bey(v) - v, places=9)
+
+
+class TestSpec7BRevisionsaudit(unittest.TestCase):
+    """Spec 7B (RAADETS_SPEC7 §2): aargange, faste markedsrenter, manglende datoer og 10bp-kravet — syntetisk."""
+
+    @staticmethod
+    def _raekke(logget):
+        return dict(logget=logget, snapshot=logget)
+
+    def test_aargange_efter_forsegling_og_forfra_ved_hul(self):
+        rk = [self._raekke(d) for d in ("2026-10-10", "2026-11-10", "2026-12-10", "2027-02-10", "2027-03-10")]
+        serie, faerdig = B3.aargange(rk)
+        self.assertEqual([lg for lg, _ in serie], ["2027-02-10", "2027-03-10"])   # januar mangler -> forfra
+        self.assertFalse(faerdig)
+        tolv = [self._raekke(f"{2026 + (10 + i) // 12}-{(10 + i) % 12 + 1:02d}-10") for i in range(13)]
+        serie, faerdig = B3.aargange(tolv)
+        self.assertTrue(faerdig)
+        self.assertEqual(len(serie), 12)
+        self.assertEqual(serie[0][0], "2026-11-10")
+        self.assertEqual(B3.aargange([])[0], [])
+
+    def _byg(self, raw, skridt, drop_sidste=False, markedsrevision=False):
+        datoer = [f"{y}-{m:02d}-15" for y in (2024, 2025, 2026) for m in range(1, 13)][9:34]   # 2024-10..2026-10
+        rk = []
+        for k in range(1, 13):
+            lg = f"{2026 + (10 + k - 1) // 12}-{(10 + k - 1) % 12 + 1:02d}-10"
+            sn = raw / lg; sn.mkdir(parents=True)
+            ds = datoer[:-1] if (drop_sidste and k == 12) else datoer
+            _skriv_serie(sn, "THREEFYTP10", [(d, f"{1.0 + skridt * (k - 1):.4f}") for d in ds])
+            _skriv_serie(sn, "DGS10", [(d, "5.0" if not (markedsrevision and k == 2) else "5.3") for d in datoer])
+            _skriv_serie(sn, "DTB3", [(d, "4.0") for d in datoer])
+            (sn / "meta.json").write_text(json.dumps({"series": {"THREEFYTP10": {"sha256": f"h{k}"}}}), encoding="utf-8")
+            rk.append(self._raekke(lg))
+        return rk
+
+    def test_audit_under_og_over_graensen(self):
+        for skridt, under in ((0.005, True), (0.01, False)):            # max revision 0,055 / 0,11pp
+            with tempfile.TemporaryDirectory() as t:
+                raw = Path(t)
+                ud = B3.audit(self._byg(raw, skridt, drop_sidste=True, markedsrevision=True), raw)
+                self.assertTrue(ud["faerdig"])
+                self.assertEqual(ud["under_graensen"], under)
+                self.assertAlmostEqual(ud["e_max_samlet"], round(skridt * 11, 4))
+                rv = {r["nr"]: r for r in ud["revisioner"]}
+                self.assertEqual(rv[12]["n_mangler"], 1)                    # manglende dato taelles, imputeres ikke
+                self.assertEqual(rv[2]["e_max"], rv[2]["tp_max"])           # markedsrenter holdes faste fra aargang 1
+                self.assertAlmostEqual(rv[2]["markedsrevision_max"]["DGS10"], 0.3)
+                self.assertEqual(ud["aargange"][0]["threefytp10_sha256"], "h1")
+                self.assertIn("ikke evidens for validitet", ud["status"])
+
+    def test_ingen_aargange_endnu(self):
+        with tempfile.TemporaryDirectory() as t:
+            ud = B3.audit([self._raekke("2026-10-10")], Path(t))
+            self.assertEqual(ud["n_aargange"], 0)
+            self.assertIn("2026-11-raekken", ud["status"])
+
 if __name__ == "__main__":
     unittest.main()

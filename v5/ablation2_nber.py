@@ -187,15 +187,18 @@ def i_annonceret_recession(usrec, eps, avail, idx):
             return onset, avail[onset]
     return None
 
-def build_dataset(snap, feats=None, spine_file=None):
+def build_dataset(snap, feats=None, spine_file=None, tb3_omregning=None):
     """Raekkeuniverset (RAADETS_V501 §2): start = protokolkonstanten C.START_QK, teknisk label
     defineret (trin 1's univers), og modellens EGNE features ikke-NaN — foer: alle BASE10, hvilket
     gjorde curve-only til gidsel for CAPE-kilden. `feats` default = F5 (fuldmodellen);
-    `spine_file` tvinger en rygrad (legacy-replay: 'shiller_yale_2023-09.csv')."""
+    `spine_file` tvinger en rygrad (legacy-replay: 'shiller_yale_2023-09.csv'). `tb3_omregning` omregner hver
+    maaneds TB3MS, foer kurven bygges (spec 7A: protokol2027.bey); None = den operationelle diskontokonvention."""
     feats = list(feats or C.F5)
     shiller = C.read_shiller(snap, spine_file)
     gs10 = C.read_fred(snap, "GS10")
     tb3ms = C.read_fred(snap, "TB3MS")
+    if tb3_omregning is not None:
+        tb3ms = {k: tb3_omregning(v) for k, v in tb3ms.items()}
     gdp_g = C.read_fred(snap, "A191RL1Q225SBEA")
     if spine_file is None and feats == ["curve"]:
         # Curve-only maa aldrig afhaenge af CAPE-kilden (§1.7, §2): er rygraden trunkeret (multpl/SP500 nede), ville

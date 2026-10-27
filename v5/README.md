@@ -18,7 +18,7 @@ blev til, ikke hvordan den koeres i dag.
 | `calibrate.py` | Hjaelpefunktioner for hele kaeden (read_fred, live_kurve, fit ...). Som script HISTORISK (trin 1): skriver `calibrate_resultat.json`; `weights.json` kun med `--overskriv` (bevidst) |
 | `ablation2_nber.py` | NBER-labelen, annonceringstabellen, USREC-krydstjekket, eligibility og den forklarede origin-audit. Som script (`--promote`) HISTORISK — koer ikke i drift |
 | `ablation3/4/7/8_*.py`, `audit5_alfred.py` | Historiske, afsluttede tests (frekvens, features, curve+cape, AWHMAN, ALFRED) — koer ikke i drift |
-| `test_v5.py` | 225 tests, stdlib unittest, ingen netvaerk (~4 min) |
+| `test_v5.py` | 234 tests, stdlib unittest, ingen netvaerk (~4 min) |
 | `nber_announcements.csv` | NBER's annonceringsdatoer (top/bund) — se *NBER-vedligehold* nedenfor |
 | `manual/` | `manual.json` (S&P vs 52u-top, live-CAPE, marginlaan y/y + deres datoer), `shiller_yale_2023-09.csv` (uforanderlig Yale-kopi), `seam_check_2023.json`, evt. `outliers_accepteret.json` |
 | `kalibreringer/` | Kalibreringsmanifester (v5.0.1 §3.3): et pr. kalibrering, index.json, legacy_mapping.json |
@@ -43,7 +43,8 @@ hvis Kim-Wright-serien mangler.
 python fetch.py                  # hent + rygrad + guards + diff-tjek med oejnene; beregner selv S&P vs 12m-top,
                                  # CAPE og marginlaan (meta.json -> "afledte"); manual/manual.json er kun reserve
 python motor.py --log --json     # aflaesning, prospektiv raekke i ../LOG.md + ../hovedbog.jsonl, dashboard.json
-python -m unittest test_v5       # 225 tests
+python analyser/b3_revisionsaudit.py   # spec 7B: Kim-Wright-revisionsaudit (fra 2026-11-raekken; afgoerende ved 12. aargang)
+python -m unittest test_v5       # 234 tests
 ```
 Hovedbogen (`../LOG.md`) er den eneste fuldt prospektive test: een raekke pr. maaned, skrevet FOER
 udfaldet kendes; historiske raekker roeres aldrig. Den beskytter mod look-ahead, men er statistisk
@@ -826,13 +827,13 @@ laases i `protokol2027.SPECS`. Intet af det roerer P foer refitten.
 
 | § | Hvad | Forseglet spec (commit) | Kode | Status |
 |---|---|---|---|---|
-| SPEC7 §1 | Del A: 3m-benet paa obligationsaekvivalent basis (`protokol2027.bey`) som uscoret diagnostik i `diagnostik.json` → `uscorede.konvention_bey`: fit, walk-forward (oracle-fri foerst), parret Δ (10.000 traek, seed 42, 5.–95.), rentebin-tabel (beskrivende), BEY-P kun i diagnostikken; ubetinget dagsordenspunkt, ingen skifteregel | [spec2027/7A_konvention_bey.md](spec2027/7A_konvention_bey.md) (d1049ac) | `bey()` findes; selve diagnostikken skrives foer refitten | afventer (skal vaere klar foer 2027-09) |
-| SPEC7 §2 | Del B: ingen historisk test af forventningsdelen; prospektiv Kim-Wright-revisionsaudit over 12 hovedbogs-snapshots fra 2026-11-raekken; kolonne kun ved max revision af E < 10bp (visningsstabilitet) OG raadets godkendelse | [spec2027/7B_forventningsdel_audit.md](spec2027/7B_forventningsdel_audit.md) (d1049ac) | `analyser/b3_revisionsaudit.py` skrives foer 12. aargang (ca. 2027-10); aargangene gemmes allerede i hvert snapshot | afventer |
+| SPEC7 §1 | Del A: 3m-benet paa obligationsaekvivalent basis (`protokol2027.bey`) som uscoret diagnostik i `diagnostik.json` → `uscorede.konvention_bey`: fit, walk-forward (oracle-fri foerst), parret Δ (10.000 traek, seed 42, 5.–95.), rentebin-tabel (beskrivende), BEY-P kun i diagnostikken; ubetinget dagsordenspunkt, ingen skifteregel | [spec2027/7A_konvention_bey.md](spec2027/7A_konvention_bey.md) (d1049ac) | `diagnostik.konvention_bey` (+ `A2.build_dataset(tb3_omregning=)`, GS3M i spine/fetch); koerer automatisk i `diagnostik.py` ved R >= 2027-09; motor fjerner BEY-P, foer diagnostikken indlejres i dashboard.json; testet kun paa syntetiske data | gennemfoert (koeres ved refitten) |
+| SPEC7 §2 | Del B: ingen historisk test af forventningsdelen; prospektiv Kim-Wright-revisionsaudit over 12 hovedbogs-snapshots fra 2026-11-raekken; kolonne kun ved max revision af E < 10bp (visningsstabilitet) OG raadets godkendelse | [spec2027/7B_forventningsdel_audit.md](spec2027/7B_forventningsdel_audit.md) (d1049ac) | `analyser/b3_revisionsaudit.py` (aargange = hovedbogs-snapshots efter 2026-10-27, 12 i traek, forfra ved hul; markedsrenter fra aargang 1; kravet vurderes foerst ved 12) — testet paa syntetiske data | gennemfoert (koeres maanedligt fra 2026-11-raekken; afgoerende efter 12. aargang, ca. 2027-10) |
 | husholdning | BNP-monitoren: hent BEA's udgivelseskalender eller ALFRED-vintage-metadata, saa "foerste print" kan siges verificeret (Fable, Argon, forbehold runde 4) | — | — | foer refitten |
 
 **Ritualet ved september-refitten 2027** (efter NBER-vedligehold og maanedsritualets fetch): bump VERSION i finalize6.py;
 `python finalize6.py` (gate, L_R-audit, uscorede fit); `python diagnostik.py` (parret maanedlig diagnostik, nested λ
-oracle-fri); `python replay2027.py` (replay + styrkeklausul); `python motor.py --log --json` i logvinduet; commit og push.
+oracle-fri, spec 7A's konventionsdiagnostik); `python replay2027.py` (replay + styrkeklausul); `python motor.py --log --json` i logvinduet; commit og push.
 Den parrede diagnostik og replayen publiceres uanset udfald, og F35-forudsigelsen ovenfor sammenlignes.
 
 ## Kontekst-protokollen 2026-10-24: raavarer, kreditkort og bolig (USA) + rettelser fra mellemlaesningen 2026-10-23

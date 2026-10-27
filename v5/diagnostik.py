@@ -134,19 +134,168 @@ def skill(recs, base=None):
                 improvement=round(imp, 2), brier=round(br, 2))
 
 
+def blok_boot_middel(d, bl, n_draws=10000):
+    """Episode-blok-bootstrap af middelvaerdien af d over cykelblokkene bl (seed 42). -> (blokke, middel pr. traek)."""
+    rng = np.random.default_rng(SEED)
+    keys = np.unique(bl); means = []
+    for _ in range(n_draws):
+        rows = np.concatenate([np.where(bl == g)[0] for g in rng.choice(keys, size=len(keys), replace=True)])
+        means.append(d[rows].mean())
+    return keys, np.array(means)
+
+
 def parret_loss_boot(recs, eps, base):
     """4.4: per-origin log-loss-forbedring mod den poolede basisrate; episode-blok-bootstrap over cykelblokkene,
     10.000 traek, seed 42, 5.-95. percentil. -> (resultat, d, blokke)."""
     d = np.array([loss(base, r["Y"]) - loss(r["p"], r["Y"]) for r in recs])
     bl = np.array([blok_af(A2.qend_idx(r["y"], r["q"]), eps) for r in recs])
-    rng = np.random.default_rng(SEED)
-    keys = np.unique(bl); means = []
-    for _ in range(10000):
-        rows = np.concatenate([np.where(bl == g)[0] for g in rng.choice(keys, size=len(keys), replace=True)])
-        means.append(d[rows].mean())
-    means = np.array(means)
+    keys, means = blok_boot_middel(d, bl)
     return (dict(middel_pp=round(float(d.mean()), 4), interval_90=[round(float(np.percentile(means, 5)), 4), round(float(np.percentile(means, 95)), 4)],
                  andel_ikke_positiv=round(float(np.mean(means <= 0)), 4), n_blokke=int(len(keys)), n_draws=10000), d, bl)
+
+
+# ---- RAADETS_SPEC7 §1 / spec2027/7A_konvention_bey.md: 3m-benet paa obligationsaekvivalent basis (uscoret) ----
+BEY_BINS = ((None, 4.0, "< 4 %"), (4.0, 8.0, "4-8 %"), (8.0, 12.0, "8-12 %"), (12.0, None, ">= 12 %"))
+BEY_ENHEDER = ("Den omregnede kurve er stadig ikke enhedskonsistent: 3m-benet er en simpel ACT/365-rente (91 dage), "
+               "10-aars-benet en semiannual par-rente (CMT).")
+
+
+def _bin_af(v):
+    for lo, hi, navn in BEY_BINS:
+        if (lo is None or v >= lo) and (hi is None or v < hi):
+            return navn
+    return None
+
+
+def _raa_fit(x, y):
+    """Curve-only-fit som finalize6.fit_model (ddof=1, lambda=1) -> raa (alpha, beta pr. pp), eller None."""
+    if len(x) < 20 or y.sum() < 2 or y.sum() > len(y) - 2:
+        return None
+    mu, sd = float(x.mean()), float(x.std(ddof=1)) or 1.0
+    w = C.fit(((x - mu) / sd).reshape(-1, 1), y)
+    return dict(alpha=round(float(w[0] - w[1] * mu / sd), 4), beta_pr_pp=round(float(w[1] / sd), 4), n=int(len(x)), n_pos=int(y.sum()))
+
+
+def konvention_bey_kerne(Dc, Db, tb3_q, eps, avail, usrec, R):
+    """Spec 7A §3 (1)-(4) paa faerdigbyggede datasaet: diskonto (Dc) og BEY-proxy (Db). Identiteten (univers,
+    berettigede origins, labels, walk-forward-origins) asserteres og fejler hoejlydt. tb3_q = {(aar, kvt): TB3MS}
+    i kvartalets sidste maaned (som calibrate.to_quarterly) til rentebins."""
+    if Dc["qk"] != Db["qk"]:
+        raise SystemExit("FEJL (spec 7A §2): BEY-proxyens univers afviger fra den operationelle kurves.")
+    ec, yc = A2.eligible_fit(Dc, eps, avail, usrec, R)
+    eb, yb = A2.eligible_fit(Db, eps, avail, usrec, R)
+    if not (np.array_equal(ec, eb) and np.array_equal(yc, yb)):
+        raise SystemExit("FEJL (spec 7A §2): berettigede origins eller labels afviger mellem BEY og diskonto.")
+    fm = F6.fit_model(Db, eps, avail, usrec, R)                                                    # (1)
+    fit = {k: fm[k] for k in ("features", "n_obs", "n_pos", "mu", "sd", "w", "raa") if k in fm}
+    wfres = {}
+    for navn, censur in (("oracle_fri", "realtid"), ("orakel_censureret", "endelig")):            # (2) §1.2-orden
+        rc = wf(Dc, eps, avail, usrec, R, censur=censur)
+        rb = wf(Db, eps, avail, usrec, R, censur=censur)
+        if [(r["y"], r["q"], r["Y"]) for r in rc] != [(r["y"], r["q"], r["Y"]) for r in rb]:
+            raise SystemExit(f"FEJL (spec 7A §3): walk-forward-origins eller labels afviger ({navn}).")
+        dd = np.array([loss(c["p"], c["Y"]) - loss(b["p"], b["Y"]) for c, b in zip(rc, rb)])   # (3) >0: BEY bedre
+        bl = np.array([blok_af(A2.qend_idx(r["y"], r["q"]), eps) for r in rc])
+        keys, means = blok_boot_middel(dd, bl)
+        sc, sb = skill(rc), skill(rb)
+        bins = []                                                                                   # (4) origin-niveau
+        for _, _, bn in BEY_BINS:
+            idx = [i for i, r in enumerate(rc) if _bin_af(tb3_q.get((r["y"], r["q"]), np.nan)) == bn]
+            ons = sorted({o for i in idx if rc[i]["Y"] == 1.0 for o in rc[i]["onsets"]})
+            bins.append(dict(bin=bn, n=len(idx), n_pos=int(sum(rc[i]["Y"] for i in idx)), onsets=len(ons),
+                             middel_dlogloss=round(float(dd[idx].mean()), 4) if idx else None,
+                             middel_dP=round(float(np.mean([rb[i]["p"] - rc[i]["p"] for i in idx])), 4) if idx else None))
+        wfres[navn] = dict(
+            n=len(rc), skill_bey=sb, skill_diskonto=sc,
+            delta_pp=(round(sb["improvement"] - sc["improvement"], 2)
+                      if sb["improvement"] is not None and sc["improvement"] is not None else None),
+            parret=dict(middel_nats=round(float(dd.mean()), 4),
+                        interval_90=[round(float(np.percentile(means, 5)), 4), round(float(np.percentile(means, 95)), 4)],
+                        interval_80=[round(float(np.percentile(means, 10)), 4), round(float(np.percentile(means, 90)), 4)],
+                        andel_ikke_positiv=round(float(np.mean(means <= 0)), 4), n_blokke=int(len(keys)), n_draws=len(means),
+                        note="dlogloss = L(diskonto) - L(BEY) pr. origin; positiv = BEY-proxyen har lavere log-loss. "
+                             "80 %-intervallet er 10.-90. percentil af samme traek. Flere traek mindsker Monte Carlo-stoej, "
+                             "ikke usikkerheden fra faa episoder. Traekandele er ikke p-vaerdier."),
+            rentebins=bins)
+    rows = np.where(ec)[0]                                                                          # (4) bin-fit
+    bin_fits = []
+    for _, _, bn in BEY_BINS:
+        r_ = [j for j in rows if _bin_af(tb3_q.get(tuple(Dc["qk"][j]), np.nan)) == bn]
+        bin_fits.append(dict(bin=bn, diskonto=_raa_fit(Dc["F"][r_, 0], yc[r_]) if r_ else None,
+                             bey=_raa_fit(Db["F"][r_, 0], yc[r_]) if r_ else None))
+    return dict(fit=fit, walk_forward=wfres,
+                rentebin_fit=dict(bins=bin_fits, note="Beskrivende, uden inferens: de hoeje bins rummer i praksis 1973 og "
+                                  "1980-81 og er naesten uidentificerede (None = for faa raekker eller klasser). Ikke et "
+                                  "vaegtforslag; et regime-afhaengigt beta er en ny model med egen forseglet spec og replay."))
+
+
+def _bey_robusthed(snap, tb3):
+    """Spec 7A §2: omregning efter middelvaerdien mod hovedoperatoren, maalt een gang."""
+    pr_kvt = {}
+    for (y, m), v in sorted(tb3.items()):
+        pr_kvt.setdefault((y, (m - 1) // 3 + 1), []).append(v)
+    dk = [P27.bey(float(np.mean(v))) - float(np.mean([P27.bey(x) for x in v])) for v in pr_kvt.values() if len(v) == 3]
+    ud = dict(kvartal=(dict(n=len(dk), middel_abs=round(float(np.mean(np.abs(dk))), 6),
+                            max_abs=round(float(np.max(np.abs(dk))), 6)) if dk else None),
+              note="Hovedoperator: hver maaneds TB3MS omregnes (historik), hver DTB3-dag omregnes og middles (live). "
+                   "Kvartalsaggregeringen tager kvartalets sidste maaned (calibrate.to_quarterly); kvartalslinjen maaler "
+                   "BEY af kvartalets middel-TB3MS mod middel af de omregnede maaneder, som spec 7A §2 skriver. "
+                   "Jensen-graensen: under 0,003pp ved en spredning paa 1pp.")
+    d3 = C.read_fred_daily(snap, "DTB3")
+    if d3:
+        fra = C.maaned_foer(d3[-1][0])
+        v = [x for d, x in d3 if d > fra]
+        ud["live"] = dict(n_dage=len(v), forskel=round(P27.bey(float(np.mean(v))) - float(np.mean([P27.bey(x) for x in v])), 6))
+    return ud
+
+
+def _gs3m_kontrol(snap, tb3):
+    """Spec 7A §2: fra 1981-09 middel og max |BEY(TB3MS) - GS3M| pr. maaned. Rapporteres; aldrig splejset ind."""
+    if not (snap / "GS3M.csv").exists():
+        return dict(mangler=True, note="GS3M.csv mangler i snapshottet")
+    gs3m = C.read_fred(snap, "GS3M")
+    dd = [P27.bey(tb3[k]) - gs3m[k] for k in sorted(set(tb3) & set(gs3m)) if k >= (1981, 9)]
+    if not dd:
+        return dict(n=0, note="ingen faelles maaneder fra 1981-09")
+    return dict(n=len(dd), middel_abs=round(float(np.mean(np.abs(dd))), 4), max_abs=round(float(np.max(np.abs(dd))), 4),
+                note="kontrol, ikke et kriterium; CMT og omregnet diskonto er forskellige papirer og maalemetoder")
+
+
+def _bey_live(snap, raa):
+    """Spec 7A §3 (5): P ved refittens live-input under BEY-proxyen. KUN til diagnostik.json; motor fjerner feltet."""
+    d10, d3 = C.read_fred_daily(snap, "DGS10"), C.read_fred_daily(snap, "DTB3")
+    if not (d10 and d3 and raa):
+        return None
+    a, b = dict(d10), dict(d3)
+    faelles = sorted(set(a) & set(b))
+    fra = C.maaned_foer(faelles[-1])
+    vin = [d for d in faelles if d > fra]
+    kurve = float(np.mean([a[d] for d in vin])) - float(np.mean([P27.bey(b[d]) for d in vin]))
+    p = 1.0 / (1.0 + np.exp(-(raa["alpha"] + raa["beta_curve_pr_pp"] * kurve)))
+    return dict(kurve=round(kurve, 4), p=round(float(p), 6), vindue=[vin[0], vin[-1]], n_dage=len(vin),
+                maerke="uscoret foelsomhed, ikke P",
+                note="skrives kun til diagnostik.json; vises aldrig paa dashboardet, i LOG.md eller hovedbog.jsonl")
+
+
+def konvention_bey(snap, Dc, eps, avail, usrec, R):
+    """Spec 7A: hele diagnostikken ved en refit med R >= 2027-09 -> diagnostik.json['uscorede']['konvention_bey']."""
+    h = P27.kraev_forseglet("7A_konvention_bey.md")
+    Db = A2.build_dataset(snap, ["curve"], tb3_omregning=P27.bey)
+    tb3 = C.read_fred(snap, "TB3MS")
+    tb3_q = {}
+    for (y, m), v in sorted(tb3.items()):
+        tb3_q[(y, (m - 1) // 3 + 1)] = v                     # kvartalets sidste maaned, som to_quarterly
+    kerne = konvention_bey_kerne(Dc, Db, tb3_q, eps, avail, usrec, R)
+    meta = json.loads((snap / "meta.json").read_text(encoding="utf-8"))
+    sha = {sid: (meta.get("series", {}).get(sid) or {}).get("sha256") for sid in ("TB3MS", "DTB3", "GS10", "DGS10", "GS3M", "USREC")}
+    ann = F6.ann_fil()
+    sha["nber_announcements"] = C.ann_sha256(ann) if ann.exists() else None
+    return dict(protokol="RAADETS_SPEC7 §1", spec_sha256=h, code_commit=F6.git_commit(), input_sha256=sha,
+                serie="91-dages BEY-proxy: BEY(d) = 365d/(360 - 91d), d i procent", enheder=BEY_ENHEDER, **kerne,
+                robusthed=_bey_robusthed(snap, tb3), kontrol_gs3m=_gs3m_kontrol(snap, tb3),
+                p_live_uscoret=_bey_live(snap, kerne["fit"].get("raa")),
+                beslutning="Ingen skifteregel og ingen udloeser; ubetinget dagsordenspunkt for raadet ved refitten 2027 "
+                           "(RAADETS_SPEC7 §1.4). Tallene tilhoerer BEY-konfigurationen og citeres aldrig som driftens (§1.3).")
 
 
 def skill_expanding(recs):
@@ -429,6 +578,13 @@ def main():
         maanedlig_parret = P27.maanedlig_parret(snap, eps, avail, usrec, R)
         for ln in P27.parret_linjer(maanedlig_parret):
             print(ln.strip())
+    konvention_bey_ud = None
+    if P27.i_kraft_maaned(W.get("refit_maaned")):
+        # RAADETS_SPEC7 §1 (spec2027/7A_konvention_bey.md): uscoret diagnostik; ubetinget dagsordenspunkt, ingen skifteregel
+        konvention_bey_ud = konvention_bey(snap, Dc, eps, avail, usrec, R)
+        for navn, v in konvention_bey_ud["walk_forward"].items():
+            print(f"spec 7A ({navn}): BEY-proxy +{v['skill_bey']['improvement']}% mod diskonto +{v['skill_diskonto']['improvement']}% "
+                  f"paa {v['n']} origins; parret 90 %-interval {v['parret']['interval_90']} nats (uscoret, ikke et kriterium)")
     styrke = styrke_tabel(d, bl, recs)
     print(f"styrke (G3.2): 80 % styrke kraever ca. {styrke['blokke_80pct']} cyklusblokke = ca. {styrke['aar_80pct']} aar scorede raekker")
 
@@ -444,6 +600,7 @@ def main():
               gate_mde=gate_mde, sti=sti, pre_onset_analoger=analoger, start_sensitivitet=start, flips=flips, kimi_r6=r6, styrke=styrke,
               **({"maanedlig_parret": maanedlig_parret} if maanedlig_parret else {}),
               **({"nested_oracle_fri": nested_of} if nested_of else {}),
+              **({"uscorede": dict(konvention_bey=konvention_bey_ud)} if konvention_bey_ud else {}),
               erklaering_36="Publiceret baseline = poolet basisrate over scorede origins (C.metrics). Konsensustekstens 'expanding intercept' var sekretaerens fejl; expanding printes som ekstra kolonne, gaten aendres ikke.")
     (HERE / "diagnostik.json").write_text(json.dumps(ud, indent=1, ensure_ascii=False), encoding="utf-8")
     print(f"diagnostik.json skrevet ({time.time() - t0:.0f} s)")

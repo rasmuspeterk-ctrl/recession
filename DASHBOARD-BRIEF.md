@@ -399,7 +399,10 @@ eksempler, ikke den aktuelle læsning. Feltrækkefølgen er motorens.
 - `diagnostik.parret_loss_bootstrap_oraclefri` og `diagnostik.parret_loss_bootstrap`: 4.4-intervallet
   for den oracle-fri (219 origins) og den orakel-censurerede (198) variant. Den oracle-fri vises
   først; mangler den, står den censurerede som fodnote med "det oracle-fri interval afventer".
-  Andelen af træk ≤ 0 er en trækandel, ikke en p-værdi. Gaten vises som "curve-only minus F5 =
+  Andelen af træk ≤ 0 er en trækandel, ikke en p-værdi.
+- `diagnostik.uscorede.konvention_bey` (først fra refitten 2027, spec 7A): konventionsdiagnostikken. Siden viser
+  kun en henvisning til, at den findes. BEY-proxyens P (`p_live_uscoret`) står kun i `v5/diagnostik.json`;
+  motor fjerner feltet, før diagnostikken indlejres i dashboard.json. Gaten vises som "curve-only minus F5 =
   +3,89 pp, orakel-censureret fuld sti", aldrig med +27,1 % alene. Dommen får "Primær båndregel:"
   foran på siden; strengen i JSON'en og hovedbogen er uændret.
 

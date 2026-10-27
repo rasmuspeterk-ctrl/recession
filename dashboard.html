@@ -399,6 +399,8 @@ button, input[type=file] { font: inherit; }
       el("p", { class: "lille", text: "Wf-skill sammenlignes kun inden for samme panel. De afviste kandidater er målt på panelet t.o.m. 2023Q2 og sammenlignes med referencerækken lige over dem." }),
       plbo ? el("p", { class: "lille", text: bootTekst(plbo, `oracle-fri, ${plbo.n_origins} origins`) }) : null,
       plb ? el("p", { class: "lille", text: bootTekst(plb, "orakel-censureret") + (plbo ? "" : " Det oracle-fri interval afventer.") }) : null,
+      d.diagnostik && d.diagnostik.uscorede && d.diagnostik.uscorede.konvention_bey
+        ? el("p", { class: "lille", text: "Spec 7A: konventionsdiagnostikken (3m-benet på obligationsækvivalent basis) findes i diagnostik.json. Den er uscoret og et ubetinget dagsordenspunkt ved refitten — ikke P." }) : null,
       gt.note ? el("p", { class: "lille", text: (gt.fuldmodel_wf !== undefined && gt.curve_only_wf !== undefined
         ? `Gaten: curve-only minus F5 = ${fortegn(gt.curve_only_wf - gt.fuldmodel_wf, 2)} pp, orakel-censureret fuld sti. `
         : "Gaten: ") + T(gt.note) }) : null));
