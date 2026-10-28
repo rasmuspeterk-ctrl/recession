@@ -1,0 +1,19 @@
+**Claude Fable 5.1 — Round 3**
+
+**Corrections first.** The secretary's two fact checks against me are right. (i) The fit ends 2024Q1, so the sample holds six zero-labelled inversion-period origins (2022Q4–2024Q1, curve ≈ min12) and none of the re-steepening. My "resolved zeros through 2025Q3" was wrong and my ≤2022Q3 disclosure fit was built on it. (ii) "Stationary bootstrap, mean block 8 = walk-forward convention" was not an existing convention; the repo's only convention is the episode-block bootstrap, seed 42. Both withdrawn. The framing of my positions is otherwise accurate.
+
+**D1 — shadow at all.** Yes. A state that anyone can recompute from FRED forever records nothing about what was believed when; only a fitted forecast tied to a vintage does. Compromise: Claude's hash commitment answers Grok's "monitoring number beside a live P" — nothing with a percent sign is published. I would vote against a text with no shadow, but I will not call that a veto if Grok can live with a hashed, unpublished one.
+
+**D2 — storage.** Move from (a) to (c). My objection to (b) — a diary — is met by a public sha256 per row. Conditions I need in the spec: canonical serialisation of the hashed line (row id, fit-vintage id, `curve_min12`, `p_hukommelse`, snapshot hash) so a reveal is verifiable byte-for-byte; the hash written in the same commit as the ledger row; one line, one hash, no alternates. `curve_min12` itself may stay public — it carries no belief. **Veto:** a private file with no public commitment.
+
+**D3 — scored rule now.** I concede (a), on the matrix's fact: the four block lengths were four new choices and I supplied one of them. What I need written now, as constraints not a bar: sealed before the first onset it counts; ≥ 2 post-sealing onsets; quarterly origins; comparator = operational P from the identical vintage (the matrix shows no separate control is needed); Kimi's fixed stopping rule; the shadow file stays hashed until that council convenes; the repo's episode-block bootstrap, seed 42, named as the default procedure so block length is never shopped. Evidence that would move me back to pinning a number: a showing that a 2028 council cannot credibly seal before onsets in the 2030s — I don't see one.
+
+**D4 — H justification.** Sol is right that backward memory and forward label are distinct quantities; equality at 12 is a coincidence, not identification. Spec text: operative reason is pre-existence (v4); the label-horizon equality recorded as a mnemonic only; E2's three values beside it; "chosen knowing them." I can live with pre-existence alone.
+
+**D5 — ≤2022Q3 fit.** Withdrawn; premise was false. Replacement disclosure, one sentence: the fit sample contains six zero-labelled origins inside the 2022–24 inversion and no origin after it; the 2024Q2+ re-steepening is unresolved and absent.
+
+**D6 — live value.** (b): live trailing month as month 12 plus the 11 previous published months, mirroring exactly how P's live input relates to its fit input. Sol's "new feature" charge applies equally to P's own live curve. I accept (a) if the council prefers; it must be pinned either way and the logged value marked.
+
+**D7 — start.** November 2026, unchanged. With the number hashed, Grok's distribution objection is gone; what remains is Argon's point — a row written before an outcome is known is the only thing that makes any later evaluation prospective. Waiting to September 2027 risks the first row postdating a dated onset.
+
+**Would change my mind on D1/D7:** a demonstrated way to game the hash commitment that the same-commit, one-line-per-row rule does not close.

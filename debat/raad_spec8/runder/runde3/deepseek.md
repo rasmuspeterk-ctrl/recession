@@ -1,0 +1,15 @@
+Secretary’s framing is accurate. One clarification: on D5 I am **reject**, not silent — the proposed ≤2022Q3 fit rests on a false premise.
+
+**D1 — shadow probability at all.** Yes: one committed fitted shadow forecast, plus one matched curve-only control fitted on the identical snapshot/R/eligibility. A reconstructible state is no information; only a forecast tied to a freeze can ever answer the question prospectively. Compromise: I accept the single two-feature shadow without the matched control if the control is deemed too much apparatus, but then the spec must state that operational P confounds memory with refit timing.
+
+**D2 — storage.** No `p_hukommelse` or any other shadow probability field in a public `hovedbog.jsonl`. **VETO** a public probability field: if the ledger is distributed, “unscored” does not stop it becoming the real P. Compromise I can live with: Claude’s hash commitment — `skygge_sha256` in the public row, the forecast line in a git-ignored append-only file, revealed only at evaluation. A private companion archive is also acceptable. Evidence that would change my mind: a sealed access control proving `hovedbog.jsonl` is not public or user-rendered.
+
+**D3 — scored rule.** No scored comparison or pinned 1.96·SE/bootstrap bar in this spec. Two onsets cannot resolve MDE80 ≈ 30 pp, and four block lengths are four tests. Compromise: I accept Kimi’s descriptive agenda screen — quarterly origins only, fixed stopping rule at the second dated onset, no significance claim and no automatic inference — but not a confirmatory threshold. **VETO** a confirmatory superiority test pinned now. Evidence that would change my mind: a future council seals a bar after the number of post-sealing origins and block structure can be justified against an independent out-of-sample dataset, not this cycle.
+
+**D4 — H justification.** Pre-existence of `curve_min12` is the only tie-breaker; the label-horizon equality is a construction provenance, not statistical validation. I will not veto the label-horizon sentence if the spec states both rationales were chosen after seeing E2 and that H=12 is blind to 1957, 1960, 1990 and the current 22-month lag.
+
+**D5 — ≤2022Q3 disclosure fit.** Reject. The fit sample ends 2024Q1, so the premise “resolved zeros through 2025Q3” is wrong; adding a post-hoc cutoff manufactures a second model. Compromise: print the actual fit-sample composition (including 2022Q4–2024Q1 inversion-period zeros), standardised-feature correlation, and both coefficients. No second coefficient vector.
+
+**D6 — live value.** Use the v4 object exactly: minimum of the last 12 **published monthly** GS10 − TB3MS values, ≥ 6 observations, no trailing-daily mixing. Compromise: if no complete calendar month exists in the log window, use the latest available monthly vintage and log the vintage ID.
+
+**D7 — start.** Yes, November 2026. First row is sealed and hashed before generation. Grok’s objection confuses recording an input state with using it as evidence; pre-2027 rows remain audit-only. Compromise: start at the first row where the frozen monthly `curve_min12` is available, with no backfill.

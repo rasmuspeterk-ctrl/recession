@@ -94,11 +94,12 @@ tripwires out of the ledger's ignition column (the council's R3), a preregistere
 | [RAADETS_V501.md](RAADETS_V501.md) | The council's consensus on v5.0.1 — the first recalibration (4/4, 19 Sept 2026) |
 | [RAADETS_2027.md](RAADETS_2027.md) | The council's consensus on the agenda for the September 2027 refit (7/7, 15 Oct 2026) |
 | [RAADETS_SPEC7.md](RAADETS_SPEC7.md) | The council's consensus on the external reviews, the presentation fixes and spec 7 (rate convention, expectations component) (7/7, 27 Oct 2026) |
+| [RAADETS_SPEC8.md](RAADETS_SPEC8.md) | The council's consensus on spec 8: a hash-committed memory shadow model beside P, never in it (7/7, 29 Oct 2026) |
 | [REVIEW-2026-10-15.md](REVIEW-2026-10-15.md) | The code review of the whole setup (85 findings) |
 | [TRIGGER-ATLAS.md](TRIGGER-ATLAS.md) | Swarm-simulated recession channels and tripwires — narrative context, not an input to P |
 | [DASHBOARD-BRIEF.md](DASHBOARD-BRIEF.md) | Design rules for a dashboard that cannot oversell (Danish) |
 | [dashboard.html](dashboard.html) | The dashboard: one self-contained page that reads `dashboard.json` from the same folder (`python -m http.server` in the repository root, open `/dashboard.html`; opened from disk, choose the file in the page) |
-| [debat/](debat/) | Transcripts of the council debates (blueprint, v5.0.1, 2027 and spec 7; the grand review's rounds A+B were not archived — see RAADETS_REVIEW.md) |
+| [debat/](debat/) | Transcripts of the council debates (blueprint, v5.0.1, 2027, spec 7 and spec 8; the grand review's rounds A+B were not archived — see RAADETS_REVIEW.md) |
 | [mirofish-sim/](mirofish-sim/) | Raw data and summaries of the swarm simulations |
 | [v4/](v4/) | The predecessor |
 

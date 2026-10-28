@@ -1,0 +1,55 @@
+{
+ "id": "gen-1793229041-w4zQGoNFBA9PlknpK9aK",
+ "object": "chat.completion",
+ "created": 1793229041,
+ "model": "openai/gpt-6.1-sol-pro",
+ "provider": "OpenAI",
+ "system_fingerprint": null,
+ "service_tier": "default",
+ "choices": [
+  {
+   "index": 0,
+   "logprobs": null,
+   "finish_reason": "stop",
+   "native_finish_reason": "completed",
+   "message": {
+    "role": "assistant",
+    "content": "VOTE: APPROVE\n\nThe draft satisfies my requirements: operational P remains untouched; one fixed shadow specification; public hash commitments rather than published shadow probabilities; no second cutoff fit; and no retrospective conversion of tracking into confirmatory evidence.\n\nThe post-hoc choices in Q1\u2013Q6 are acceptable **as instrumentation, not validation**. Pre-existing `curve_min12` limits discretion; it does not establish that twelve months is economically optimal.\n\nThree non-blocking reservations for the record:\n\n1. **\u201cBlind\u201d describes the memory feature, not the complete forecast.** The two-feature model can assign recession risk without a prior inversion through its current-curve term and intercept. Likewise, it cannot attribute current risk to the expired 2022\u201324 inversion through `curve_min12`, but its prospective forecasts can still be recorded during this cycle. \u201cCannot speak to the current cycle\u201d is a restriction on evidentiary interpretation, not a mathematical property of the model.\n\n2. **MDE80 \u2248 30 percentage points belongs to the historical evaluation design.** It is not a power calculation for an unknown future sample. Two post-sealing onsets establish minimum eligibility, not adequate power. The draft correctly authorises neither a significance threshold nor an inference from failure to outperform.\n\n3. **The hash provides integrity, not complete forecast secrecy.** A secret nonce prevents recovering the committed record through probability guessing. It does not prevent independently calculating the shadow probability if coefficients, scaling, code and inputs are public. I accept the distribution compromise as prohibiting publication or rendering of the shadow probability\u2014not as guaranteeing that nobody can reconstruct it. Private archive access and backups must preserve the committed bytes.",
+    "refusal": null,
+    "reasoning": null,
+    "reasoning_details": [
+     {
+      "type": "reasoning.encrypted",
+      "data": "gAAAAABq4oEEMgib0cTMO_97aHLa0OOENOnEG-7FL8hyeMWL6Gi-KRCGXfoEcy4rRosCYF75oY3fw95uoL3FEip5FtzIwNqFEQWlwHh5BvAtzMD_i7I0naDv5H40Xxgy31uwMDfWOWoCmGopigUIxwCSYH81-YRxCDwDSq8S69oUy13a6AWRnwwIrxUFrqmyW5F3M_d3qiOpOWEsLLdHhN4nLmwgY9sUb6zAC5vde0pQ38zxYAwcFmyJcgsFXQd6HUcTPIGbSxBqrNRx-pmc3CAsIdgwCDoWunFfCj38F2kvubh4hpXOh0zZKzjXybAvnv1F-UaWGmU1PGxKT8KvYqsmW90Q8hQv703PXEGFToebuTP5khI3czSunq571pyMljaOBH6YGm6QJQ7xnsWAd3IZbQTNED2QtCwFzcusBQ8pD38OUQV6HC7YPVuhwEsm3HodaEyxgHGWCR20W4Y8mzgMZFJkamScJPi89JJKIiKFACDy2J6c5fObF4maz-0EwnetT3PSPY3o9o4dVE8SfsFL_v9gOuh32O1mmCGDGB3y9TJ2GvyHOur2Dp23djUw3xMdkQzFPQ15QKA6msN2QE1ptZfl8RtTemDNYDwEf9pVFUeah65oEckwzHJYh0xH7IteuotdrxYUk-coUcJaUnqRR1ahA2a69ur678xXuhlUOXWg-Z45xr1id0fVusnlQiSAJysXnwUsReqwqAY4KJ48QMMeQrJSWriOg0xXlyZ_Zy4y-4W0SxZs5Rv_aVa7JpQxC-dfHi8lqOm76AY1T8MZZPUV2GKbVWt-xn3mVd4ypFUPuc288ZU4PHkTzMizBa0uNFXCFihU_ToI9eRVwTWVlfmMew5vkhPTYLgS8pJvtuoEXMLuqgwCm0dcUsgS6rHwW34tduQVl9FLtOUTnRJTPvOnyZ7EIOdv-3jh6Ir2V6PUPE94FJJVUZ9rIh02hY-x6JCMkfoXxdacSWcPCVDO1lAZvFMFtN4NKQpUShu8D_ykv_zkbfonTINRylRnOkQsIks3wwgUPunBVSPP-KUz3-bRGSAvCNSM0b0axtq06mTSVOdm2sw3QICvbSgkyGbJF5kkzezg6_zVzppY3VamhyC1M444wVmHB5FlPfSfI-_2UCBZz_nXIuV0QJTJhLtvZCgwOAGvkG84Sx9fibygmkXhLwB329BC3b-AJVe5f3g2olaDtVfTxt_376pe3828yNOS9sRDnFNHdbjK_f9ah62ELb4KTT4lC8atgvqeWDKh7QuE4ZjZci4EX5T3thi83L-wVcQ2-yPUv_wHxsXxhONR2yEY3_TYThO77ADGpEfWAuDcXLO0B2-uo8YznMRbvAnw1625LJx3ljwDE3IJfXr8LKROM-ZbqqzEvTghX2pwPcmvxxEejq-imNyFFQA-JCSqUT05rexLhrnUn0bXCSv_UJIHxarE45nBYHtyC4_FXr6yAgHq4O3n3_u4emu2ePv8Eo9jw9SW-ChaFhAP4qjRYyqJ_Pwbs8EWbGif3FCNvlubAlzJPol_XUi_1qOgzQo17zve_kwbN7Qv-Xvtkuni1zZ6JZS7jP3G_3YBbD8m-0B6a5nQiDFaTUYH1SBN4lBkfv3t3Ln7k_aR-ZyPZyaomkaUZH1relVG5vQeeCGoJlyOTuCMBfPbgoZUVr0UqKJ-qI74PUv-3FS9HJetXY1us0lTo7NbzGGqxePUaXeFXetoJs2QZpPT3VQGH3X1RdK10OczAyt905X33g1Ei7YxLveJLZG4J_D-hepsWiWMFLOIHz58xxOk3JEk4u0SvR_-lnbnWvPGv3_9yaNowIdqy44ghDrLzBl8A14BtsjLxHwvAyUYdqt4H59fVwqDtkwNplzSEiEZ2pgE3cCAKmxeCNXZCgw1aASvBsyv8NmiJnx9xaNibUlYCjeMPDfAxi-XDH7CyVFwo2JTE8ZxYwjwomOkNA2g_HhX-pHpW2cq5APXGL76Nrx_LagepXZmHYDkPfaS2vNOjr85p06jODjYjlACzHZQwlx__ihU1NjOelvi-yYvheq1elHz8QunyCe-oBm8WWdYnEgIsrXUcJTHbeqBex4Fqh3L2dwabMGbRSMgThZ-0jAflOYSZ8z9pwvSqudthO6S7ResRYtmUP1n4XsgyvD-FKMcLl5hE3lgRss_S1rIWZYYqSTW4vpGd2jqwMeGdT4rtwywt-x0AUH1zMfdX_rgD_ZzH_yz0FFwX2dGRn6fTAL7vOlbQLsqqDLVj_6nC147q6zbncODM7F2F-4e_qqnvxXXNbpf7H4fT53iBuG0fgS6HpPpJ_muzQisNQvWL0NlQW7gVnUS-OOV0i_5I4hytMx6VdUda7e22qvRuZlebrQ22aRfX_GHw8V6MwkHAEPjsytgQa3kDA78uDr13LqNSfRy8LP4KCOAjnn-z5uHI_u-4hZ9i8aHRjii6xck2Ai6siLYf1ks7-mc5wzkL5K_rwZsQa3rAHQ8ygJtDvnQpAqxKE2PyX4vKS3ZtH_H5NlaVGmQW4EKNcMw1rLlUdmaiekJ0ViJnjWNYXr31AyKnH6nK-z0zVTdLRgg3ZXOowjBproSyUHP4bK1vhqivX6b6X3cpuMXLD1kaKfDMZId0V3drsSl6jhGvveLBYtSyiDp2yQgsSDlmCgGVkIJhQMHSHd64UM3RTDOLbL0jIG6RZwYpab0KK3Ds3fiy72bKd10S5o_fTHh_DlBnhEPSiEelsZdNXqRAa9ywWjyUIyNIBx5cPaURcoChXrqW9mVeI6rRR2bZakpjSu3Mr2SKBqgGke6g-cqpVtYL2Fur1zxI8pnCI4WQh5k2q4r7kaMQIhj34su_mFfVscgCPKFJoPIIYQNYHstEGNpvEBNdRMXmYDAW6_TY5CHgYfsAFTqjUaiHxrRbYXx3o1RU1XH0V3Qh2c-2t5qGfYN9hhGCrkZXk6ksdrFYeBuG7KXVCd4OJ6jC2_8uoLhQUEDV4JUIni9Fh1PKbEUVbkwX91Ep0zvOIXWmujWpU2WxPwW_1P9NOfDqZ_pKD2NP-4_uerafPqOOBIIueLLHpLdL88SuIX8dZzkPAeXWeueZp4_xgAjpUX33JBMGqbrzsfB94u_qjHey_VCbSUyl8zaz5lSknX1FJvhJF1KnDqOZ2_xlKTuYITGykEMTaSGepV5bo3LaApBVwluO44EooAUha4-JgRUN5G6vwNuMuOftnYXfo884bVeg943Mxik84Xb_2rgsRV_t6fJRYQGiUqeqchsIJSgE-x8hUyCdmSqJt4zVbj5mwGtX6GXS18h2phx6hPHNwc0HEdNJdOOruifIGbZF4RGu2M_YFTNR8ohRkz3TdqL-OKBsYuxTQFYJwJ3SWH5VYNFcQN39IGWuqAX4iuFQQp_n9xuyijIA2RakOEIve4V4KI44AUl26jW2HbXD0sfL-yan6cz4lBog8EeC12tO58_8NGiwcWg6LPM1G0PBkTwcHfZZlFLU5sKUqOaFIzKMm9ptvUNifG8Bzc44mhrMtIvqIXMiVSORRCruIf8exN6BMj0VKf3lthXssIOSICiwhlGcrufK3uhGEZtee3Gqc7JnNSrkws61n0f8U4nDJAwvb2jKEwKP1ozupVUbagYCpfKQBX6TDKegheIwi34mlGTkBP9daYlYoppuaMIeZqO997DSLNMr6I2sXffoRqs2anaXIXGXaqYEFmB9mooQaEm0YZ-C_JboOPgveblqYnJjH_vh4C2DJ6z-OeqUStY75J87KQg4RU-TyZK8NLlkaBzNIuE2e_qAsSlFJ9ZnJFQWzB_EisfYmU_38CXRc-m2P5ivhNDCUexurKS5AqEeYyN8zb78qbgC2spKECCZloqswGuWClWlS9L_yMAr2kMmreG4hmnY5UNiYEJeL9S00Qp3iUU5SkD-jjTvu9J3hQl4CMrXvKrKamhZBaSy0EmuuhEHv7uytq9fzX7fJZvhEqC60QX0FKR17ITpOhkbU-5_HLPMPg2rbvcAo3NIKNzfzGyiNVuA4MvsMClgnEdnM1Qlo7GM1de6f5qEjGBd50f-n-2aPsuwKC3pGa8SFpa-9ous7HPEGzn2sNa0t5pw0ibFFgXh_WLtgXOIMaUoGkX_EYVL0_GlV7i0QmkKQDK090jcX9Ap03x1IcUMEh9A3mUdD9fIncczuos8Q25lRfJ52b4iED9JCt-mzq3MKAc5PL3iynS4YupngYDiRPUXtf3CZWE5aUNVA7wS-yy9hXqV5zGya45Ww6mBvwftvBXlkKwNij-GiXSO7x14RTRJKM8p4Q-vpXx3BDgZQ974m56yWzMqhExac3pbRDoqzjEAx6zXYOxX_qtdGJls-bG0wfU5LewhyBIyxkkfgTUb045aq2qJifoSS69SZdWT5-UhGt1Db_wslUSqRTbaJPy8v_yej4pnYttlaHdM_e4fU2U-Q7lEIbhwiN5Rvlpjn-wWfhrhziI1viCRLdYJZqc__I=.eyJlbmRwb2ludF9zbHVnIjoib3BlbmFpL2dwdC02LjEtc29sLXByby0yMDI2MDkyOXxvcGVuYWkifQ",
+      "format": "openai-responses-v1",
+      "id": "rs_0cda7e84cf5140df016ae281041cb487d18eaa88ac3f4f555b",
+      "index": 0
+     }
+    ]
+   }
+  }
+ ],
+ "usage": {
+  "prompt_tokens": 34297,
+  "completion_tokens": 1125,
+  "total_tokens": 35422,
+  "cost": 0.0628111,
+  "is_byok": false,
+  "prompt_tokens_details": {
+   "cached_tokens": 11726,
+   "cache_write_tokens": 10493,
+   "audio_tokens": 0,
+   "video_tokens": 0
+  },
+  "cost_details": {
+   "upstream_inference_cost": 0.0628111,
+   "upstream_inference_prompt_cost": 0.0515611,
+   "upstream_inference_completions_cost": 0.01125
+  },
+  "completion_tokens_details": {
+   "reasoning_tokens": 452,
+   "image_tokens": 0,
+   "audio_tokens": 0
+  }
+ }
+}
