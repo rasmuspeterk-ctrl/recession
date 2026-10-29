@@ -33,6 +33,7 @@ import calibrate as C
 import spine as SP
 import ablation2_nber as A2
 import protokol2027 as P27
+import skygge as SK
 
 HERE = Path(__file__).parent
 STALE_DAYS = 40
@@ -1445,10 +1446,16 @@ def main():
                                                  p_maanedligt_fit=round(p_us["p_maanedligt_fit"], 6), vindue=vindue,
                                                  note="uscoret (RAADETS_2027 §10.4): raekken scores ikke (noeglen §1 d); "
                                                       "P og det endelige udfald foeres")
+            # spec 8 (RAADETS_SPEC8 §3): skyggelinjen i den private fil; recorden faar kun hashen (eller grunden)
+            sk_felter, sk_besked = SK.hovedbogsfelter(HERE, snap, meta, W, x["curve"], I, vindue)
+            if sk_felter:
+                rec.update(sk_felter)
             with (logf.parent / "hovedbog.jsonl").open("a", encoding="utf-8", newline="\n") as fh:
                 fh.write(json.dumps(rec, ensure_ascii=False, sort_keys=True) + "\n")
             print(f"   LOGGET som raekke {len(rows) + len(mangler) + 1}: {idag_s}, P {p_op*100:.1f}%, dom '{dom_ord}'."
                   + (f" ({len(mangler)} 'ikke logget'-raekke(r) foer: {', '.join(mangler)})" if mangler else ""))
+            if sk_besked:
+                print(f"   {sk_besked}")
     elif blok:
         print("   (en --log i dag ville blive afvist: " + "; ".join(blok) + ")")
 

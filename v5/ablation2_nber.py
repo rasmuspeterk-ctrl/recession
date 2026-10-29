@@ -187,6 +187,27 @@ def i_annonceret_recession(usrec, eps, avail, idx):
             return onset, avail[onset]
     return None
 
+KURVE_UNIVERS = (["curve"], ["curve", "curve_min12"])   # curve-only og spec 8's skyggemodel deler univers
+
+
+def maanedspanel(snap, feats, spine_file=None, tb3_omregning=None):
+    """Det maanedlige panel bag build_dataset -> (keys, M) fra calibrate.build_monthly. Spec 8 aflaeser
+    skyggemodellens live curve_min12 her, saa live-vaerdien bygges ad samme vej som fittets kolonne."""
+    shiller = C.read_shiller(snap, spine_file)
+    gs10 = C.read_fred(snap, "GS10")
+    tb3ms = C.read_fred(snap, "TB3MS")
+    if tb3_omregning is not None:
+        tb3ms = {k: tb3_omregning(v) for k, v in tb3ms.items()}
+    if spine_file is None and list(feats) in KURVE_UNIVERS:
+        # Curve-only maa aldrig afhaenge af CAPE-kilden (§1.7, §2): er rygraden trunkeret (multpl/SP500 nede), ville
+        # maanedsindekset ende med den, og en refit stille falde tilbage til det gamle panel (v5.0-vaegtene, n_obs 264).
+        # Indekset forlaenges derfor med GS10/TB3MS-maanederne efter rygradens sidste maaned (rygrad-felterne NaN).
+        # Med en frisk rygrad tilfoejes intet (samme sidste maaned); legacy-replayet (spine_file) roeres ikke.
+        sidst = shiller[-1][0] if shiller else (0, 0)
+        shiller = shiller + [(k, np.nan, np.nan, np.nan, np.nan) for k in sorted(set(gs10) & set(tb3ms)) if k > sidst]
+    return C.build_monthly(shiller, gs10, tb3ms)
+
+
 def build_dataset(snap, feats=None, spine_file=None, tb3_omregning=None):
     """Raekkeuniverset (RAADETS_V501 §2): start = protokolkonstanten C.START_QK, teknisk label
     defineret (trin 1's univers), og modellens EGNE features ikke-NaN — foer: alle BASE10, hvilket
@@ -194,20 +215,8 @@ def build_dataset(snap, feats=None, spine_file=None, tb3_omregning=None):
     `spine_file` tvinger en rygrad (legacy-replay: 'shiller_yale_2023-09.csv'). `tb3_omregning` omregner hver
     maaneds TB3MS, foer kurven bygges (spec 7A: protokol2027.bey); None = den operationelle diskontokonvention."""
     feats = list(feats or C.F5)
-    shiller = C.read_shiller(snap, spine_file)
-    gs10 = C.read_fred(snap, "GS10")
-    tb3ms = C.read_fred(snap, "TB3MS")
-    if tb3_omregning is not None:
-        tb3ms = {k: tb3_omregning(v) for k, v in tb3ms.items()}
+    keys, M = maanedspanel(snap, feats, spine_file, tb3_omregning)
     gdp_g = C.read_fred(snap, "A191RL1Q225SBEA")
-    if spine_file is None and feats == ["curve"]:
-        # Curve-only maa aldrig afhaenge af CAPE-kilden (§1.7, §2): er rygraden trunkeret (multpl/SP500 nede), ville
-        # maanedsindekset ende med den, og en refit stille falde tilbage til det gamle panel (v5.0-vaegtene, n_obs 264).
-        # Indekset forlaenges derfor med GS10/TB3MS-maanederne efter rygradens sidste maaned (rygrad-felterne NaN).
-        # Med en frisk rygrad tilfoejes intet (samme sidste maaned); legacy-replayet (spine_file) roeres ikke.
-        sidst = shiller[-1][0] if shiller else (0, 0)
-        shiller = shiller + [(k, np.nan, np.nan, np.nan, np.nan) for k in sorted(set(gs10) & set(tb3ms)) if k > sidst]
-    keys, M = C.build_monthly(shiller, gs10, tb3ms)
     qkeys, cols = C.to_quarterly(keys, M, gdp_g)
     rec_now, Y_tek = C.make_labels(cols)          # teknisk label til diagnostik
 

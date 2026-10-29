@@ -28,3 +28,7 @@ v5/calibrate_resultat.json
 
 # lokal Claude-konfiguration (F56)
 .claude/
+
+# spec 8 (RAADETS_SPEC8 §3): skyggemodellens private, append-only linjer — kun deres sha256 staar i hovedbog.jsonl.
+# Committes ALDRIG (det ville publicere p_hukommelse); backup uden for repoet (skygge.py, MOTOR_SKYGGE_BACKUP).
+skygge_hukommelse.jsonl

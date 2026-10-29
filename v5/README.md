@@ -18,7 +18,7 @@ blev til, ikke hvordan den koeres i dag.
 | `calibrate.py` | Hjaelpefunktioner for hele kaeden (read_fred, live_kurve, fit ...). Som script HISTORISK (trin 1): skriver `calibrate_resultat.json`; `weights.json` kun med `--overskriv` (bevidst) |
 | `ablation2_nber.py` | NBER-labelen, annonceringstabellen, USREC-krydstjekket, eligibility og den forklarede origin-audit. Som script (`--promote`) HISTORISK — koer ikke i drift |
 | `ablation3/4/7/8_*.py`, `audit5_alfred.py` | Historiske, afsluttede tests (frekvens, features, curve+cape, AWHMAN, ALFRED) — koer ikke i drift |
-| `test_v5.py` | 238 tests, stdlib unittest, ingen netvaerk (~4 min) |
+| `test_v5.py` | 248 tests, stdlib unittest, ingen netvaerk (~4 min) |
 | `nber_announcements.csv` | NBER's annonceringsdatoer (top/bund) — se *NBER-vedligehold* nedenfor |
 | `manual/` | `manual.json` (S&P vs 52u-top, live-CAPE, marginlaan y/y + deres datoer), `shiller_yale_2023-09.csv` (uforanderlig Yale-kopi), `seam_check_2023.json`, evt. `outliers_accepteret.json` |
 | `kalibreringer/` | Kalibreringsmanifester (v5.0.1 §3.3): et pr. kalibrering, index.json, legacy_mapping.json |
@@ -26,6 +26,7 @@ blev til, ikke hvordan den koeres i dag.
 | `ablation9_nested.py` | PRAEREGISTRERET nested lambda-/modelselektion (G1.1/G1.2): koerer kun naar filen er committet og pushet; publiceres ved siden af, aendrer intet |
 | `protokol2027.py`, `spec2027/` | RAADETS_2027's regler fra september-refitten 2027, hver efter en forseglet spec (sha256 laast i koden): gate, L_R-audit, indholdstrigger, maanedligt fit + uscorede felter, live-censureringens regeltekst, skill-saetningen ved refitten. Virker kun for kalibreringer med refit-maaned >= 2027-09 |
 | `replay2027.py` | Den konfigurationsspecifikke hovedbogs-replay (september + hash + indholdstrigger) og den re-afledte styrkeklausul — koeres ved refitten 2027 |
+| `skygge.py` | Spec 8 (RAADETS_SPEC8): hukommelses-skyggemodellen (curve + curve_min12) uden operationel myndighed. `--log` skriver hver raekkes linje i den private `../skygge_hukommelse.jsonl` (git-ignoreret, backup uden for repoet) og kun dens sha256 i hovedbog.jsonl; `--fit` ved refitten (`kalibreringer/skygge_<manifest>.json`); `--verificer` tjekker kompletheden. Viser aldrig skyggens tal |
 
 ## Maanedligt ritual (~5 min) — logdag: foerste hverdag fra den 10. (+ 3 dage)
 
@@ -45,7 +46,8 @@ python fetch.py                  # hent + rygrad + guards + diff-tjek med oejnen
                                  # BEA's BNP-kalender + ALFRED (meta.json -> "bnp_kalender"; --uden-bnp-kalender)
 python motor.py --log --json     # aflaesning, prospektiv raekke i ../LOG.md + ../hovedbog.jsonl, dashboard.json
 python analyser/b3_revisionsaudit.py   # spec 7B: Kim-Wright-revisionsaudit (fra 2026-11-raekken; afgoerende ved 12. aargang)
-python -m unittest test_v5       # 238 tests
+python skygge.py --verificer     # spec 8: hver skygge-hash i hovedbog.jsonl har en linje (privat + backup); viser aldrig tal
+python -m unittest test_v5       # 248 tests
 ```
 Hovedbogen (`../LOG.md`) er den eneste fuldt prospektive test: een raekke pr. maaned, skrevet FOER
 udfaldet kendes; historiske raekker roeres aldrig. Den beskytter mod look-ahead, men er statistisk
@@ -70,6 +72,7 @@ indhold, ikke bytes), saa linjeskift og formatering ikke udloeser en falsk dater
 # foerst, ved en NY kalibrering: bump VERSION i finalize6.py (5.0.1 -> 5.0.2 ...) — finalize6 stopper ellers foer noget skrives (§3.3)
 python finalize6.py      # gulv + forklaret audit mod forrige manifest + bro + manifest -> weights.json
 python diagnostik.py     # §4-diagnostik -> diagnostik.json (~95 s)
+python skygge.py --fit   # spec 8 §2.4: skyggefittet til den nye kalibrering (identitet asserteret; koefficienterne printes)
 python motor.py --json   # verificer; naeste --log-raekke faar automatisk bro-noten
 ```
 **Fra september-refitten 2027 (RAADETS_2027; refit-maaned >= 2027-09)** koerer finalize6 desuden den ensidede gate
@@ -832,9 +835,21 @@ laases i `protokol2027.SPECS`. Intet af det roerer P foer refitten.
 | SPEC7 §2 | Del B: ingen historisk test af forventningsdelen; prospektiv Kim-Wright-revisionsaudit over 12 hovedbogs-snapshots fra 2026-11-raekken; kolonne kun ved max revision af E < 10bp (visningsstabilitet) OG raadets godkendelse | [spec2027/7B_forventningsdel_audit.md](spec2027/7B_forventningsdel_audit.md) (d1049ac) | `analyser/b3_revisionsaudit.py` (aargange = hovedbogs-snapshots efter 2026-10-27, 12 i traek, forfra ved hul; markedsrenter fra aargang 1; kravet vurderes foerst ved 12) — testet paa syntetiske data | gennemfoert (koeres maanedligt fra 2026-11-raekken; afgoerende efter 12. aargang, ca. 2027-10) |
 | husholdning | BNP-monitoren: BEA's udgivelseskalender (FRED release 53) + ALFRED, saa "foerste print" kan siges verificeret (Fable, Argon, forbehold runde 4). `fetch.fetch_bnp_kalender` -> `meta.json` "bnp_kalender" (udgivelsesdage, advance-dag og -vaerdi pr. kvartal, verificeret som den foerste udgivelse, hvor kvartalet findes i ALFRED-vintagen); `spine.bnp_vintage` taeller udgivelser fra advance til vores foerste snapshot: advance / andet / tredje estimat / senere revision. Ikke-veto; uden kalender viser monitoren kun "foerst set af os" | — | `motor.bnp_tekst` | gennemfoert (vises fra naeste fetch) |
 
+**Tilfoejet af RAADETS_SPEC8 (7/7, 2026-10-29).** Spec'en er forseglet og pushet (b8ffcfe) foer koden; sha256
+laases i `protokol2027.SPECS`. Skyggemodellen er aldrig i P, baand, dom, gate, trigger, antaendingskolonnen, LOG.md
+eller paa dashboardet, heller ikke efter 2027 uden et nyt raad. Med 12 maaneders hukommelse kan den ikke sige noget
+om denne cyklus (curve_min12 = +0,24 ved 2026-09); den opbygger et forhaandsforpligtet spor for de kommende.
+
+| § | Hvad | Forseglet spec (commit) | Kode | Status |
+|---|---|---|---|---|
+| SPEC8 §2 | Skyggemodellen logit⁻¹(α + β₁·z(curve) + β₂·z(curve_min12)), fittet paa 72c3371d's snapshot 2026-09-19 og R 2026-09 med identiske 267 origins (asserteret); w −2,0932/−0,9111/−0,6883, korrelation +0,86 (β₂ daarligt bestemt) | [spec2027/8_hukommelse_skygge.md](spec2027/8_hukommelse_skygge.md) (b8ffcfe) | `skygge.fit_skygge` -> `kalibreringer/skygge_72c3371d.json` (fit-id d7b628afc85f); `A2.maanedspanel` deler curve-onlys univers | gennemfoert |
+| SPEC8 §3 | Hash-forpligtelse: hver raekke fra 2026-11-01 faar een kanonisk linje (nonce 256 bit) i den private, git-ignorerede `../skygge_hukommelse.jsonl`, spejlet til `MOTOR_SKYGGE_BACKUP` (ellers OneDrive\MOTOR-skygge-backup); hovedbog.jsonl faar kun `skygge_sha256` (eller `skygge_sha256: null` + `skygge_mangler`); motor printer aldrig p_hukommelse | samme | `skygge.hovedbogsfelter` (kaldt af `motor.py --log` efter LOG.md-raekken), `skygge.verificer` | gennemfoert (foerste linje ved novemberraekken 2026) |
+| SPEC8 §4 | Ingen scoret regel. Et senere raad forsegler den foer de onsets, den taeller (>= 2 efter forseglingen) | samme | — | intet at koere |
+
 **Ritualet ved september-refitten 2027** (efter NBER-vedligehold og maanedsritualets fetch): bump VERSION i finalize6.py;
 `python finalize6.py` (gate, L_R-audit, uscorede fit); `python diagnostik.py` (parret maanedlig diagnostik, nested λ
-oracle-fri, spec 7A's konventionsdiagnostik); `python replay2027.py` (replay + styrkeklausul); `python motor.py --log --json` i logvinduet; commit og push.
+oracle-fri, spec 7A's konventionsdiagnostik); `python replay2027.py` (replay + styrkeklausul); `python skygge.py --fit`
+(spec 8's skyggefit til den nye kalibrering); `python motor.py --log --json` i logvinduet; commit og push.
 Den parrede diagnostik og replayen publiceres uanset udfald, og F35-forudsigelsen ovenfor sammenlignes.
 
 ## Kontekst-protokollen 2026-10-24: raavarer, kreditkort og bolig (USA) + rettelser fra mellemlaesningen 2026-10-23

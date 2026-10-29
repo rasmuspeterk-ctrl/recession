@@ -23,6 +23,8 @@ R >= IKRAFT (2027-09). En kalibrering med R < IKRAFT (fx reproduktionen af 72c33
                             SPEC7 §1  3m-benet paa obligationsaekvivalent basis: uscoret diagnostik ved refitten
   spec2027/7B_forventningsdel_audit.md
                             SPEC7 §2  ingen historisk test af forventningsdelen; prospektiv KW-revisionsaudit
+  spec2027/8_hukommelse_skygge.md
+                            SPEC8     hash-forpligtet hukommelses-skyggemodel ved siden af P (skygge.py; fra 2026-11)
 
 Kun stdlib + numpy.
 """
@@ -48,6 +50,7 @@ SPECS = {
     "6_skill_saetning_refit.md": "42b5f63e1144b5de49f32ed61de6fbb554b6639405f3733fc3983ede4f00c1c0",
     "7A_konvention_bey.md": "fc43ef43c32eef6eb281a911ea63eb2c79385a3a069ff89b3dcdcd7fc2183295",      # RAADETS_SPEC7
     "7B_forventningsdel_audit.md": "0ceff66abafeac9d0a6d016b1e736168d434aa50fa4817c4864ed9a514c0c560",
+    "8_hukommelse_skygge.md": "9406453a557658afa6340e369c6819669856b609846a97436861f3eafdc57eda",       # RAADETS_SPEC8
 }
 
 Z_975, Z_80 = 1.959964, 0.841621   # spec 1 §4.1: 80 %-MDE = (z_0,975 + z_0,80) x SD_block (normalteori)

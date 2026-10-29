@@ -23,6 +23,8 @@ import numpy as np
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE))
 os.environ.setdefault("OPENROUTER_API_KEY", "test-noegle")     # debate.py kraever en noegle ved import
+_SKYGGE_BACKUP = tempfile.TemporaryDirectory(prefix="skygge_backup_test_")
+os.environ["MOTOR_SKYGGE_BACKUP"] = _SKYGGE_BACKUP.name       # spec 8: testene roerer aldrig brugerens rigtige backup
 sys.path.insert(0, str(HERE.parent / "debat"))
 
 import fetch as F
@@ -33,6 +35,7 @@ import debate as D
 import spine as S
 import ablation2_nber as A2
 import ablation4_features as A4
+import skygge as SK
 
 REAL_SNAP = sorted(d for d in C.RAW.iterdir() if d.is_dir() and C.snapshot_complete(d))[-1]
 
@@ -786,6 +789,30 @@ class TestMotor(unittest.TestCase):
         out2 = self._motor(["--log"])
         self.assertIn("--log AFVIST", out2); self.assertIn("allerede logget", out2)
         self.assertEqual(logf.read_text(encoding="utf-8").count(f"| {self.today} |"), 1)
+
+    def test_spec8_log_skriver_kun_hashen(self):
+        """Spec 8 §3: --log skriver skyggelinjen i den private fil i repo-roden og kun dens sha256 i hovedbog.jsonl;
+        p_hukommelse staar hverken i stdout, LOG.md, hovedbog.jsonl eller dashboard-JSON'en. curve_min12 er syntetisk,
+        saa testen beregner ikke skyggens rigtige live-tal."""
+        syn = dict(curve_min12=5.0, cutoff="2026-09", vindue="2025-10..2026-09", n_obs=12, uden_kurve=[])
+        with tempfile.TemporaryDirectory() as t, tempfile.TemporaryDirectory() as tb:
+            rod = Path(t); here = rod / "v5"; shutil.copytree(self.here, here)
+            (rod / "LOG.md").write_text("| logget | snapshot | P | baand | basisrate | dom | kurve | antaending | note |\n|---|\n",
+                                        encoding="utf-8")
+            with mock.patch.object(SK, "START", "2000-01-01"), mock.patch.object(SK, "live_min12", return_value=syn), \
+                 mock.patch.dict(os.environ, {"MOTOR_SKYGGE_BACKUP": tb}):
+                out = self._motor(["--log", "--json", str(rod / "d.json")], here=here)
+            self.assertIn("LOGGET som raekke 1", out); self.assertIn("skygge (spec 8): linje skrevet", out)
+            self.assertIn("backup ok", out)
+            rec = json.loads((rod / "hovedbog.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+            linjer = (rod / SK.PRIVAT).read_text(encoding="utf-8").splitlines()
+            self.assertEqual(len(linjer), 1); self.assertEqual(rec["skygge_sha256"], SK.sha(linjer[0]))
+            self.assertEqual((Path(tb) / SK.PRIVAT).read_text(encoding="utf-8").splitlines(), linjer)
+            p_s = json.loads(linjer[0])["p_hukommelse"]
+            for tekst in (out, (rod / "LOG.md").read_text(encoding="utf-8"), (rod / "hovedbog.jsonl").read_text(encoding="utf-8"),
+                          (rod / "d.json").read_text(encoding="utf-8")):
+                self.assertNotIn(p_s, tekst); self.assertNotIn("p_hukommelse", tekst); self.assertNotIn("curve_min12", tekst)
+            self.assertNotIn("skygge", (rod / "LOG.md").read_text(encoding="utf-8").lower())
 
     def test_log_afvises_naar_nyeste_snapshot_er_ubrugeligt(self):
         with tempfile.TemporaryDirectory() as t:
@@ -3396,6 +3423,161 @@ class TestBnpKalender(unittest.TestCase):
         self.assertEqual(kal["udgivelser"], ["2026-04-30", "2026-05-28", "2026-07-30", "2026-08-26"])   # 25/11 er ikke afholdt
         self.assertEqual(kal["advance"]["2026Q1"]["dato"], "2026-04-30")
         self.assertEqual(kal["advance"]["2026Q2"]["dato"], "2026-07-30")          # foerste udgivelse, hvor Q2 findes
+
+
+class TestSpec8Skygge(unittest.TestCase):
+    """Spec 8 (RAADETS_SPEC8): hash-forpligtet hukommelses-skyggemodel. Linjerne bygges paa syntetiske tal; ingen test
+    beregner skyggens rigtige live-tal. DeepSeek-forbeholdet: identitet og serialisering testes foer november."""
+
+    SYN = dict(curve_min12=2.0, cutoff="2026-10", vindue="2025-11..2026-10", n_obs=12, uden_kurve=[])
+    VINDUE = "2026-11..2027-10"
+
+    def _rod(self):
+        t = tempfile.TemporaryDirectory(); self.addCleanup(t.cleanup)
+        rod = Path(t.name) / "repo"; (rod / "v5" / "kalibreringer").mkdir(parents=True)
+        shutil.copy(SK.fit_fil(HERE, "72c3371d"), rod / "v5" / "kalibreringer")
+        return rod, rod / "v5", Path(t.name) / "backup"
+
+    def _felter(self, here, backup, dato=date(2026, 11, 10), manifest="72c3371d", kurve=3.0):
+        with mock.patch.object(SK, "live_min12", return_value=self.SYN), mock.patch.object(F6, "git_commit", lambda: "test"):
+            return SK.hovedbogsfelter(here, Path("2026-11-10"), {"snapshot_sha256": "ab" * 32}, {"manifest_hash": manifest},
+                                      kurve, dato, self.VINDUE, backup=backup)
+
+    def test_spec_forseglet_og_fittet_genskabes_med_identitet(self):
+        self.assertEqual(P27.kraev_forseglet(SK.SPEC), P27.SPECS[SK.SPEC])
+        fit = SK.fit_skygge()
+        self.assertEqual(fit, json.loads(SK.fit_fil(HERE, fit["manifest"]).read_text(encoding="utf-8")))
+        f0 = json.loads(SK.fit_fil(HERE, "72c3371d").read_text(encoding="utf-8"))   # = spec 8 §1, forseglet 2026-10-29
+        self.assertEqual((f0["n_obs"], f0["w"], f0["korrelation_fit"], f0["mu"], f0["sd"]),
+                         (267, [-2.0932, -0.9111, -0.6883], 0.8595, {"curve": 1.3733, "curve_min12": 0.9362},
+                          {"curve": 1.1495, "curve_min12": 1.0604}))
+        spec = (P27.SPEC_DIR / SK.SPEC).read_text(encoding="utf-8")
+        for v in ("| -2,0932 | -0,9111 | -0,6883 |", "| +1,3733 | +0,9362 |", "| +1,1495 | +1,0604 |", "**+0,8595**"):
+            self.assertIn(v, spec)
+
+    def test_identiteten_fejler_hoejlydt(self):
+        man = json.loads((HERE / "kalibreringer" / "manifest_72c3371d.json").read_text(encoding="utf-8"))
+        op = man["modeller"]["curve_only"]
+        mc = dict(_origins=man["origins"], w=op["w"], mu=op["mu"], sd=op["sd"], _y=np.array([o[2] for o in man["origins"]]))
+        SK.kraev_identitet(mc, dict(mc), man)
+        for mc_, ms_ in ((mc, dict(mc, _origins=man["origins"][:-1])), (dict(mc, w=[0.0, 0.0]), mc),
+                         (mc, dict(mc, _y=1 - mc["_y"]))):
+            with self.assertRaises(SystemExit) as cm:
+                SK.kraev_identitet(mc_, ms_, man)
+            self.assertIn("spec 8 §2.4", str(cm.exception))
+
+    def test_fit_filen_overskrives_aldrig(self):
+        rod, here, _ = self._rod()
+        fit = json.loads(SK.fit_fil(here, "72c3371d").read_text(encoding="utf-8"))
+        self.assertEqual(SK.skriv_fit(fit, here)[1], False)                       # identisk genfit: no-op
+        with self.assertRaises(SystemExit):
+            SK.skriv_fit(dict(fit, w=[0.0, 0.0, 0.0]), here)
+        with self.assertRaises(RuntimeError):                                    # indhold aendret uden nyt fit-id
+            SK.fit_fil(here, "72c3371d").write_text(json.dumps(dict(fit, w=[0.0, 0.0, 0.0])), encoding="utf-8")
+            SK.laes_fit(here, "72c3371d")
+
+    def test_kanonisk_serialisering(self):
+        a = dict(b="1.0000", a=dict(y="2", x="1"), n=3, l=["æ"])
+        self.assertEqual(SK.kanonisk(a), '{"a":{"x":"1","y":"2"},"b":"1.0000","l":["æ"],"n":3}')
+        self.assertEqual(SK.kanonisk(a), SK.kanonisk(dict(n=3, l=["æ"], a=dict(x="1", y="2"), b="1.0000")))
+        self.assertEqual(SK.sha(SK.kanonisk(a)), sha(SK.kanonisk(a).encode("utf-8")))
+        for raat in (dict(p=0.1), dict(p=[np.float64(0.1)]), dict(d=dict(p=1.5))):
+            with self.assertRaises(TypeError):
+                SK.kanonisk(raat)
+        self.assertEqual((SK.f4(0.24), SK.f4(-1.5), SK.f6(1 / 3)), ("0.2400", "-1.5000", "0.333333"))
+
+    def test_linjens_felter_nonce_og_p(self):
+        rod, here, _ = self._rod()
+        with mock.patch.object(SK, "live_min12", return_value=self.SYN):
+            l1, h1 = SK.lav_linje(here, Path("2026-11-10"), {"snapshot_sha256": "ab" * 32}, {"manifest_hash": "72c3371d"},
+                                  3.0, date(2026, 11, 10), self.VINDUE, kode="test")
+            l2, h2 = SK.lav_linje(here, Path("2026-11-10"), {"snapshot_sha256": "ab" * 32}, {"manifest_hash": "72c3371d"},
+                                  3.0, date(2026, 11, 10), self.VINDUE, kode="test")
+        r = json.loads(l1)
+        self.assertEqual(set(r), {"format", "raekke", "origin", "vindue", "kurve", "curve_min12", "curve_min12_cutoff",
+                                  "curve_min12_vindue", "p_hukommelse", "fit", "manifest", "skalering", "kode", "snapshot",
+                                  "snapshot_sha256", "mangler", "nonce"})
+        self.assertEqual((r["raekke"], r["origin"], r["kurve"], r["curve_min12"], r["fit"]),
+                         ("2026-11-10", "2026-10", "3.0000", "2.0000", "d7b628afc85f"))
+        fit = SK.laes_fit(here, "72c3371d")
+        self.assertEqual(r["p_hukommelse"], SK.f6(F6.p_af(fit, {"curve": 3.0, "curve_min12": 2.0})))
+        self.assertEqual(SK.kanonisk(r), l1); self.assertEqual(h1, SK.sha(l1))
+        self.assertRegex(r["nonce"], r"^[0-9a-f]{64}$")                         # 256 bit >= §3.1's 128
+        self.assertNotEqual(r["nonce"], json.loads(l2)["nonce"]); self.assertNotEqual(h1, h2)
+        with mock.patch.object(SK, "live_min12", return_value=self.SYN):
+            r_jan = json.loads(SK.lav_linje(here, Path("x"), {"snapshot_sha256": "x"}, {"manifest_hash": "72c3371d"}, 1.0,
+                                            date(2027, 1, 12), "2027-01..2027-12", kode="test")[0])
+        self.assertEqual(r_jan["origin"], "2026-12")
+
+    def test_live_min12_er_v4_objektet_ved_cutoff(self):
+        g, t = C.read_fred(REAL_SNAP, "GS10"), C.read_fred(REAL_SNAP, "TB3MS")
+        cy, cm = max(set(g) & set(t))
+        kal = [((cy * 12 + cm - 1 - k) // 12, (cy * 12 + cm - 1 - k) % 12 + 1) for k in range(12)]
+        v = [g[k] - t[k] for k in kal if k in g and k in t]
+        r = SK.live_min12(REAL_SNAP)
+        self.assertEqual(r["cutoff"], f"{cy}-{cm:02d}"); self.assertEqual(r["n_obs"], len(v))
+        self.assertAlmostEqual(r["curve_min12"], min(v), places=9)
+        # syntetisk hul: en maaned uden kurve taeller ikke, og cutoff kraever publiceret GS10 OG TB3MS
+        keys = [(2025, m) for m in range(1, 13)] + [(2026, m) for m in (1, 2, 3)]
+        curve = np.array([1.0] * 9 + [np.nan, 0.5, 0.7, 0.9, 0.3, 0.8])
+        Mx = dict(curve=curve, curve_min12=C.rolling_min(curve, 12, 6))
+        pub = {k: 1.0 for k in keys}
+        for tb3, cut, n, uden, vmin in ((pub, "2026-03", 11, ["2025-10"], 0.3), ({k: 1.0 for k in keys[:-1]}, "2026-02", 11, ["2025-10"], 0.3)):
+            with mock.patch.object(A2, "maanedspanel", return_value=(keys, Mx)), \
+                 mock.patch.object(C, "read_fred", side_effect=lambda s, sid, tb3=tb3: pub if sid == "GS10" else tb3):
+                r = SK.live_min12(Path("x"))
+            self.assertEqual((r["cutoff"], r["n_obs"], r["uden_kurve"], r["curve_min12"]), (cut, n, uden, vmin))
+
+    def test_lagring_append_only_backup_og_manglende(self):
+        rod, here, bk = self._rod()
+        self.assertEqual(self._felter(here, bk, dato=date(2026, 10, 29)), (None, None))      # foer starten (§5)
+        self.assertFalse((rod / SK.PRIVAT).exists())
+        f1, b1 = self._felter(here, bk)
+        linjer = (rod / SK.PRIVAT).read_text(encoding="utf-8").splitlines()
+        self.assertEqual(f1, {"skygge_sha256": SK.sha(linjer[0])}); self.assertIn("backup ok", b1)
+        self.assertNotIn(json.loads(linjer[0])["p_hukommelse"], b1)
+        (bk / SK.PRIVAT).unlink()                                                # backuppen indhenter den manglende hale
+        f2, b2 = self._felter(here, bk, dato=date(2026, 12, 10))
+        self.assertEqual((bk / SK.PRIVAT).read_bytes(), (rod / SK.PRIVAT).read_bytes())
+        self.assertEqual(len((rod / SK.PRIVAT).read_text(encoding="utf-8").splitlines()), 2)
+        (bk / SK.PRIVAT).write_text("divergeret\n", encoding="utf-8")            # en divergeret backup roeres ikke
+        f3, b3 = self._felter(here, bk, dato=date(2027, 1, 12))
+        self.assertIn("skygge_sha256", f3); self.assertIn("BACKUP FEJLEDE", b3)
+        self.assertEqual((bk / SK.PRIVAT).read_text(encoding="utf-8"), "divergeret\n")
+        f4_, b4 = self._felter(here, rod / "backup")                             # backup i repoet afvises
+        self.assertIn("ligger i repoet", b4)
+        fm, bm = self._felter(here, bk, manifest="ukendt")                        # intet fit -> manglende med grund
+        self.assertEqual(fm["skygge_sha256"], None); self.assertIn("intet skyggefit", fm["skygge_mangler"])
+        self.assertIn("MANGLER", bm)
+        n = len((rod / SK.PRIVAT).read_text(encoding="utf-8").splitlines())
+        (rod / SK.PRIVAT).write_bytes((rod / SK.PRIVAT).read_bytes()[:-1])      # beskadiget (ingen LF): intet tilfoejes
+        fx, _ = self._felter(here, bk)
+        self.assertIsNone(fx["skygge_sha256"]); self.assertIn("ender ikke med LF", fx["skygge_mangler"])
+        self.assertEqual(len((rod / SK.PRIVAT).read_text(encoding="utf-8").splitlines()), n)
+
+    def test_verificer_kompletheden(self):
+        rod, here, bk = self._rod()
+        rows = []
+        for d in (date(2026, 11, 10), date(2026, 12, 10)):
+            f, _ = self._felter(here, bk, dato=d)
+            rows.append(dict(logget=d.isoformat(), **f))
+        rows.append(dict(logget="2027-01-12", skygge_sha256=None, skygge_mangler="testgrund"))
+        (rod / "hovedbog.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+        ok, rap = SK.verificer(here, backup=bk)
+        self.assertTrue(ok); self.assertEqual(rap["forpligtet"], 2); self.assertEqual(rap["manglende_med_grund"], ["2027-01-12"])
+        self.assertEqual((rap["privat"]["linjer"], rap["backup"]["linjer"], rap["privat"]["uden_forpligtelse"]), (2, 2, 0))
+        self.assertNotIn("p_hukommelse", json.dumps(rap))
+        t = (rod / SK.PRIVAT).read_text(encoding="utf-8")                       # en rettet linje hasher ikke laengere
+        (rod / SK.PRIVAT).write_text(t.replace('"p_hukommelse":"0', '"p_hukommelse":"1', 1), encoding="utf-8", newline="\n")
+        ok, rap = SK.verificer(here, backup=bk)
+        self.assertFalse(ok); self.assertEqual(rap["privat"]["uden_linje"], ["2026-11-10"])
+        self.assertEqual(rap["backup"]["uden_linje"], [])
+        (bk / SK.PRIVAT).unlink()
+        self.assertFalse(SK.verificer(here, backup=bk)[0])
+
+    def test_privat_fil_er_git_ignoreret(self):
+        self.assertIn(SK.PRIVAT, (HERE.parent / ".gitignore").read_text(encoding="utf-8").splitlines())
+
 
 if __name__ == "__main__":
     unittest.main()

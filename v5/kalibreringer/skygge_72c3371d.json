@@ -1,0 +1,44 @@
+{
+ "base_rate": 0.1798,
+ "estimering_slut": "2024Q1",
+ "features": [
+  "curve",
+  "curve_min12"
+ ],
+ "fit_id": "d7b628afc85f",
+ "identitet": {
+  "curve_only_genskabt": true,
+  "origins": 267
+ },
+ "korrelation_fit": 0.8595,
+ "manifest": "72c3371d",
+ "mu": {
+  "curve": 1.3733,
+  "curve_min12": 0.9362
+ },
+ "n_obs": 267,
+ "n_pos": 48,
+ "note": "spec 8: skyggemodel uden operationel myndighed; beta_curve_min12 er daarligt bestemt (kollinearitet) og er ikke en effekt",
+ "origins_sha256": "4729c5ed0e5b26b1",
+ "raa": {
+  "alpha": -0.397,
+  "beta_curve_min12_pr_pp": -0.6491,
+  "beta_curve_pr_pp": -0.7926,
+  "note": "P = logit^-1(alpha + beta_curve*curve + beta_curve_min12*curve_min12), begge i pp"
+ },
+ "refit_maaned": "2026-09",
+ "sd": {
+  "curve": 1.1495,
+  "curve_min12": 1.0604
+ },
+ "snapshot": "2026-09-19",
+ "snapshot_sha256": "c8c2ffa5261c480de8d9aeb7ccca6f7f88de2044d15e6fdc018535c514f0bbca",
+ "spec": "8_hukommelse_skygge.md",
+ "spec_sha256": "9406453a557658afa6340e369c6819669856b609846a97436861f3eafdc57eda",
+ "univers_slut": "2026Q1",
+ "w": [
+  -2.0932,
+  -0.9111,
+  -0.6883
+ ]
+}
