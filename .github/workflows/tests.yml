@@ -22,7 +22,7 @@ permissions:
 jobs:
   unittest:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -52,3 +52,12 @@ jobs:
           snap=$(python -c "import json; print(json.load(open('../dashboard.json'))['snapshot'])")
           python motor.py --snapshot data/raw/$snap --allow-stale --json /tmp/dashboard.json > /dev/null
           cmp /tmp/dashboard.json ../dashboard.json
+      # Audit 2026-11-13: testsuiten paa den 10. i naeste maaned og paa den foerste september, hvor rekalibreringen er
+      # forfalden — saa tests og regler, der gaar i stykker paa kalenderen alene, opdages et aar foer i stedet for i
+      # logvinduet (40 tests ville vaere gaaet roede 2027-09-01). Kun ugentligt og manuelt: to ekstra suite-koersler.
+      - name: Tidsrejse (testsuiten paa fremtidige datoer)
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        working-directory: v5
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python tidsrejse.py
