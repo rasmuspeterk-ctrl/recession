@@ -19,18 +19,19 @@ Solo se usan datos gratuitos (FRED, Reserva Federal, Shiller), y cada snapshot d
 - **La lectura se compara siempre con la tasa base** (con qué frecuencia ha comenzado históricamente una recesión
   dentro de un año, unos 18 %). Si la incertidumbre del modelo incluye la tasa base, el veredicto es
   "no distinguible de la tasa base".
-- **Se publica también lo que falló:** siete variables candidatas se probaron y se rechazaron, y figuran junto al
-  modelo que sobrevivió.
+- **Se publica también lo que falló:** siete candidatos (seis variables y el modelo completo de cinco variables) se probaron y
+  se rechazaron, y figuran junto al modelo que sobrevivió.
 - **Cifras con su incertidumbre:** la mejora de log-loss frente a la tasa base es de +20,4 % (sin oráculo, 219
   orígenes), pero su intervalo del 90 % empieza por debajo de cero. Detectar esa ventaja con un 80 % de potencia
   exigiría del orden de 150 años de registro.
-- **Un consejo de modelos de lenguaje** debate y ratifica cada cambio de método; las decisiones se sellan antes de
-  escribir el código ([RAADETS_SPEC7.md](RAADETS_SPEC7.md) y anteriores).
+- **Un consejo de modelos de lenguaje** debate y ratifica los cambios de método (algunos a posteriori); desde el
+  2026-10-15 las especificaciones se sellan antes de escribir el código ([RAADETS_SPEC8.md](RAADETS_SPEC8.md) y
+  anteriores).
 
 ## Lectura actual
 
-Última lectura registrada (2026-10-10): **P = 15,1 %** [10,4–21,6 %] frente a una tasa base del 18,0 %, es decir,
-no distinguible de la tasa base. Una lectura intermedia del 2026-10-27 (no registrada) dio 14,8 %. El modelo lee
+Última lectura registrada (2026-11-13): **P = 17,7 %** [12,7–25,6 %] frente a una tasa base del 18,0 %, es decir,
+no distinguible de la tasa base. El modelo lee
 solo el nivel de la curva y no ve choques externos, por lo que esa cifra significa "en torno a la tasa base", no
 "riesgo bajo".
 

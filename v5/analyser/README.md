@@ -9,7 +9,11 @@ Tallene herunder er efter verifikatorernes rettelser; hvor scriptets egen sammen
 tallene her.
 
 Koersel (fra `v5/`): `python analyser/<navn>.py`. Koeretid 4 s til 5,5 min (nested_robusthed).
-Kun `created_utc` varierer mellem koersler.
+Kun `created_utc` varierer mellem koersler. *(Audit 2026-11-13: det gaelder ikke `styrke_simulation.py`, hvis wild-cluster-felter
+afhaenger af CPU'en i 3.-4. decimal; `frekvensgate.py` er nu pinnet til snapshot 2026-10-15 og genskabes identisk.
+`hovedbog_reference`, `nber_indholdstrigger`, `frekvensgate` og `universstart` laeser vaegtene i drift og kan ikke
+genkoeres uaendret efter 2027-refitten. `b3_revisionsaudit.py` er spec 7B's maanedlige revisionsaudit og hoerer ikke
+til de syv: dens resultatfil vokser med een aargang pr. hovedbogsraekke.)*
 
 | Script | Review-fund | Hovedresultat |
 |---|---|---|
