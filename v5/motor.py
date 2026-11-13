@@ -24,7 +24,7 @@ noeglens §1 (d), skrevet byte-identisk i protokollen (spec2027/5_live_censureri
 Koer:  python motor.py [--allow-stale] [--log] [--log-uden-for-vindue "<begrundelse>"] [--json [sti]]
                       [--snapshot data/raw/YYYY-MM-DD]
 """
-import csv, hashlib, json, math, sys
+import csv, hashlib, json, math, re, sys
 from datetime import date, timedelta
 from pathlib import Path
 import numpy as np
@@ -528,6 +528,26 @@ def kontekst_usa(snap):
         if raekker:
             ud[blok] = dict(titel=titel, linjer=raekker)
     return ud
+
+
+def ebp_linje(snap):
+    """F36: EBP-linjens tekst (kontekst, aldrig i P). Fed Boards ebp_csv.csv er en uversioneret fil, og fetch validerer
+    kun 'ebp'-kolonnen: en omdoebt eller tom date/gz_spread/est_prob vaeltede hele laesningen (audit 2026-11-13,
+    fejlinjektion) — i strid med F18. -> (tekst, None); (None, grund) ved uventet format; (None, None) uden fil/raekker."""
+    f = snap / "EBP.csv"
+    if not f.exists():
+        return None, None
+    try:
+        with f.open(encoding="utf-8-sig") as fh:
+            er = [r for r in csv.DictReader(fh) if r.get("ebp") not in (None, "", ".")]
+        if not er:
+            return None, None
+        r = er[-1]
+        return (f"{float(r['ebp']):+.2f}pp ({r['date'][:7]}); "
+                f"GZ-spaend {float(r['gz_spread']):.2f}pp; ekstern in-sample-probit {float(r['est_prob'])*100:.0f}% "
+                "(andet maal, ikke sammenlignelig med P)"), None
+    except (KeyError, ValueError, TypeError) as e:
+        return None, f"{type(e).__name__}: {e}"[:120]
 
 
 def manuelle_tal(man, afledte):
@@ -1195,14 +1215,11 @@ def main():
 
     # F36: kreditkanalen ud over HY OAS
     kredit = []
-    ebp_f = snap / "EBP.csv"
-    if ebp_f.exists():
-        with ebp_f.open(encoding="utf-8-sig") as fh:
-            er = [r for r in csv.DictReader(fh) if r.get("ebp") not in (None, "", ".")]
-        if er:
-            kredit.append(("Excess bond premium (GZ/Fed Board)", f"{float(er[-1]['ebp']):+.2f}pp ({er[-1]['date'][:7]}); "
-                           f"GZ-spaend {float(er[-1]['gz_spread']):.2f}pp; ekstern in-sample-probit {float(er[-1]['est_prob'])*100:.0f}% "
-                           "(andet maal, ikke sammenlignelig med P)"))
+    ebp_txt, ebp_fejl = ebp_linje(snap)
+    if ebp_txt:
+        kredit.append(("Excess bond premium (GZ/Fed Board)", ebp_txt))
+    elif ebp_fejl:                                          # audit 2026-11-13: kontekst vaelter aldrig laesningen (F18)
+        kredit.append(("Excess bond premium (GZ/Fed Board)", f"utilgaengelig — uventet format i EBP.csv ({ebp_fejl})"))
     baa = seneste_obs(snap, meta, "BAA10Y")
     if baa:
         kredit.append(("Baa minus 10Y (Moody's)", f"{baa[1]:.2f}pp ({baa[0]})"))
@@ -1321,7 +1338,12 @@ def main():
     blok = []
     if rekal_paakraevet:
         blok.append("rekalibrering paakraevet (§3.2) — koer finalize6.py && diagnostik.py, derefter motor.py --log")
-    nyeste = sorted(d for d in C.RAW.iterdir() if d.is_dir())[-1]
+    # audit 2026-11-13: kun snapshot-mapper taeller (<dato>, <dato>.ny, <dato>.ukomplet). Foer blokerede ENHVER mappe i
+    # data/raw --log med raadet 'koer fetch.py igen' — ogsaa <dato>.gammel, som fetch selv skriver 'ignoreres af
+    # motor/calibrate' om, naar Windows har laast den gamle mappe.
+    snapmapper = sorted(d for d in C.RAW.iterdir()
+                        if d.is_dir() and re.fullmatch(r"\d{4}-\d{2}-\d{2}(\.ny|\.ukomplet)?", d.name))
+    nyeste = snapmapper[-1] if snapmapper else snap
     if age > STALE_DAYS:                                    # PR #1: --allow-stale gaelder kun aflaesningen
         blok.append(f"snapshottet er {age} dage gammelt (>{STALE_DAYS}) — --allow-stale gaelder kun aflaesningen; "
                     "hovedbogen faar kun friske data, koer fetch.py")
@@ -1425,10 +1447,8 @@ def main():
                           f"{vindue} | {ren_note(inp)} | {p_maanedlig*100:.1f}% |"
                           + (f" {p_us['p_maanedligt_fit']*100:.1f}% | {p_us['p_start_1953Q2']*100:.1f}% | "
                              f"{p_us['p_start_1960Q1']*100:.1f}% |" if p_us else ""))
-            with logf.open("a", encoding="utf-8", newline="\n") as fh:
-                for ln in linjer:
-                    fh.write(ln + "\n")
-            # fuld record pr. raekke (alt der skal til for at score den uden at laese koden)
+            # fuld record pr. raekke (alt der skal til for at score den uden at laese koden). Audit 2026-11-13: recorden
+            # bygges og serialiseres FOER noget skrives — fejler det, er hverken LOG.md eller hovedbog.jsonl roert.
             rec = dict(logget=idag_s, snapshot=snap.name, snapshot_sha256=meta["snapshot_sha256"], manifest=kh,
                        version=W.get("version"), p=round(p_op, 6), baand=[round(float(lo), 6), round(float(hi), 6)],
                        basisrate=base, dom=dom_ord, kurve=round(x["curve"], 4), vindue=vindue, input=inp,
@@ -1446,12 +1466,25 @@ def main():
                                                  p_maanedligt_fit=round(p_us["p_maanedligt_fit"], 6), vindue=vindue,
                                                  note="uscoret (RAADETS_2027 §10.4): raekken scores ikke (noeglen §1 d); "
                                                       "P og det endelige udfald foeres")
-            # spec 8 (RAADETS_SPEC8 §3): skyggelinjen i den private fil; recorden faar kun hashen (eller grunden)
-            sk_felter, sk_besked = SK.hovedbogsfelter(HERE, snap, meta, W, x["curve"], I, vindue)
+            json.dumps(rec, ensure_ascii=False, sort_keys=True)          # kan recorden skrives? (rejser foer foerste skrivning)
+            with logf.open("a", encoding="utf-8", newline="\n") as fh:
+                for ln in linjer:
+                    fh.write(ln + "\n")
+            # spec 8 (RAADETS_SPEC8 §3, raekkefoelgen er forseglet): LOG.md-raekken er skrevet; nu skyggelinjen i den
+            # private fil; recorden faar kun hashen (eller grunden). Fra her SKAL recorden skrives: en raekke i LOG.md uden
+            # record i hovedbog.jsonl kan ikke repareres (maaneden er 'allerede logget'). Derfor fanges alt fra skyggen.
+            try:
+                sk_felter, sk_besked = SK.hovedbogsfelter(HERE, snap, meta, W, x["curve"], I, vindue)
+            except (Exception, SystemExit) as e:
+                grund_ = f"{type(e).__name__}: {e}"[:240]
+                sk_felter, sk_besked = dict(skygge_sha256=None, skygge_mangler=grund_), f"skygge (spec 8): MANGLER - {grund_}"
             if sk_felter:
                 rec.update(sk_felter)
-            with (logf.parent / "hovedbog.jsonl").open("a", encoding="utf-8", newline="\n") as fh:
-                fh.write(json.dumps(rec, ensure_ascii=False, sort_keys=True) + "\n")
+            jf = logf.parent / "hovedbog.jsonl"
+            # en hovedbog.jsonl uden afsluttende linjeskift ville faa den nye record klistret paa den forrige (ugyldig JSONL)
+            skil = "\n" if jf.exists() and jf.stat().st_size and not jf.read_bytes().endswith(b"\n") else ""
+            with jf.open("a", encoding="utf-8", newline="\n") as fh:
+                fh.write(skil + json.dumps(rec, ensure_ascii=False, sort_keys=True) + "\n")
             print(f"   LOGGET som raekke {len(rows) + len(mangler) + 1}: {idag_s}, P {p_op*100:.1f}%, dom '{dom_ord}'."
                   + (f" ({len(mangler)} 'ikke logget'-raekke(r) foer: {', '.join(mangler)})" if mangler else ""))
             if sk_besked:

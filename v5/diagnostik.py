@@ -31,7 +31,7 @@ Tilfoejet efter kode-review 2026-10-15 (alt diagnostik, aendrer intet):
   styrke  hovedbogens styrke (G3.2): cluster-t paa cyklusblokke, parametrisk skaleret fra 4.4.
 
 R og snapshot tages fra kalibreringen i drift (weights.json: refit_maaned/snapshot), ikke fra
-nyeste snapshot (F26). Et snapshot hvis rygrad ikke er refit-klar afvises (F5).
+nyeste snapshot (F26). Et snapshot hvis rygrad ikke er refit-klar giver en advarsel (F5; curve-only er uafhaengig af den).
 Skriver diagnostik.json (laeses af motor.py). Kun stdlib + numpy.
 Koer:  python diagnostik.py [--snapshot ...] [--hurtig]   (--hurtig: 200 traek i 4.3)
 """

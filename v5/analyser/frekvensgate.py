@@ -82,6 +82,8 @@ PUBLICERET = dict(
 )
 
 
+LIVE_SNAPSHOT = "2026-10-15"     # nyeste komplette snapshot ved analysens tilblivelse (pinnet for determinisme)
+
 def mk(i):
     return f"{i // 12}-{i % 12 + 1:02d}"
 
@@ -381,7 +383,12 @@ def main():
             sys.exit(f"FEJL: snapshot {s} mangler")
     R_legacy = A2.midx(2023, 6) + 12 + L       # 2025-12: alle origins <= 2023Q2 modne (finalize6 --legacy)
     R_b = A2.midx(2026, 9)                     # weights.json refit_maaned
-    snap_ny = C.find_snapshot([])
+    # audit 2026-11-13: pinnet som universstart.LIVE_SNAPSHOT. Foer: C.find_snapshot([]) = nyeste snapshot, saa blokken
+    # P_i_dag (og dermed den sha256-pinnede resultatfil) aendrede sig stille med hvert nyt snapshot
+    snap_ny = C.RAW / LIVE_SNAPSHOT
+    if not (snap_ny / "meta.json").exists():
+        snap_ny = C.find_snapshot([])
+        print(f"ADVARSEL: pinnet snapshot {LIVE_SNAPSHOT} mangler — nyeste komplette ({snap_ny.name}) brugt; P_i_dag afviger da fra den pinnede resultatfil")
     print(f"=== frekvensgate (G1.3) — paneler a:{snap_a.name} a':{snap_b.name}+Yale b:{snap_b.name} — nyeste {snap_ny.name} ===")
 
     paneler = {}

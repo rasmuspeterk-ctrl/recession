@@ -16,8 +16,9 @@ det en raadsbeslutning om en v5.1-protokol, aldrig et automatisk skift.
     manifest med FORKLAREDE aendringer (modnet / censureret / omlabelet ved ny annoncering i
     (R_gl, R]); en uforklaret aendring er FEJL (kode-review 2026-10-15, F6).
 §3.2 Koerslen kraever en deterministisk trigger: september-snapshot eller aendret annonceringstabel.
-    Uden trigger kraeves `--reparation "<begrundelse>"`, som skrives i manifestet (F4). Rygraden
-    skal vaere refit-klar (meta.spine.refit_klar, F5); annonceringstabellen skal vaere i synk med
+    Uden trigger kraeves `--reparation "<begrundelse>"`, som skrives i manifestet (F4). Er rygraden
+    ikke refit-klar (meta.spine.refit_klar, F5), ADVARES der kun: curve-only kalibreres uafhaengigt af den,
+    og fuldmodellens gate kan blive 'comparison unavailable'. Annonceringstabellen skal vaere i synk med
     USREC (F7).
 §3.5 Kun modne origins (vinduets slut + 18 mdr <= refit-maaned) fittes OG scores.
 RAADETS_2027 (refit-maaned >= 2027-09; protokol2027.py, forseglede specs i spec2027/): §2.3 gaten er ensidet mod
@@ -230,8 +231,9 @@ def L_R_audit():
 
 
 def rygrad_klar(snap, meta):
-    """F5: et snapshot hvis rygrad er skaaret af (multpl/SP500-udfald) eller stale maa aldrig
-    rekalibreres — det ville stille rulle v5.0.1-reparationen tilbage. Aeldre snapshots uden
+    """F5: er snapshottets rygrad skaaret af (multpl/SP500-udfald) eller stale? -> (klar, grunde). main() og
+    diagnostik ADVARER kun (PR #1): curve-only-panelet er uafhaengigt af rygraden, saa en afkortet rygrad ruller
+    ikke v5.0.1-reparationen tilbage; den koster kun fuldmodellens gate. Aeldre snapshots uden
     meta.spine.refit_klar vurderes efter de samme regler."""
     sp = meta.get("spine", {})
     if "refit_klar" in sp:

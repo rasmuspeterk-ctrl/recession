@@ -54,8 +54,9 @@ KRITISKE = ("GS10", "TB3MS", "USREC", "DGS10", "DTB3")   # stale her -> snapshot
 # ---- seriernes roller (kode-review 2026-10-15, F18/F1/F19): EEN tabel, alt andet afledes heraf ----
 # rolle   "P"        kraeves for selve laesningen af P (live-kurve + publiceret maanedssammenligning)
 #         "refit"    kraeves af kalibreringen (label, raekkeunivers, rygradens CPI)
-#         "rygrad"   bygger rygradens komposit i fetch; fejl nedlaegger ikke laesningen, men goer
-#                    snapshottet uegnet til rekalibrering (meta.spine.refit_klar = false, F5)
+#         "rygrad"   bygger rygradens komposit i fetch; fejl nedlaegger ikke laesningen, men saetter
+#                    meta.spine.refit_klar = false (F5): finalize6/diagnostik advarer, curve-only kalibreres
+#                    alligevel, og fuldmodellens gate kan blive 'comparison unavailable'
 #         "kontekst" monitor/kontekst/ablation: fejl eller manglende fil nedlaegger ALDRIG veto
 # licens  "pd"       FRED: Public Domain: Citation Requested
 #         "citation" FRED: Copyrighted: Citation Required — maa videregives med kildeangivelse
@@ -302,18 +303,39 @@ def finra_margin(xlsx):
     Laeses med stdlib (xlsx er en zip med XML). -> dict(vaerdi (%), periode, saldo, saldo_aaret_foer)."""
     z = zipfile.ZipFile(io.BytesIO(xlsx))
     ark = z.read("xl/worksheets/sheet1.xml").decode("utf-8")
+    # Audit 2026-11-13: xlsx gemmer normalt tekstceller som DELTE strenge (t="s": <v> er et indeks i
+    # xl/sharedStrings.xml). Parseren kendte kun indlejrede strenge (<is><t>) og laeste indekset som maanedsetiket,
+    # saa filen hentet 2026-11-13 gav "ingen 'YYYY-MM'-raekker", og marginlaanet faldt tilbage til manual.json.
+    delte = []
+    if "xl/sharedStrings.xml" in z.namelist():
+        ss = z.read("xl/sharedStrings.xml").decode("utf-8")
+        delte = ["".join(re.findall(r"<t[^>]*>([^<]*)</t>", si))          # en streng kan vaere delt i flere <r><t>-stykker
+                 for si in re.findall(r"<si\s*/>|<si[^>]*>(.*?)</si>", ss, re.S)]
     rk = {}
     for raekke in re.findall(r"<row[^>]*>(.*?)</row>", ark, re.S):
-        a = re.search(r'<c r="A\d+"[^>]*>(?:<is><t>|<v>)([^<]*)<', raekke)
-        b = re.search(r'<c r="B\d+"[^>]*><v>([^<]*)</v>', raekke)
-        if a and b and re.fullmatch(r"\d{4}-\d{2}", a.group(1).strip()):
-            rk[a.group(1).strip()] = float(b.group(1))
+        a = re.search(r'<c r="A\d+"([^>]*)>(?:<is><t[^>]*>|<v>)([^<]*)<', raekke)
+        b = re.search(r'<c r="B\d+"([^>]*)><v>([^<]*)</v>', raekke)
+        if not (a and b):
+            continue
+        etiket, saldo = a.group(2).strip(), b.group(2).strip()
+        try:
+            if re.search(r'\bt="s"', a.group(1)):                         # delt streng: slaa indekset op
+                etiket = delte[int(etiket)].strip()
+            if re.search(r'\bt="s"', b.group(1)):                         # saldoen gemt som TEKST: indekset er ikke et tal
+                saldo = delte[int(saldo)]
+            saldo = float(saldo.replace(",", "").replace(" ", ""))
+        except (ValueError, IndexError):
+            continue
+        if re.fullmatch(r"\d{4}-\d{2}", etiket):
+            rk[etiket] = saldo
     if not rk:
         raise RuntimeError("FINRA-filen har ingen 'YYYY-MM'-raekker med debit balances — formatet er aendret?")
     sidst = max(rk)
     foer = f"{int(sidst[:4]) - 1}{sidst[4:]}"
     if foer not in rk:
         raise RuntimeError(f"FINRA-filen mangler {foer} (samme maaned aaret foer {sidst})")
+    if not (rk[sidst] > 0 and rk[foer] > 0):
+        raise RuntimeError(f"FINRA-filens saldi er ikke positive ({sidst}: {rk[sidst]}, {foer}: {rk[foer]}) — formatet er aendret?")
     return dict(vaerdi=round((rk[sidst] / rk[foer] - 1) * 100, 1), periode=sidst, saldo=rk[sidst], saldo_aaret_foer=rk[foer])
 
 

@@ -239,8 +239,10 @@ def hovedbogsfelter(here, snap, meta, W, kurve, dato, vindue, backup=None):
         tilfoej(rod / PRIVAT, linje)
     except (Exception, SystemExit) as e:
         return dict(skygge_sha256=None, skygge_mangler=grund(e)), f"skygge (spec 8): MANGLER - {grund(e)}"
-    bf = (backup or backup_mappe()) / PRIVAT
     try:
+        # audit 2026-11-13: ogsaa opslaget af backup-mappen ligger i try. Foer stod det udenfor: en fejl dér (fx en
+        # utilgaengelig OneDrive- eller hjemmemappe) vaeltede motor EFTER LOG.md-raekken og FOER hovedbog.jsonl-recorden.
+        bf = (backup or backup_mappe()) / PRIVAT
         spejl(rod / PRIVAT, bf, rod)
         bst = f"backup ok ({bf})"
     except (Exception, SystemExit) as e:
