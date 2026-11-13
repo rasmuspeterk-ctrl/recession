@@ -1,0 +1,772 @@
+{
+ "retrieved_utc": "2026-11-13T22:36:00+00:00",
+ "series": {
+  "GS10": {
+   "rows": 883,
+   "first": "1953-04-01",
+   "last": "2026-10-01",
+   "last_value": "5.13",
+   "sha256": "018e609eb98c52ec8d2cf0ea9f8e1450c24974c31cca455cc19717a77703af78",
+   "purpose": "10-aarig statsrente, maanedssnit (kalibreringens kurve; publiceret sammenligning)",
+   "rolle": "P",
+   "licens": "pd",
+   "kilde": "Board of Governors (H.15)"
+  },
+  "TB3MS": {
+   "rows": 1114,
+   "first": "1934-01-01",
+   "last": "2026-10-01",
+   "last_value": "4.05",
+   "sha256": "33fae406051a658c316580f8e8b5e461157e6663bc03b35648cc7cd3e89ee26b",
+   "purpose": "3-mdr T-bill, maanedssnit (kalibreringens kurve; publiceret sammenligning)",
+   "rolle": "P",
+   "licens": "pd",
+   "kilde": "Board of Governors (H.15)"
+  },
+  "DGS10": {
+   "rows": 16201,
+   "first": "1962-01-02",
+   "last": "2026-11-12",
+   "last_value": "5.10",
+   "sha256": "ef864cd0a56c983f248fb34b46fc6f4e2b35bcee54b10cb5d0332ebfaea99d5b",
+   "purpose": "10-aarig statsrente, daglig (live-input: trailing maaned; 10Y-linjen)",
+   "rolle": "P",
+   "licens": "pd",
+   "kilde": "Board of Governors (H.15)"
+  },
+  "DTB3": {
+   "rows": 18207,
+   "first": "1954-01-04",
+   "last": "2026-11-12",
+   "last_value": "4.14",
+   "sha256": "e348dc53e133a85ba6f1ae3b3106fc91a101e9d380527d9cd6d223d0639ee185",
+   "purpose": "3-mdr T-bill, daglig (live-input: trailing maaned; CP-spaend)",
+   "rolle": "P",
+   "licens": "pd",
+   "kilde": "Board of Governors (H.15)"
+  },
+  "USREC": {
+   "rows": 2063,
+   "first": "1854-12-01",
+   "last": "2026-10-01",
+   "last_value": "0",
+   "sha256": "7d28698513be7460870afa883c2325d3502ddaecd6b1e781ed5f655126341b44",
+   "purpose": "NBER-recessionsmaaneder (label; USREC-krydstjek af annonceringstabellen)",
+   "rolle": "refit",
+   "licens": "citation",
+   "kilde": "NBER via Federal Reserve Bank of St. Louis"
+  },
+  "A191RL1Q225SBEA": {
+   "rows": 318,
+   "first": "1947-04-01",
+   "last": "2026-07-01",
+   "last_value": "3.4",
+   "sha256": "1af2590d79adb8d3c6fad4328d306c96bb6ed9980120eae58bb9471fffbb0562",
+   "purpose": "real BNP %-aendring ann. (raekkeunivers via teknisk label; BNP-linjen)",
+   "rolle": "refit",
+   "licens": "pd",
+   "kilde": "U.S. Bureau of Economic Analysis"
+  },
+  "CPIAUCNS": {
+   "rows": 1365,
+   "first": "1913-01-01",
+   "last": "2026-10-01",
+   "last_value": "337.511",
+   "sha256": "0e1fc35d62c4b76698418b4e6a8f259ca23407a52bf3f5971597afe0388cadfc",
+   "purpose": "CPI NSA (rygradens CPI; realrate/d_infl i fuldmodellen)",
+   "rolle": "refit",
+   "licens": "pd",
+   "kilde": "U.S. Bureau of Labor Statistics"
+  },
+  "SP500": {
+   "rows": 2513,
+   "first": "2016-11-14",
+   "last": "2026-11-12",
+   "last_value": "7592.40",
+   "sha256": "a28beb8e6d9a335329579f40ea9d58b7cfde99b84edad7e2ca3daf064f4efde7",
+   "purpose": "S&P 500 dagligt luk, rullende ~10 aar (rygradens SP500 efter 2023-07 som maanedsmiddel; dd)",
+   "rolle": "rygrad",
+   "licens": "lokal",
+   "kilde": "S&P Dow Jones Indices LLC"
+  },
+  "CPIAUCSL": {
+   "rows": 957,
+   "first": "1947-01-01",
+   "last": "2026-10-01",
+   "last_value": "337.476",
+   "sha256": "c9be2d4909ffd28d91f07df5d113151b0fe7ba602144ee6fd453d3bc8426efde",
+   "purpose": "CPI SA (inflationsmomentum, kontekst)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Bureau of Labor Statistics"
+  },
+  "UNRATE": {
+   "rows": 945,
+   "first": "1948-01-01",
+   "last": "2026-10-01",
+   "last_value": "4.1",
+   "sha256": "fb669461abc34e00324b940be6bad1c7f89117652f28587196a7b8bf4a9f56a1",
+   "purpose": "ledighed (Sahm-transform, trin 4 \u2014 afvist)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Bureau of Labor Statistics"
+  },
+  "SAHMREALTIME": {
+   "rows": 802,
+   "first": "1959-12-01",
+   "last": "2026-10-01",
+   "last_value": "0.00",
+   "sha256": "eaee71d67f8a363c989cb3c256683aa256b06120d067e89fc83e9d9971f8d287",
+   "purpose": "Sahm-reglen realtid (monitor + benchmark)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "Claudia Sahm via FRED"
+  },
+  "ICSA": {
+   "rows": 3123,
+   "first": "1967-01-07",
+   "last": "2026-11-07",
+   "last_value": "200000",
+   "sha256": "91162f4571b64e232bf0de701d8b01325eaa617055324ec7811da99b59124fbb",
+   "purpose": "initial claims, ugentlig (monitor; trin 4 \u2014 afvist)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Employment and Training Administration"
+  },
+  "CCSA": {
+   "rows": 3122,
+   "first": "1967-01-07",
+   "last": "2026-10-31",
+   "last_value": "1697000",
+   "sha256": "bfdf790229e3b7fa2e9282fc295d6e2b27b84c37b31e29f2890218affc35720c",
+   "purpose": "fortsatte ansoegninger, ugentlig (claims-linjen, F58)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Employment and Training Administration"
+  },
+  "PERMIT": {
+   "rows": 801,
+   "first": "1960-01-01",
+   "last": "2026-09-01",
+   "last_value": "1398",
+   "sha256": "b83f05a2d8cdcaeb64609c55ebb907398f7f25577c3ba78da8e9d8e4fde0d6a4",
+   "purpose": "byggetilladelser (monitor; trin 4 \u2014 afvist)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Census Bureau"
+  },
+  "BAMLH0A0HYM2": {
+   "rows": 785,
+   "first": "2023-11-14",
+   "last": "2026-11-12",
+   "last_value": "3.20",
+   "sha256": "c290bfeff44daea141c486b13f8c9583e8c9de0c243dd3c2bce8b7d1ef4d97a9",
+   "purpose": "HY OAS, daglig, rullende 3 aar (monitor \u2014 ineligible som feature)",
+   "rolle": "kontekst",
+   "licens": "lokal",
+   "kilde": "ICE Data Indices, LLC"
+  },
+  "BAA10Y": {
+   "rows": 10216,
+   "first": "1986-01-02",
+   "last": "2026-11-12",
+   "last_value": "1.48",
+   "sha256": "780e6b717aa80afa8b406e8292032613f2b75949c6f635bd08301576838e46eb",
+   "purpose": "Baa minus 10Y, daglig 1986- (kreditkontekst, F36)",
+   "rolle": "kontekst",
+   "licens": "lokal",
+   "kilde": "Moody's via FRED"
+  },
+  "GDPC1": {
+   "rows": 319,
+   "first": "1947-01-01",
+   "last": "2026-07-01",
+   "last_value": "24611.077",
+   "sha256": "1c6c6e9f59e383e20c849dd299175c7a307526c09abdc18f18da9754fc5b3343",
+   "purpose": "real BNP niveau (reserve)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Bureau of Economic Analysis"
+  },
+  "FEDFUNDS": {
+   "rows": 868,
+   "first": "1954-07-01",
+   "last": "2026-10-01",
+   "last_value": "3.88",
+   "sha256": "06ded1625e05391a1407f1d7d721e482e8b62916c6c5fe9491b76d74285ddd69",
+   "purpose": "effektiv fed funds, maanedssnit (fallback for DFF)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "Board of Governors (H.15)"
+  },
+  "DFF": {
+   "rows": 26433,
+   "first": "1954-07-01",
+   "last": "2026-11-12",
+   "last_value": "3.88",
+   "sha256": "f2f56c719be375680b5d6310cf23fd2876e64be2f062bd670f5e0a3b5625bb59",
+   "purpose": "effektiv fed funds, daglig (pengepolitik-blok)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "Board of Governors (H.15)"
+  },
+  "PCEPI": {
+   "rows": 813,
+   "first": "1959-01-01",
+   "last": "2026-09-01",
+   "last_value": "132.257",
+   "sha256": "beca75e07e79a0c3293dd068703c966f5fe1adb181d0989fad36877e012f11a2",
+   "purpose": "PCE-prisindeks (realt kontantafkast, inflationsmomentum)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Bureau of Economic Analysis"
+  },
+  "GS3M": {
+   "rows": 542,
+   "first": "1981-09-01",
+   "last": "2026-10-01",
+   "last_value": "4.23",
+   "sha256": "38cac7059579d39067914cbc803f70e93f355b823c85aa9a035a5465e0c4811b",
+   "purpose": "3-mdr CMT, maanedssnit (kun kontrol i spec 7A, RAADETS_SPEC7; splejses aldrig ind)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "Board of Governors (H.15)"
+  },
+  "THREEFYTP10": {
+   "rows": 9199,
+   "first": "1990-01-02",
+   "last": "2026-11-06",
+   "last_value": "0.8738",
+   "sha256": "561d5474fb8d35f8410143b475fefd25e2bf1150efee31988a04110d51f34110",
+   "purpose": "Kim-Wright 10-aars term-praemie, Fed Board (kontekst; ACM-testen trin 4 brugte manual/acm.csv)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "Board of Governors (Kim-Wright)"
+  },
+  "RECPROUSM156N": {
+   "rows": 712,
+   "first": "1967-06-01",
+   "last": "2026-09-01",
+   "last_value": "0.40",
+   "sha256": "43dd0ca80f8399257a186e6827afec30013bdf6c4e66549b6adf393f083759b1",
+   "purpose": "Chauvet-Piger glattet recessionssandsynlighed (benchmark, coincident nowcast)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "Marcelle Chauvet og Jeremy Piger via FRED"
+  },
+  "AWHMAN": {
+   "rows": 1054,
+   "first": "1939-01-01",
+   "last": "2026-10-01",
+   "last_value": "41.8",
+   "sha256": "b5e8a3937cbde370062c51172f1cf1f94cf71acb5c9038de7d2df8a44d731236",
+   "purpose": "ugentlige arbejdstimer, industri (v5.2-testen \u2014 afvist; vist som kontekst)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Bureau of Labor Statistics"
+  },
+  "RIFSPPFAAD90NB": {
+   "rows": 6767,
+   "first": "1997-01-02",
+   "last": "2026-11-12",
+   "last_value": "4.10",
+   "sha256": "121a0b28f66bd23afeb137b3c8464ba8354484aef154c2691e7b9b23e436c9f4",
+   "purpose": "90-dages AA finansiel commercial paper-rente (scenarie-appendiks: CP-spaend)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "Board of Governors (CP)"
+  },
+  "MORTGAGE30US": {
+   "rows": 2903,
+   "first": "1971-04-02",
+   "last": "2026-11-12",
+   "last_value": "7.11",
+   "sha256": "45d20db28675827f068d0534949a6c1f431c58193d2153c8fbd9435f5b2530e3",
+   "purpose": "30-aars realkreditrente, ugentlig (scenarie-appendiks)",
+   "rolle": "kontekst",
+   "licens": "citation",
+   "kilde": "Freddie Mac"
+  },
+  "DGS1": {
+   "rows": 16201,
+   "first": "1962-01-02",
+   "last": "2026-11-12",
+   "last_value": "4.65",
+   "sha256": "7c17de002d572a8eb2513c0c2e523e578c38090ee442b7d5fdc5fc8059c8a8ad",
+   "purpose": "1-aarig statsrente, daglig (kurvens sammensaetning, near-term forward spread, F38)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "Board of Governors (H.15)"
+  },
+  "DGS2": {
+   "rows": 12609,
+   "first": "1976-06-01",
+   "last": "2026-11-12",
+   "last_value": "4.86",
+   "sha256": "6ac9a529408135b020c6a9ffa525908e966ba7b0ae42b01410e3abdf96d1b12c",
+   "purpose": "2-aarig statsrente, daglig (kurvens sammensaetning front/bag, F38)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "Board of Governors (H.15)"
+  },
+  "DGS3MO": {
+   "rows": 11299,
+   "first": "1981-09-01",
+   "last": "2026-11-12",
+   "last_value": "4.32",
+   "sha256": "89bb7be934f8149c3910ac1ecff58122724e1c2f37239469719461f31ef83a70",
+   "purpose": "3-mdr konstant loebetid, daglig (near-term forward spread, F38)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "Board of Governors (H.15)"
+  },
+  "PAYEMS": {
+   "rows": 1054,
+   "first": "1939-01-01",
+   "last": "2026-10-01",
+   "last_value": "159293",
+   "sha256": "968f9252d00246e2b6cf40307e01eef7a413ec936fcc45c7498347a509a2dc32",
+   "purpose": "loenmodtagerbeskaeftigelse (NBER-indikator, F39)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Bureau of Labor Statistics"
+  },
+  "CE16OV": {
+   "rows": 945,
+   "first": "1948-01-01",
+   "last": "2026-10-01",
+   "last_value": "163615",
+   "sha256": "d6e38d34d191bd63aa9982ee00e386ac6aa0da46906747515fd17fa941735c45",
+   "purpose": "husstandsbeskaeftigelse (NBER-indikator, F39)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Bureau of Labor Statistics"
+  },
+  "INDPRO": {
+   "rows": 1293,
+   "first": "1919-01-01",
+   "last": "2026-09-01",
+   "last_value": "103.9506",
+   "sha256": "0fc53a503386efaf83f17cf0cc6d77b3980830a91c9dfa9ebab97b4cf1aa5feb",
+   "purpose": "industriproduktion (NBER-indikator, F39)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "Board of Governors (G.17)"
+  },
+  "W875RX1": {
+   "rows": 813,
+   "first": "1959-01-01",
+   "last": "2026-09-01",
+   "last_value": "17015.2",
+   "sha256": "c75e606b9cc1a16113d5d8ead4091694a3c5b61ec867171f81d06ef1f0495ed0",
+   "purpose": "real personlig indkomst ekskl. overfoersler (NBER-indikator, F39)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Bureau of Economic Analysis"
+  },
+  "PCEC96": {
+   "rows": 237,
+   "first": "2007-01-01",
+   "last": "2026-09-01",
+   "last_value": "16977.6",
+   "sha256": "47edb01bfb88e70c031864aa23eefa1756fc91482e398ffbcd86a5acfaaec8af",
+   "purpose": "realt privatforbrug (NBER-indikator, F39)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Bureau of Economic Analysis"
+  },
+  "CMRMTSPL": {
+   "rows": 716,
+   "first": "1967-01-01",
+   "last": "2026-08-01",
+   "last_value": "1599260.000",
+   "sha256": "aa8ffbe95e671e4fcbde23d88778c03623140f8f3f7e32b1239e80bbeac9a2f7",
+   "purpose": "realt engros/detail/industri-salg (NBER-indikator, F39)",
+   "rolle": "kontekst",
+   "licens": "citation",
+   "kilde": "Federal Reserve Bank of St. Louis"
+  },
+  "TEMPHELPS": {
+   "rows": 442,
+   "first": "1990-01-01",
+   "last": "2026-10-01",
+   "last_value": "2526.0",
+   "sha256": "8185d9c9f2bd3f38898fd5f3eb1525ae75cd434a433bfdd7c85d1d4d55551256",
+   "purpose": "vikarbeskaeftigelse (arbejdsmarkedskontekst, F58)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Bureau of Labor Statistics"
+  },
+  "DCOILWTICO": {
+   "rows": 9543,
+   "first": "1986-01-02",
+   "last": "2026-11-11",
+   "last_value": "89.62",
+   "sha256": "2bab6974f96b57b1fe1bdfe6fd2edd44ae041dc135060dddc479ef1994a02bc3",
+   "purpose": "WTI-oliepris, daglig (regimekontekst, F40)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Energy Information Administration"
+  },
+  "DCOILBRENTEU": {
+   "rows": 9128,
+   "first": "1987-05-20",
+   "last": "2026-11-11",
+   "last_value": "92.14",
+   "sha256": "24c21dcefd22454f23390f58e8472c6b8a3cdea283d6cc5b7cfade9fede1d985",
+   "purpose": "Brent-spot, daglig (raavarer; prissaetter US benzin/diesel)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Energy Information Administration"
+  },
+  "DHHNGSP": {
+   "rows": 5728,
+   "first": "1997-01-07",
+   "last": "2026-11-11",
+   "last_value": "3.00",
+   "sha256": "7fc71f76d90130f07537a142e6bdc3c633b90ac03ea954f6438ed981026bac41",
+   "purpose": "Henry Hub naturgas spot, daglig (raavarer; goedningens feedstock)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Energy Information Administration"
+  },
+  "GASREGW": {
+   "rows": 1885,
+   "first": "1990-08-20",
+   "last": "2026-11-09",
+   "last_value": "3.995",
+   "sha256": "c558648daa8600c10e6d66ed9980bcf3c5cb10c1c3b6a29bf6549eeff666ea70",
+   "purpose": "US benzin, regular, detail, ugentlig (raavarer)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Energy Information Administration"
+  },
+  "GASDESW": {
+   "rows": 1704,
+   "first": "1994-03-21",
+   "last": "2026-11-09",
+   "last_value": "6.127",
+   "sha256": "f465aa924ef580d75c58599a2485cf27dda4cf43e77d1ac40816885bcf2a0472",
+   "purpose": "US diesel, detail, ugentlig (raavarer)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Energy Information Administration"
+  },
+  "WPU0652": {
+   "rows": 1126,
+   "first": "1933-01-01",
+   "last": "2026-10-01",
+   "last_value": "411.514",
+   "sha256": "8fe379dcaec63e892d7eb09bdd2f604c31034cccc59a0f4436710e6a8e5aa2f1",
+   "purpose": "PPI goedningsmaterialer, NSA (raavarer)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Bureau of Labor Statistics"
+  },
+  "WPU065201": {
+   "rows": 958,
+   "first": "1947-01-01",
+   "last": "2026-10-01",
+   "last_value": "461.523",
+   "sha256": "22f62492c486f3b943ca0e91c52fb7dd99e4c835edac81d3af798508b29687b1",
+   "purpose": "PPI kvaelstofgoedning (nitrogenates), NSA (raavarer)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Bureau of Labor Statistics"
+  },
+  "WPU012": {
+   "rows": 1210,
+   "first": "1926-01-01",
+   "last": "2026-10-01",
+   "last_value": "184.811",
+   "sha256": "365340b528771e289e195d65c0994371cec005ba24f2ad56762c790c99d3cf65",
+   "purpose": "PPI korn (farm products: grains), NSA (raavarer)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Bureau of Labor Statistics"
+  },
+  "WPU102": {
+   "rows": 1210,
+   "first": "1926-01-01",
+   "last": "2026-10-01",
+   "last_value": "532.492",
+   "sha256": "b1768fd01b4a97c5016ec78aa2b6d0f238f9e5028483ddea35aa6a2aa4d3f45b",
+   "purpose": "PPI ikke-jernholdige metaller, NSA (raavarer)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Bureau of Labor Statistics"
+  },
+  "REVOLSL": {
+   "rows": 705,
+   "first": "1968-01-01",
+   "last": "2026-09-01",
+   "last_value": "1368452.9600000000",
+   "sha256": "e74aa88be8be216521ad08d3cfdb514baa1ec831cb454de19689b18beae70aca",
+   "purpose": "revolverende forbrugerkredit, mio. USD, SA (kreditkort)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "Board of Governors (G.19)"
+  },
+  "CCLACBW027SBOG": {
+   "rows": 1376,
+   "first": "2000-06-28",
+   "last": "2026-11-04",
+   "last_value": "1101.2829",
+   "sha256": "753759c59a35545bc556916ffb6f6096a12c0a8e8eab399941924b59fec25460",
+   "purpose": "kreditkortlaan i banker, mia. USD, SA, ugentlig (kreditkort)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "Board of Governors (H.8)"
+  },
+  "DRCCLACBS": {
+   "rows": 142,
+   "first": "1991-01-01",
+   "last": "2026-04-01",
+   "last_value": "2.85",
+   "sha256": "0209cae8f24e84160eab760a5b1f3f139b9d62a42dddc42752126248cc611815",
+   "purpose": "restancerate kreditkort, alle banker, %, SA, kvartal (kreditkort)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "Board of Governors"
+  },
+  "CORCCACBS": {
+   "rows": 166,
+   "first": "1985-01-01",
+   "last": "2026-04-01",
+   "last_value": "3.82",
+   "sha256": "6a25113375310f4abfa49f3f312f1c8e48c287ce858dbbe77e59c3111a837b23",
+   "purpose": "afskrivningsrate kreditkort, alle banker, %, SA, kvartal (kreditkort)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "Board of Governors"
+  },
+  "HPIPONM226S": {
+   "rows": 428,
+   "first": "1991-01-01",
+   "last": "2026-08-01",
+   "last_value": "444.61",
+   "sha256": "966396f63f0ad62a935ec54c32544d60a5e5a476d7e1df65bc42c6309fb50bd7",
+   "purpose": "FHFA purchase-only huspris-indeks, SA, maanedlig (bolig)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Federal Housing Finance Agency"
+  },
+  "MSPUS": {
+   "rows": 255,
+   "first": "1963-01-01",
+   "last": "2026-07-01",
+   "last_value": "393300",
+   "sha256": "a9f5886d44aeb6f0bbb14d823b1c2b397e8fb7775fb47b6dfd4c67073fdbea32",
+   "purpose": "median salgspris for solgte huse, USD, kvartal (bolig)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Census Bureau og HUD"
+  },
+  "MSACSR": {
+   "rows": 765,
+   "first": "1963-01-01",
+   "last": "2026-09-01",
+   "last_value": "8.4",
+   "sha256": "bd8b2dfd1413e0f2c5a1673cd9d081b855a1bb7b6cc4ec44e90cf99da3d8cd52",
+   "purpose": "udbud af nye huse i maaneder, SA (bolig)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "U.S. Census Bureau og HUD"
+  },
+  "DRSFRMACBS": {
+   "rows": 142,
+   "first": "1991-01-01",
+   "last": "2026-04-01",
+   "last_value": "1.86",
+   "sha256": "402fb4844920b7582007bbfcc9235689c1aa0eebb309233d974f6b9e36746bcc",
+   "purpose": "restancerate enfamilie-realkredit, alle banker, %, SA, kvartal (bolig)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "Board of Governors"
+  },
+  "EBP": {
+   "rows": 646,
+   "first": "1973-01-01",
+   "last": "2026-10-01",
+   "last_value": "-0.26533114775416333",
+   "sha256": "caa16e0619cb5399b9c8f44433868351f01973f9594c50a4f1f87dd0856542c5",
+   "purpose": "excess bond premium + GZ-spaend, maanedlig 1973- (kreditkontekst, F36)",
+   "rolle": "kontekst",
+   "licens": "pd",
+   "kilde": "Board of Governors (Gilchrist-Zakrajsek EBP, FEDS Notes)"
+  }
+ },
+ "manual": {
+  "manual.json": {
+   "sha256": "e7f1a79f0eff1f3abeb78971616fe9e2f64174d6f1255abf50f65ffba4a01174",
+   "bytes": 1111
+  },
+  "acm.csv": {
+   "sha256": "bc6dae6898ae43ec143d9cf78ca60763e13b04b047e155134100525319b55593",
+   "bytes": 13407
+  }
+ },
+ "spine": {
+  "yale": {
+   "fil": "shiller_yale_2023-09.csv",
+   "sha256": "264da56238073ef40b6f417f35448c1ebc68b9719f3bd9767632501eb89e637f",
+   "bytes": 85174
+  },
+  "multpl": {
+   "sha256": "722447c7d55921b9143df75f625f4f3c196370e457927e0a6336ed360be3e4b2",
+   "bytes": 149462,
+   "maaneder": 1869,
+   "foerste": "1871-02",
+   "sidste": "2026-10",
+   "note": "seneste maanedsraekke er multpl's foreloebige vaerdi og kan revideres (\u00a71.3)",
+   "revideret": {},
+   "diff_mod": "2026-10-27/spine.csv (komposit-maaneder)"
+  },
+  "sp500_delvis_foerste_maaned_udeladt": "2016-11",
+  "overlap": {
+   "sp500_n": 80,
+   "cape_n": 403,
+   "sp500_median_abs_pct": 0.0,
+   "sp500_andel_inden_1pct": 1.0,
+   "sp500_max_abs_pct": 0.0002,
+   "sp500_undtagelser": [],
+   "cape_median_abs_pct": 0.0102,
+   "cape_max_abs_pct": 0.0467,
+   "cape_undtagelser": [],
+   "preliminaere_afvigelser_pct": {
+    "2023-08": {
+     "sp500": -0.0,
+     "cape": -1.246
+    },
+    "2023-09": {
+     "sp500": -2.362,
+     "cape": -3.281
+    }
+   },
+   "bestaaet": true
+  },
+  "seam": "2023-07",
+  "raekker": 1870,
+  "sidste": "2026-10",
+  "komposit_maaneder": 39,
+  "cpi_huller": [
+   "2025-10"
+  ],
+  "cpi_ikke_udgivet": [],
+  "sha256": "1a04955b9c99a7da18c863d5211dc61a16ec8f00623faccee508618432ed6dc5",
+  "seam_check": {
+   "metode": "Shiller: real pris / 10-aars middel af real indtjening t.o.m. sidste tilgaengelige E-maaned (forloebige maaneder bruger samme naevner)",
+   "indtjening_sidste_maaned": "2023-06",
+   "vindue": [
+    "2013-07",
+    "2023-06"
+   ],
+   "n": 120,
+   "forventning_skrevet_foer": "genberegningen reproducerer Yales forloebige CAPE (30.47/30.81) ved Yales egen pris og ligger over multpl (30.09/29.80); residualen tilskrives reviderede indtjeningstal + endelig S&P-print",
+   "resultater": {
+    "2023-08": {
+     "yale_pris": 4457.358695652174,
+     "fred_maanedsmiddel": 4457.36,
+     "cpi_yale": 305.98199999999997,
+     "cpi_fred": 307.026,
+     "cape_yale_kolonne": 30.47,
+     "cape_genberegnet_yale_pris": 30.514,
+     "cape_genberegnet_fred_pris": 30.411,
+     "cape_multpl": 30.09,
+     "afv_multpl_vs_genberegnet_fred_pct": -1.05
+    },
+    "2023-09": {
+     "yale_pris": 4515.77,
+     "fred_maanedsmiddel": 4409.1,
+     "cpi_yale": 306.12749999999994,
+     "cpi_fred": 307.789,
+     "cape_yale_kolonne": 30.811,
+     "cape_genberegnet_yale_pris": 30.9,
+     "cape_genberegnet_fred_pris": 30.007,
+     "cape_multpl": 29.8,
+     "afv_multpl_vs_genberegnet_fred_pct": -0.69
+    }
+   }
+  },
+  "refit_klar": true
+ },
+ "afledte": {
+  "spx_vs_hi": {
+   "vaerdi": -0.029,
+   "dato": "2026-11-12",
+   "luk": 7592.4,
+   "top": 7818.93,
+   "top_dato": "2026-10-06",
+   "kilde": "FRED SP500: seneste luk mod hoejeste luk de seneste 12 maaneder"
+  },
+  "cape": {
+   "vaerdi": 39.95,
+   "dato": "2026-11-13",
+   "kilde": "multpl.com/shiller-pe, seneste raekke"
+  },
+  "margin_yoy": {
+   "fejl": "FINRA-filen har ingen 'YYYY-MM'-raekker med debit balances \u2014 formatet er aendret?"
+  }
+ },
+ "bnp_kalender": {
+  "kilde": "FRED-udgivelseskalender (release 53, BEA) + ALFRED-vintages af A191RL1Q225SBEA",
+  "rid": 53,
+  "udgivelser": [
+   "2025-01-30",
+   "2025-02-27",
+   "2025-03-27",
+   "2025-04-30",
+   "2025-05-29",
+   "2025-06-26",
+   "2025-07-30",
+   "2025-08-28",
+   "2025-09-25",
+   "2025-12-23",
+   "2026-01-22",
+   "2026-02-20",
+   "2026-03-13",
+   "2026-04-09",
+   "2026-04-30",
+   "2026-05-28",
+   "2026-06-25",
+   "2026-07-30",
+   "2026-08-26",
+   "2026-09-30",
+   "2026-10-29"
+  ],
+  "advance": {
+   "2025Q4": {
+    "dato": "2026-02-20",
+    "vaerdi": 1.4
+   },
+   "2026Q1": {
+    "dato": "2026-04-30",
+    "vaerdi": 2.0
+   },
+   "2026Q2": {
+    "dato": "2026-07-30",
+    "vaerdi": 1.5
+   },
+   "2026Q3": {
+    "dato": "2026-10-29",
+    "vaerdi": 3.4
+   }
+  },
+  "hentet": "2026-11-13"
+ },
+ "complete": true,
+ "lokale_filer": {
+  "serier": [
+   "SP500",
+   "BAMLH0A0HYM2",
+   "BAA10Y"
+  ],
+  "filer": [
+   "multpl_cape.html",
+   "cape_multpl.csv",
+   "finra_margin.xlsx"
+  ],
+  "note": "licensbegraensede kilder: hashet her, committes aldrig (.gitignore; README 'Datakilder og vilkaar')"
+ },
+ "snapshot_sha256": "dd6abb3b8a702fcd47580db0826dd61b091074688b44b87165e60c1b4be84743"
+}
