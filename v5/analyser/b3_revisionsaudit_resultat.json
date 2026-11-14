@@ -1,0 +1,31 @@
+{
+ "spec_sha256": "0ceff66abafeac9d0a6d016b1e736168d434aa50fa4817c4864ed9a514c0c560",
+ "created_utc": "2026-11-13T22:39:02+00:00",
+ "protokol": "RAADETS_SPEC7 §2",
+ "forseglet": "2026-10-27",
+ "n_aargange": 1,
+ "kraevet": 12,
+ "faerdig": false,
+ "graense_pp": 0.1,
+ "aargange": [
+  {
+   "nr": 1,
+   "logget": "2026-11-13",
+   "snapshot": "2026-11-13",
+   "threefytp10_sha256": "561d5474fb8d35f8410143b475fefd25e2bf1150efee31988a04110d51f34110",
+   "acm_sekundaer": {
+    "maaned": "2026-07",
+    "acmtp10": 0.837552
+   }
+  }
+ ],
+ "sammenligningssaet": {
+  "fra": "2024-11-06",
+  "til": "2026-11-06",
+  "n_datoer": 500,
+  "n_med_E": 500
+ },
+ "revisioner": [],
+ "e_max_samlet": null,
+ "status": "i gang: 1 af 12 aargange; kravet vurderes foerst ved 12."
+}

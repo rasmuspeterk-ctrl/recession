@@ -10,7 +10,7 @@ blev til, ikke hvordan den koeres i dag.
 
 | Fil | Rolle |
 |---|---|
-| `fetch.py` | Henter 53 serier noeglefrit (52 FRED + Fed Boards EBP-CSV; 16 af dem kontekst-protokollen 2026-10-24) parallelt (~30 s), skriver byte-eksakt hashet snapshot i `data/raw/<dato>/`, bygger rygraden, printer diff mod forrige snapshot (ny obs / aendret vaerdi / revideret historik / rullende vindue) |
+| `fetch.py` | Henter 54 serier noeglefrit (53 FRED + Fed Boards EBP-CSV; 16 af dem kontekst-protokollen 2026-10-24) parallelt (~30 s), skriver byte-eksakt hashet snapshot i `data/raw/<dato>/`, bygger rygraden, printer diff mod forrige snapshot (ny obs / aendret vaerdi / revideret historik / rullende vindue) |
 | `spine.py` | Rygraden (komposit Shiller + FRED + multpl) og dens guards — og **seriernes rolletabel** `SERIER` (rolle P/refit/rygrad/kontekst + licens). Kun P- og refit-serier nedlaegger veto |
 | `motor.py` | Maanedlig aflaesning og hovedbogslogning (`--log` kun i logvinduet), `--json` til dashboardet (reproducerbar) |
 | `finalize6.py` | Rekalibrering — KUN ved en §3.2-trigger (september-snapshot eller ny raekke i `nber_announcements.csv`); ellers kraeves `--reparation "<begrundelse>"`. En NY kalibrering kraever at VERSION bumpes (§3.3). `--legacy` = legacy-replay |
@@ -18,7 +18,7 @@ blev til, ikke hvordan den koeres i dag.
 | `calibrate.py` | Hjaelpefunktioner for hele kaeden (read_fred, live_kurve, fit ...). Som script HISTORISK (trin 1): skriver `calibrate_resultat.json`; `weights.json` kun med `--overskriv` (bevidst) |
 | `ablation2_nber.py` | NBER-labelen, annonceringstabellen, USREC-krydstjekket, eligibility og den forklarede origin-audit. Som script (`--promote`) HISTORISK — koer ikke i drift |
 | `ablation3/4/7/8_*.py`, `audit5_alfred.py` | Historiske, afsluttede tests (frekvens, features, curve+cape, AWHMAN, ALFRED) — koer ikke i drift |
-| `test_v5.py` | 248 tests, stdlib unittest, ingen netvaerk (~4 min) |
+| `test_v5.py` | 266 tests, stdlib unittest, ingen netvaerk (~4 min) |
 | `nber_announcements.csv` | NBER's annonceringsdatoer (top/bund) — se *NBER-vedligehold* nedenfor |
 | `manual/` | `manual.json` (S&P vs 52u-top, live-CAPE, marginlaan y/y + deres datoer), `shiller_yale_2023-09.csv` (uforanderlig Yale-kopi), `seam_check_2023.json`, evt. `outliers_accepteret.json` |
 | `kalibreringer/` | Kalibreringsmanifester (v5.0.1 §3.3): et pr. kalibrering, index.json, legacy_mapping.json |
@@ -26,7 +26,9 @@ blev til, ikke hvordan den koeres i dag.
 | `ablation9_nested.py` | PRAEREGISTRERET nested lambda-/modelselektion (G1.1/G1.2): koerer kun naar filen er committet og pushet; publiceres ved siden af, aendrer intet |
 | `protokol2027.py`, `spec2027/` | RAADETS_2027's regler fra september-refitten 2027, hver efter en forseglet spec (sha256 laast i koden): gate, L_R-audit, indholdstrigger, maanedligt fit + uscorede felter, live-censureringens regeltekst, skill-saetningen ved refitten. Virker kun for kalibreringer med refit-maaned >= 2027-09 |
 | `replay2027.py` | Den konfigurationsspecifikke hovedbogs-replay (september + hash + indholdstrigger) og den re-afledte styrkeklausul — koeres ved refitten 2027 |
-| `skygge.py` | Spec 8 (RAADETS_SPEC8): hukommelses-skyggemodellen (curve + curve_min12) uden operationel myndighed. `--log` skriver hver raekkes linje i den private `../skygge_hukommelse.jsonl` (git-ignoreret, backup uden for repoet) og kun dens sha256 i hovedbog.jsonl; `--fit` ved refitten (`kalibreringer/skygge_<manifest>.json`); `--verificer` tjekker kompletheden. Viser aldrig skyggens tal |
+| `tidsrejse.py` | Koerer testsuiten paa en fremtidig kalenderdato (audit 2026-11-13): fanger tests og regler, der gaar i stykker paa kalenderen alene. Skriver intet |
+| `dashboard_tjek.js` | Proever `../dashboard.html` i en rigtig browser (audit 2026-11-13): hovedbogsgrafen med 1-480 maaneders raekker og huller, translitterationen, raekkernes felter og fejlstierne. Kraever Node og Playwright; ikke en del af CI. Skriver intet |
+| `skygge.py` | Spec 8 (RAADETS_SPEC8): hukommelses-skyggemodellen (curve + curve_min12) uden operationel myndighed. `motor.py --log` skriver hver raekkes linje i den private `../skygge_hukommelse.jsonl` (git-ignoreret, backup uden for repoet) og kun dens sha256 i hovedbog.jsonl; `--fit` ved refitten (`kalibreringer/skygge_<manifest>.json`); `--verificer` tjekker kompletheden. Viser aldrig skyggens tal |
 
 ## Maanedligt ritual (~5 min) — logdag: foerste hverdag fra den 10. (+ 3 dage)
 
@@ -47,8 +49,10 @@ python fetch.py                  # hent + rygrad + guards + diff-tjek med oejnen
 python motor.py --log --json     # aflaesning, prospektiv raekke i ../LOG.md + ../hovedbog.jsonl, dashboard.json
 python analyser/b3_revisionsaudit.py   # spec 7B: Kim-Wright-revisionsaudit (fra 2026-11-raekken; afgoerende ved 12. aargang)
 python skygge.py --verificer     # spec 8: hver skygge-hash i hovedbog.jsonl har en linje (privat + backup); viser aldrig tal
-python -m unittest test_v5       # 248 tests
+python -m unittest test_v5       # 266 tests
 ```
+Efter aendringer i tests, motor eller protokol2027 — og altid foer en september: `python tidsrejse.py` (koerer hele
+suiten paa den 10. i naeste maaned og paa den foerste september, hvor rekalibreringen er forfalden; se *Audit 2026-11-13*).
 Hovedbogen (`../LOG.md`) er den eneste fuldt prospektive test: een raekke pr. maaned, skrevet FOER
 udfaldet kendes; historiske raekker roeres aldrig. Den beskytter mod look-ahead, men er statistisk
 svag — hvordan den scores, og hvorfor ingen dom maa formuleres foer mindst 3 komplette cyklusblokke,
@@ -83,9 +87,10 @@ NBER-indholdstriggeren (§6.1) en tredje deterministisk trigger: motor blokerer 
 PAAKRAEVET: NBER-indholdstrigger", og finalize6 skriver trigger-maaneden i manifestet. Se afsnittet *Raadet 2027*
 nederst.
 Vaegte, standardisering og basisrate er frosne mellem rekalibreringer. finalize6 naegter at koere uden
-deterministisk trigger (en reparation kraever `--reparation "<begrundelse>"`, som skrives i manifestet),
-paa et snapshot hvis rygrad ikke er refit-klar (multpl/SP500-udfald eller stale rygrad), og naar
-annonceringstabellen er ude af synk med USREC. En ny kalibrering faar en ny version (5.0.2, 5.0.3 ...),
+deterministisk trigger (en reparation kraever `--reparation "<begrundelse>"`, som skrives i manifestet), og naar
+annonceringstabellen er ude af synk med USREC. Er rygraden ikke refit-klar (multpl/SP500-udfald eller stale rygrad),
+ADVARER finalize6 og diagnostik kun: curve-only kalibreres uafhaengigt af rygraden, og fuldmodellens gate kan blive
+"comparison unavailable" (rettet 2026-11-13: her stod, at finalize6 naegtede — se "Kode-review 2026-10-14"). En ny kalibrering faar en ny version (5.0.2, 5.0.3 ...),
 en uaendret genbruger manifestet og registrerer koerslen i `weights.json.koersel`. Et skift af den
 operationelle model kraever `kalibreringer/raadsbeslutning.json` (§6). Legacy-replay til enhver tid:
 `python finalize6.py --legacy` (skal give w=[-2.1755,-1.6907], n_obs 264; CI koerer den ved hvert push).
@@ -278,12 +283,16 @@ Siden er [../dashboard.html](../dashboard.html) (2026-10-26): én HTML-fil uden 
 [../DASHBOARD-BRIEF.md](../DASHBOARD-BRIEF.md)'s sektioner og 15 regler. Den læser `dashboard.json` fra samme
 mappe; serveres repo-roden (`python -m http.server`), virker den direkte, ellers vælges filen i siden.
 Kildetekster translittereres (aa/ae/oe -> å/æ/ø, med undtagelse af fx Baa og koef.) og sættes i dansk
-talformat — de eneste ændringer brief'en tillader.
+talformat — de eneste ændringer brief'en tillader. Filnavne, hashes og afsnitsnumre ("diagnostik 4.5") gengives
+ordret, så de kan findes i repoet. Hovedbogstabellen viser rækkens øvrige LOG.md-felter (kalibrering, input, P på
+månedstal, de uscorede felter og noten) på en linje under rækken. Hovedbogsgrafens tidsakse har to lag (månedsnavne
+talt fra nyeste række, årstal under januar), der tyndes ud efter pladsen, så etiketterne ikke støder sammen, når
+rækkerne bliver mange. Efter ændringer i siden: `node dashboard_tjek.js` (kræver Node og Playwright; ikke i CI).
 
 `python motor.py --json [sti]` skriver hele laesningen som JSON (default
 `../dashboard.json`): P, baand, basisrate, `baand_udelukker_basisrate`/`ratio`,
 dommen ordret, de fem inputs med z-scores, hele benchmark-tabellen, monitorerne med
-`tilstand` (aktiv/inaktiv/kontekst) og klasse, market conditions, pengepolitik-blokken,
+`tilstand` (aktiv/inaktiv/kontekst/utilgaengelig) og klasse, market conditions, pengepolitik-blokken,
 de staaende advarsler og hele hovedbogen med baade tekst- og talfelter.
 
 Designbriefen ligger i `../DASHBOARD-BRIEF.md` og indeholder datakontrakten plus de
@@ -672,7 +681,7 @@ Designet blev committet og pushet foer koersel (9037720; scriptet naegter at koe
 
 Forudsigelserne (skrevet foer koersel): (1) nested curve-only mellem +17 og +25 % — **holdt** (+18,3 %);
 (2) selektionsstien hoejst lig nested curve-only — **holdt** (+8,5 %); (3) curve-only vaelges i flertallet af
-origins fra 2000 — **falsificeret**: den indre CV vaelger fuldmodellen i 100 % af origins fra 2000 (40 % samlet).
+origins fra 2000 — **falsificeret**: den indre CV vaelger fuldmodellen i 100 % af origins fra 2000 (60 % samlet; curve-only 40 % — rettet 2026-11-13: her stod "40 % samlet" om fuldmodellen).
 
 Tolkning (aendrer intet i driften): den indre krydsvalidering foretraekker fuldmodellen, som derefter klarer
 sig markant daarligere ude af sample. En bogstavelig, nested selektion efter blueprintet ville altsaa have
@@ -832,8 +841,8 @@ laases i `protokol2027.SPECS`. Intet af det roerer P foer refitten.
 | § | Hvad | Forseglet spec (commit) | Kode | Status |
 |---|---|---|---|---|
 | SPEC7 §1 | Del A: 3m-benet paa obligationsaekvivalent basis (`protokol2027.bey`) som uscoret diagnostik i `diagnostik.json` → `uscorede.konvention_bey`: fit, walk-forward (oracle-fri foerst), parret Δ (10.000 traek, seed 42, 5.–95.), rentebin-tabel (beskrivende), BEY-P kun i diagnostikken; ubetinget dagsordenspunkt, ingen skifteregel | [spec2027/7A_konvention_bey.md](spec2027/7A_konvention_bey.md) (d1049ac) | `diagnostik.konvention_bey` (+ `A2.build_dataset(tb3_omregning=)`, GS3M i spine/fetch); koerer automatisk i `diagnostik.py` ved R >= 2027-09; motor fjerner BEY-P, foer diagnostikken indlejres i dashboard.json; testet kun paa syntetiske data | gennemfoert (koeres ved refitten) |
-| SPEC7 §2 | Del B: ingen historisk test af forventningsdelen; prospektiv Kim-Wright-revisionsaudit over 12 hovedbogs-snapshots fra 2026-11-raekken; kolonne kun ved max revision af E < 10bp (visningsstabilitet) OG raadets godkendelse | [spec2027/7B_forventningsdel_audit.md](spec2027/7B_forventningsdel_audit.md) (d1049ac) | `analyser/b3_revisionsaudit.py` (aargange = hovedbogs-snapshots efter 2026-10-27, 12 i traek, forfra ved hul; markedsrenter fra aargang 1; kravet vurderes foerst ved 12) — testet paa syntetiske data | gennemfoert (koeres maanedligt fra 2026-11-raekken; afgoerende efter 12. aargang, ca. 2027-10) |
-| husholdning | BNP-monitoren: BEA's udgivelseskalender (FRED release 53) + ALFRED, saa "foerste print" kan siges verificeret (Fable, Argon, forbehold runde 4). `fetch.fetch_bnp_kalender` -> `meta.json` "bnp_kalender" (udgivelsesdage, advance-dag og -vaerdi pr. kvartal, verificeret som den foerste udgivelse, hvor kvartalet findes i ALFRED-vintagen); `spine.bnp_vintage` taeller udgivelser fra advance til vores foerste snapshot: advance / andet / tredje estimat / senere revision. Ikke-veto; uden kalender viser monitoren kun "foerst set af os" | — | `motor.bnp_tekst` | gennemfoert (vises fra naeste fetch) |
+| SPEC7 §2 | Del B: ingen historisk test af forventningsdelen; prospektiv Kim-Wright-revisionsaudit over 12 hovedbogs-snapshots fra 2026-11-raekken; kolonne kun ved max revision af E < 10bp (visningsstabilitet) OG raadets godkendelse | [spec2027/7B_forventningsdel_audit.md](spec2027/7B_forventningsdel_audit.md) (d1049ac) | `analyser/b3_revisionsaudit.py` (aargange = hovedbogs-snapshots efter 2026-10-27, 12 i traek, forfra ved hul; markedsrenter fra aargang 1; kravet vurderes foerst ved 12) — testet paa syntetiske data | gennemfoert (koeres maanedligt; aargang 1 = raekke 4, 2026-11-13; afgoerende efter 12. aargang, ca. 2027-10) |
+| husholdning | BNP-monitoren: BEA's udgivelseskalender (FRED release 53) + ALFRED, saa "foerste print" kan siges verificeret (Fable, Argon, forbehold runde 4). `fetch.fetch_bnp_kalender` -> `meta.json` "bnp_kalender" (udgivelsesdage, advance-dag og -vaerdi pr. kvartal, verificeret som den foerste udgivelse, hvor kvartalet findes i ALFRED-vintagen); `spine.bnp_vintage` taeller udgivelser fra advance til vores foerste snapshot: advance / andet / tredje estimat / senere revision. Ikke-veto; uden kalender viser monitoren kun "foerst set af os" | — | `motor.bnp_tekst` | gennemfoert (i snapshot 2026-11-13: `meta.json` -> `bnp_kalender`) |
 
 **Tilfoejet af RAADETS_SPEC8 (7/7, 2026-10-29).** Spec'en er forseglet og pushet (b8ffcfe) foer koden; sha256
 laases i `protokol2027.SPECS`. Skyggemodellen er aldrig i P, baand, dom, gate, trigger, antaendingskolonnen, LOG.md
@@ -843,7 +852,7 @@ om denne cyklus (curve_min12 = +0,24 ved 2026-09); den opbygger et forhaandsforp
 | § | Hvad | Forseglet spec (commit) | Kode | Status |
 |---|---|---|---|---|
 | SPEC8 §2 | Skyggemodellen logit⁻¹(α + β₁·z(curve) + β₂·z(curve_min12)), fittet paa 72c3371d's snapshot 2026-09-19 og R 2026-09 med identiske 267 origins (asserteret); w −2,0932/−0,9111/−0,6883, korrelation +0,86 (β₂ daarligt bestemt) | [spec2027/8_hukommelse_skygge.md](spec2027/8_hukommelse_skygge.md) (b8ffcfe) | `skygge.fit_skygge` -> `kalibreringer/skygge_72c3371d.json` (fit-id d7b628afc85f); `A2.maanedspanel` deler curve-onlys univers | gennemfoert |
-| SPEC8 §3 | Hash-forpligtelse: hver raekke fra 2026-11-01 faar een kanonisk linje (nonce 256 bit) i den private, git-ignorerede `../skygge_hukommelse.jsonl`, spejlet til `MOTOR_SKYGGE_BACKUP` (ellers OneDrive\MOTOR-skygge-backup); hovedbog.jsonl faar kun `skygge_sha256` (eller `skygge_sha256: null` + `skygge_mangler`); motor printer aldrig p_hukommelse | samme | `skygge.hovedbogsfelter` (kaldt af `motor.py --log` efter LOG.md-raekken), `skygge.verificer` | gennemfoert (foerste linje ved novemberraekken 2026) |
+| SPEC8 §3 | Hash-forpligtelse: hver raekke fra 2026-11-01 faar een kanonisk linje (nonce 256 bit) i den private, git-ignorerede `../skygge_hukommelse.jsonl`, spejlet til `MOTOR_SKYGGE_BACKUP` (ellers OneDrive\MOTOR-skygge-backup); hovedbog.jsonl faar kun `skygge_sha256` (eller `skygge_sha256: null` + `skygge_mangler`); motor printer aldrig p_hukommelse | samme | `skygge.hovedbogsfelter` (kaldt af `motor.py --log` efter LOG.md-raekken), `skygge.verificer` | gennemfoert (foerste linje skrevet med raekke 4, 2026-11-13; `skygge_sha256` staar i hovedbog.jsonl) |
 | SPEC8 §4 | Ingen scoret regel. Et senere raad forsegler den foer de onsets, den taeller (>= 2 efter forseglingen) | samme | — | intet at koere |
 
 **Ritualet ved september-refitten 2027** (efter NBER-vedligehold og maanedsritualets fetch): bump VERSION i finalize6.py;
@@ -856,8 +865,8 @@ Den parrede diagnostik og replayen publiceres uanset udfald, og F35-forudsigelse
 
 Paa Rasmus' ordre ("faa raavarerne med som en del af protokollen samt kreditkortgaeld og boligpriserne,
 bare i USA"). Protokollen er: serierne hentes ved HVER `fetch.py` (byte-hashet i snapshottet som alle andre),
-motor printer dem i sektion 5 i tre faste blokke, dashboard.json baerer dem (`kontekst_usa`), og fra naeste
-logfoerte raekke staar de i raekkens fulde record i `../hovedbog.jsonl` (`kontekst_usa`, uscoret og
+motor printer dem i sektion 5 i tre faste blokke, dashboard.json baerer dem (`kontekst_usa`), og fra raekke 4
+(2026-11-13) staar de i raekkens fulde record i `../hovedbog.jsonl` (`kontekst_usa`, uscoret og
 fremadrettet; LOG.md's kolonner og historiske raekker er uroerte). Tabellen er `spine.KONTEKST_BLOKKE`.
 
 **Reglerne (de samme som for al anden kontekst):** ingen indflydelse paa P, baandet, dommen eller
@@ -936,4 +945,112 @@ penalty, the secondary truncated comparison never run — not on the hypothesis;
 the expectations component. The historical search nevertheless stays closed: the result has been seen, a redesign
 could now be aimed around it, and with 8 onsets since 1961 MDE80 ≈ 30 pp." I stedet koerer en prospektiv
 revisionsaudit (spec 7B). Udkastet `spec2027/udkast/7` er afloest af 7A/7B og slettet; det ligger i 2e22ac5.
-`../hovedbog.jsonl` findes endnu ikke: den oprettes ved naeste logfoerte raekke (raekke 4).
+`../hovedbog.jsonl` findes fra raekke 4 (2026-11-13).
+
+## Audit 2026-11-13 — raekke 4 logget; driftsfejl og tidsbomber i testsuiten rettet
+
+En fuld gennemgang af kalibrering, label, motor, fetch, 2027-protokollen, analyserne, dashboardet, dokumentationen og
+testsuiten, lavet i samme session som novemberraekken blev logget. **Hverken vaegte, P, baand, basisrate, manifest
+eller historiske hovedbogsraekker er aendret**; `dashboard.json` genskabes bit-identisk fra sit snapshot, og
+legacy-replayet er eksakt.
+
+**Raekke 4 (2026-11-13).** Logget kl. 22:38 UTC paa logvinduets sidste dag fra en cloud-session, med den pushede kode
+bfaec16 og CI's versioner (Python 3.11.18, numpy 2.4.6): P 17,7 % [12,7-25,6 %], kurve +0,96pp, ikke skelnelig. Det er
+den foerste raekke med `hovedbog.jsonl`, noegle-noten f9ad45db og en skyggelinje (spec 8). NBER-tjekket kunne ikke
+laves mod nber.org fra sessionen; en soegning og motorens USREC-krydstjek stod i stedet. Tagget `ledger-2026-11` hoerer
+til commit 193bfb6. *Erratum til dashboardet for raekkens snapshot (raekken og dens record indeholder ikke tallet og er ikke
+redigeret):* marginlaanet under market conditions er reservefilens (+31,4 %, datamaaned 2026-09), fordi
+FINRA-parseren fejlede den dag; filen havde allerede 2026-10 (+22,4 %). Ingen tripwire og intet i P er beroert. Filens sha256, som mangler i snapshottets `meta.json`:
+`ce727deff430a8c924b552bff8437f55494b7284d332e2c7fb36ed3aff1e681f`.
+
+**Efterregnet uafhaengigt** (egen kode fra de raa CSV-filer, intet importeret fra repoet): 267 origins, 48 positive,
+basisrate 0,1798, mu 1,3733, sd 1,1495, w [-2,0697, -1,4884]; walk-forward +27,05 % / Brier +24,15 % paa 198 origins,
+oracle-fri +20,37 % paa 219, vaerste fejlalarm 93,8 % (2023Q2). Alt er identisk med manifest 72c3371d og
+`diagnostik.json`. Alle 14 snapshots matcher deres sha256 fil for fil, og alle fire hovedbogsraekker kan genskabes fra
+deres egne snapshots. Annonceringstabellens 12 datoer er rigtige.
+
+**Generalproeve paa september-refitten 2027** (i en kopi: snapshot 2026-11-13 under navnet 2027-09-10, VERSION 5.0.2):
+`finalize6 -> diagnostik -> skygge --fit -> replay2027 -> motor --log` koerer uden fejl. Tallene bekraefter
+F35-forudsigelsen (n_obs 271, beta -1,184, wf +21,26 %, F5 +17,13 %) og giver de tal, den ikke naevnte: **oracle-fri
++14,79 %** (223 origins; i dag +20,37 %, det tal hovedbogen bedoemmes mod), nested lambda oracle-fri +11,38 %, skill
+uden nyeste episode +13,78 %, oracle-fri 4.4-interval [-0,126; +0,172] med 25 % af traekkene <= 0, og styrkeklausulen
+re-afledt til "over 200 kalenderaar; 0,25; 53-66 %". Forudsaetning: NBER daterer ikke en top foer da.
+
+**Rettet** (hver rettelse har en test; ingen aendrer et tal i laesningen):
+- **En kontekstfil kunne vaelte laesningen.** Fejlinjektion (158 koersler: hver ikke-veto-serie fjernet eller
+  afkortet) fandt eet brud paa F18: en skemaaendring i Fed Boards EBP-fil (fetch validerer kun `ebp`-kolonnen) gav
+  `KeyError`/`ValueError` i motor. Nu `motor.ebp_linje`: linjen viser "utilgaengelig — uventet format".
+- **FINRA-parseren** (`spine.finra_margin`) kendte kun indlejrede strenge; FINRA's fil bruger nu delte strenge
+  (`xl/sharedStrings.xml`). `fetch.afledte_tal` gemmer desuden filens hash, ogsaa naar den ikke kan laeses.
+- **Tidsbomber i testsuiten** (fundet med falsk dato og simulerede snapshots; se `tidsrejse.py`):
+  (1) fra 2027-09-01 ville 40 af 248 tests fejle paa kalenderen alene, ud over den bevidste september-alarm — motor
+  laeser bedoemmelsesnoeglen under en kalibrering med refit-maaned >= 2027-09, fixturens refit-maaned er "denne
+  maaned", og noeglen laa ikke i fixturen;
+  (2) ved december-ritualet 2026 (og igen marts, juni, september 2027) ville `test_uden_trigger_...` fejle, fordi den
+  sammenlignede de to nyeste rigtige snapshots, og et nyt kvartal modner imellem dem; (3) 11 tests antog en
+  v5.0.1-kalibrering (eller et snapshot fra foer 2027-09) og ville gaa roede ved 2027-refitten; (4) `test_dd_...` gik
+  roed, hvis nyeste snapshot var over 45 dage gammelt. Efterproevet i fire tilstande: i dag (groen), med et december-snapshot,
+  paa 2027-09-10 foer refit (kun den bevidste september-alarm er roed) og paa 2027-09-10 efter generalproevens refit.
+  I de to tilstande med et kunstigt snapshot fejler alene de tests, der kraever friske data i selve snapshottet
+  (`TestDatastatus`, og efter refitten ogsaa F2-testen i `TestFetchMain`) — de falder paa det kunstige datahul.
+- **Revisionsauditten (spec 7B)** talte motorens `(ikke logget)`-raekke som en aargang, i strid med den forseglede
+  spec ("hul -> forfra"). Latent: hovedbogen har intet hul.
+- **Skrivningen af hovedbogen var ikke robust.** LOG.md-raekken skrives foer skyggelinjen og recorden (raekkefoelgen er
+  forseglet i spec 8). Opslaget af backup-mappen laa uden for skyggens try: en fejl dér vaeltede motor mellem de to
+  skrivninger og efterlod en raekke i LOG.md uden record i hovedbog.jsonl — og maaneden var da "allerede logget".
+  Nu bygges og serialiseres recorden foer foerste skrivning, alt fra skyggen fanges, og en hovedbog.jsonl uden
+  afsluttende linjeskift heles i stedet for at faa to records paa een linje.
+- **En efterladt mappe i `data/raw` blokerede `--log`** med raadet "koer fetch.py igen" — ogsaa `<dato>.gammel`, som
+  fetch efterlader, naar Windows har laast den gamle mappe, og selv kalder ignoreret. Nu taeller kun `<dato>`,
+  `<dato>.ny` og `<dato>.ukomplet`.
+- **fetch ville vaelte ved hver koersel fra ca. september 2032** (`dict()` fik `sp500_arvet_fra` to gange, naar
+  SP500-overlappet arves anden gang i traek). `spine.finra_margin` laeser nu ogsaa saldi gemt som tekst og afviser
+  ikke-positive saldi (en konstrueret fil gav -100 % uden fejl).
+- **Tests, der manglede** (mutationstest: vagterne kunne fjernes, uden at suiten fejlede): hvert felt i
+  hovedbogsraekken og recorden mod et uafhaengigt orakel; logvinduets soendag og graenser; "snapshot hentet foer
+  vinduet"; begrundelseskravet til `--log-uden-for-vindue`; synk- og diagnostik-vagterne; live-kurvens friskhedsgraense;
+  noegle-noten. En test forboed strengen "17.9" i hele dashboard.json og ville vaere gaaet roed for altid ved en
+  raekke med P 17,9 %; den tjekker nu det, raadet besluttede (ingen P med CMT-kurven i konventionsnoten).
+- **`analyser/frekvensgate.py`** brugte stille nyeste snapshot til blokken `P_i_dag`, saa den hash-laaste resultatfil
+  ikke kunne genskabes. Nu pinnet til 2026-10-15 som `universstart.py`; filen genskabes identisk.
+- **Dashboardet** (`../dashboard.html`; proevet i Chromium med `dashboard_tjek.js`, som fejler paa den gamle side og
+  er groen paa den nye — 1.164 grafer med 1-480 maaneders raekker paa 320-1280 px, med og uden huller):
+  (1) hovedbogsgrafens maanedsetiketter stoedte sammen fra 7 raekker paa en telefon, dvs. ved februar-laesningen 2027,
+  og fra 13 paa en bred skaerm; tidsaksen har nu to lag (maanedsnavne talt fra nyeste raekke, aarstal under januar),
+  der tyndes ud efter pladsen, og "ikke logget" staar lodret eller udelades i smalle kolonner i stedet for at ligge
+  oven paa naboraekkerne; (2) en fejl under tegningen (fx et manglende felt) efterlod en halv side uden besked, fordi
+  fejlbeskedens felt var fjernet, foer tegningen begyndte — siden bygges nu faerdig, foer den vises; (3)
+  translitterationen aendrede filnavne ("BEDØMMELSESNØGLE.md"), ville aendre hashes med "ae"/"aa" (6baeade4) og
+  flertals-oe ("datør"), og talformatet gjorde afsnitsnummeret "diagnostik 4.5" til "4,5"; (4) hovedbogstabellen viser
+  nu raekkens kalibrering, input, P paa maanedstal, de uscorede felter og noten under raekken. Kendt graense: over
+  ca. 90 maaneder paa en telefon er kolonnerne smallere end en synlig prik. `dashboard.json` er uroert.
+- **Dokumentation:** testantal (stod 238/248), 54 serier (stod 53), `skygge.py` har ingen `--log`, finalize6 ADVARER
+  ved en ikke-refit-klar rygrad (stod "naegter" fem steder), ablation9's "40 % samlet" stod om den forkerte model,
+  "syv feature-kandidater" er seks features plus fuldmodellen, forsidernes ritual manglede spec 8's to trin,
+  FINRA-filen er en lokal kilde, og de tre korte forsider lovede forsegling foer koden for alle aendringer.
+
+**Fundet, ikke rettet — beslutninger for Rasmus og raadet:**
+1. **Styrkeklausulen overdriver hovedbogens styrke.** (a) "36-53 %" kan ikke genskabes: den hash-laaste fil giver
+   45-53 % ved 5-20 aar (allerede noteret i den forseglede spec 6 §3). (b) "P(3 komplette cyklusblokke inden for 20
+   aar) = 0,25" taeller den afskaarne aabningsblok 1967-12..1970-11 (36 mdr; cyklussen er 117) som en hel cyklus.
+   Egen simulation med samme traekningsskema (40.000 traek): 0,24 som publiceret, **0,11-0,15** naar fragmentet faar
+   sin rigtige laengde, ikke taeller som komplet eller udgaar. Saetningen er ratificeret, og spec 6 definition 2
+   forsegler samme taelling, saa en rettelse kraever raadet.
+2. **Noeglens referencetal foelger ikke kalibreringen.** BEDOEMMELSESNOEGLE.md naevner +20,4 % og styrketabellen
+   (26 blokke / 168 aar) som faste tal, og raadet besluttede, at noeglen ikke aendres. Efter 2027-refitten siger
+   `diagnostik.json` ca. +14,8 % og ca. 71 blokke / 465 aar (generalproeven). Det boer afgoeres foer refitten, hvilket
+   referencetal raekker under et nyt manifest holdes op imod (noeglens §1 (e) goer allerede manifestet til et stratum).
+3. **Ritualet haenger paa een person i et vindue paa fire dage.** Novemberraekken blev logget ca. 20 minutter foer dansk
+   midnat paa vinduets sidste dag. En paamindelse eller en planlagt koersel paa logdagen fjerner den risiko.
+4. **Intet minimum for antal dage i trailing-vinduet.** Med DGS10 eller DTB3 afkortet til tre raekker beregner motor
+   P af tre dage (18,7 % mod 17,7 %) uden advarsel; raekkens `input`-felt viser dog "(3d)". Forslag: fetch goer
+   snapshottet ukomplet under fx 15 faelles handelsdage.
+5. **Dashboardet:** de fire visningsfejl er rettet (se ovenfor). Tilbage staar to valg i sidens opbygning, som
+   ikke giver synlige fejl: siden har ingen doctype (browseren tegner den i quirks mode), og dens foerste visning
+   venter paa stylesheetet fra Google Fonts.
+6. **Analyserne:** `styrke_simulation.py` er ikke bit-reproducerbar paa tvaers af CPU'er (wild-cluster-felterne i 3.-4.
+   decimal), fire analyser laeser vaegtene i drift og kan ikke genkoeres efter 2027-refitten, og
+   indholdstriggerens "max ca. 1 pp" er regel B's tal, ikke den vedtagne regels (delegeret gennemgang; de to sidste
+   er ikke efterproevet her).
+7. **LOG.md's header** siger stadig, at 10Y-tripwiren staar i antaendings-kolonnen (gjaldt raekke 3). Headeren er
+   ikke roert her.

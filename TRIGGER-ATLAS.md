@@ -105,7 +105,7 @@ Fra 2026-10-15 mærker motoren serien "KW TP (Kim-Wright, Fed Board)". En eventu
    - Klasse-teksterne bærer proveniensen, fx "1 kanal (fiskal); kanalens ANTAGNE trigger, ikke Q2-varsel" og for CP "1-2 kanaler".
    - Etiketten "boligkanalen" er fjernet.
    - Eksisterende hovedbogsrækker er urørte; alle tre havde "ingen".
-2. **CP-linjen** bruger nu atlassets definition: >75bp på **alle 10 seneste fælles handelsdage** (CP minus T-bill), i stedet for én dags niveau.
+2. **CP-linjen** bruger nu atlassets definition: >75bp på **alle 10 seneste fælles handelsdage** (CP minus T-bill), i stedet for én dags niveau. *(Fra 2026-10-27: alle målinger de seneste 14 kalenderdage, mindst 3 — CP-renten mangler på ca. halvdelen af dagene.)*
 3. **HY-linjen** mærker 600bp som v4-flag/seed-tærskel. Ligger HY i 350-450bp-zonen, vises noten "I SVAERM-ZONEN 350-450bp", og klasse-teksten siger, at zonen er den eneste atlas-tærskel med 3+ kanaler (5). Der er ikke indført en ny antændingslinje ved 350bp. Det ville være post hoc og bryde rækkernes sammenlignelighed.
 4. **Forudsætnings-tripwires** vises med aktuel status under market conditions (`forudsaetninger` i `dashboard.json`), med proveniens og uden indflydelse på P. Det gælder margin >40 %, permits <1,40M + 3 mdr y/y negativ og realt kontantafkast <0 (v4-flag).
 5. **Kanal 5-note** (`advarsler.lang_ende`): en stigning i den lange ende sænker P mekanisk (ca. 1,6pp pr. 10bp ved nuværende kurve), mens atlassets kanal 5 læser samme bevægelse som risiko. Dommen er uændret.

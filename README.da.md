@@ -15,15 +15,18 @@ er kun benchmark. **Walk-forward-skill (log-loss-forbedring over basisraten, RAA
 fast λ = 1 +20,4 % (219 origins; det tal, hovedbogen bedømmes mod); orakel-censureret, fast λ = 1 +27,1 %;
 nested λ (orakel-censureret) +18,3 % — og 80 % styrke kræver størrelsesordenen 150 kalenderårs hovedbog,
 mens naive tests forkaster en sand nulhypotese 36–53 % af gangene ved 5–20 år.** Hovedbogen er derfor et
-ærlighedsinstrument, ikke en test.
+ærlighedsinstrument, ikke en test. *(Audit 2026-11-13: den hash-låste simulation giver 45–53 % ved 5–20 år, ikke
+36–53 %; den ratificerede sætning står, til rådet ændrer den — se
+[v5/README.md](v5/README.md#audit-2026-11-13--raekke-4-logget-driftsfejl-og-tidsbomber-i-testsuiten-rettet).)*
 
 λ = 1 er arvet fra v4 og ikke valgt nested; det er en erklæret afvigelse fra blueprintet. En nested
 modelselektion ville have valgt fuldmodellen og scoret +8,5 % (se
-[v5/README.md](v5/README.md#afvigelser-fra-blueprintet-erklaeret-2026-10-15)). Syv feature-kandidater er
-testet, publiceret og afvist; søgningen er lukket.
+[v5/README.md](v5/README.md#afvigelser-fra-blueprintet-erklaeret-2026-10-15)). Syv kandidater (seks features
+og fuldmodellen med fem features) er testet, publiceret og afvist; søgningen er lukket.
 
-**Seneste logførte læsning (2026-10-10, v5.0.1, daglig kurve):** P = 15,1 % [10,4–21,6 %] mod basisrate
-18,0 % — ikke skelnelig fra basisraten. Se [LOG.md](LOG.md).
+**Seneste logførte læsning (2026-11-13, v5.0.1, daglig kurve):** P = 17,7 % [12,7–25,6 %] mod basisrate
+18,0 % — ikke skelnelig fra basisraten (hovedbogens række 4). Se [LOG.md](LOG.md); den aktuelle læsning står på
+[dashboardet](dashboard.html).
 
 **Rekalibrering v5.0.1 (2026-09-19):** kalibreringsrygraden var frosset ved 2023 (Yales Shiller-fil), så
 tre modne kvartaler manglede i fittet. Rådet ratificerede reparationen 4/4; samme inputs giver nu 17,7 %,
@@ -73,10 +76,10 @@ ud af repoet, sværm-tripwires ud af hovedbogens antændings-kolonne (rådets R3
 | Fil | Indhold |
 |---|---|
 | [v5/README.md](v5/README.md) | Ritualer, filoversigt, afvigelser fra blueprintet, byggelog |
-| [v5/](v5/) | Koden: fetch → (finalize6 → diagnostik ved rekalibrering) → motor (calibrate.py er trin-1-reproduktionen og overskriver ikke driftsvægtene). 238 tests. |
+| [v5/](v5/) | Koden: fetch → (finalize6 → diagnostik ved rekalibrering) → motor (calibrate.py er trin-1-reproduktionen og overskriver ikke driftsvægtene). 266 tests. |
 | [LOG.md](LOG.md) | Hovedbogen — én række pr. måned, logført før udfaldet kendes. Redigeres aldrig. |
 | [BEDOEMMELSESNOEGLE.md](BEDOEMMELSESNOEGLE.md) | Hvordan hovedbogen scores — præregistreret før række 4, med styrketabel |
-| [UDFALD.csv](UDFALD.csv) / [hovedbog.jsonl](hovedbog.jsonl) | Append-only udfald pr. række / fuld record pr. række (hovedbog.jsonl oprettes ved række 4) |
+| [UDFALD.csv](UDFALD.csv) / [hovedbog.jsonl](hovedbog.jsonl) | Append-only udfald pr. række / fuld record pr. række (hovedbog.jsonl findes fra række 4, 2026-11-13) |
 | [RAADETS_KONSENSUS.md](RAADETS_KONSENSUS.md) | Blueprintet, ratificeret 7/7 af et råd af sprogmodeller efter seks debatrunder |
 | [RAADETS_REVIEW.md](RAADETS_REVIEW.md) | Grand review med 18 modeller |
 | [RAADETS_V501.md](RAADETS_V501.md) | Rådets konsensus om v5.0.1 — den første rekalibrering (4/4, 19. sept. 2026) |
@@ -86,7 +89,7 @@ ud af repoet, sværm-tripwires ud af hovedbogens antændings-kolonne (rådets R3
 | [REVIEW-2026-10-15.md](REVIEW-2026-10-15.md) | Kode-reviewet af hele setuppet (85 fund) |
 | [TRIGGER-ATLAS.md](TRIGGER-ATLAS.md) | Sværm-simulerede recessionskanaler og tripwires — narrativ kontekst, ikke input til P |
 | [DASHBOARD-BRIEF.md](DASHBOARD-BRIEF.md) | Designregler for et dashboard der ikke kan oversælge |
-| [dashboard.html](dashboard.html) | Dashboardet: én selvstændig side, der læser `dashboard.json` fra samme mappe (`python -m http.server` i repo-roden, åbn `/dashboard.html`; direkte fra disken vælges filen i siden) |
+| [dashboard.html](dashboard.html) | Dashboardet: én HTML-fil uden build-trin (webfonte hentes fra Google Fonts), der læser `dashboard.json` fra samme mappe (`python -m http.server` i repo-roden, åbn `/dashboard.html`; direkte fra disken vælges filen i siden) |
 | [debat/](debat/) | Transkripter af rådsdebatterne (blueprint, v5.0.1, 2027, spec 7 og spec 8; grand reviewets runde A+B blev ikke arkiveret — se RAADETS_REVIEW.md) |
 | [mirofish-sim/](mirofish-sim/) | Sværm-simulationernes rådata og resuméer |
 | [v4/](v4/) | Forgængeren |
@@ -107,11 +110,13 @@ python fetch.py                        # snapshot (FRED + Fed Board EBP), hashet
                                        # CAPE (multpl), marginlån (FINRA) og BEA's BNP-kalender — manual.json er kun reserve
 python motor.py --log --json           # læsning, hovedbogsrække (kun i logvinduet), dashboard.json
 python analyser/b3_revisionsaudit.py   # spec 7B: Kim-Wright-revisionsaudit (fra 2026-11-rækken)
-python -m unittest test_v5             # 238 tests
+python skygge.py --verificer           # spec 8: hver skygge-hash i hovedbog.jsonl har sin private linje (viser ingen tal)
+python -m unittest test_v5             # 266 tests
 ```
 
 Vægtene er frosne mellem rekalibreringer (hver september, eller når NBER daterer en ny top/bund):
-`python finalize6.py && python diagnostik.py` (bump først `VERSION` i finalize6.py, §3.3). Se [RAADETS_V501.md](RAADETS_V501.md).
+`python finalize6.py && python diagnostik.py && python skygge.py --fit` (bump først `VERSION` i finalize6.py, §3.3).
+Se [RAADETS_V501.md](RAADETS_V501.md).
 
 Kræver Python 3 og numpy. Intet andet.
 
@@ -138,12 +143,13 @@ samme bytes, kan efterprøve hashen.
 | Robert J. Shiller (Yale) | Rygraden t.o.m. 2023-07 (`manual/shiller_yale_2023-09.csv`) | Data courtesy of Robert J. Shiller | ja |
 | multpl.com | Månedlig Shiller-CAPE efter 2023-07 | Siden kopieres ikke; kun afledte månedstal i `spine.csv` | **siden: nej (lokal)** |
 | NY Fed (Adrian, Crump og Moench 2013) | `manual/acm.csv` (ACM-termpræmien, kun trin 4-testen) | © Federal Reserve Bank of New York; videregivet under NY Fed's Terms of Use med kildeangivelse ("Source: Federal Reserve Bank of New York, ACM Treasury term premia") | ja |
-| FINRA | Marginlån y/y i `manual.json` (et afledt tal) | FINRA Margin Statistics | ja |
+| FINRA | Marginlån y/y: et afledt tal i hvert snapshots `meta.json` (`afledte`), med `manual.json` som reserve | FINRA Margin Statistics | det afledte tal: ja; selve filen `margin-statistics.xlsx`: **nej (lokal)** |
 
 Kildeangivelse for FRED-serier: *Federal Reserve Bank of St. Louis, [serienavn] [ID], retrieved from FRED,
 Federal Reserve Bank of St. Louis; https://fred.stlouisfed.org/series/[ID]*. Licensmærkerne blev hentet
-fra FRED's seriesider 2026-10-15 og står pr. serie i `v5/spine.py` (`SERIER`) og i hvert snapshots
-`meta.json`.
+fra FRED's seriesider 2026-10-15 (kontekst-protokollens serier 2026-10-24) og står pr. serie i `v5/spine.py`
+(`SERIER`) og i hvert snapshots `meta.json`. BEA's BNP-udgivelseskalender læses fra FRED's udgivelseskalender
+(release 53) og ALFRED-vintages.
 
 Licensbegrænsede filer fra før 2026-10-15 findes stadig i git-historikken. Anbefalingen (kode-review F1, udført
 2026-10-15) er IKKE at omskrive historikken nu: det giver alle commits nye SHA'er og svækker hovedbogens

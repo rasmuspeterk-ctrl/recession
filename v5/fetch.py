@@ -25,7 +25,8 @@ indgaar aldrig — F2), multpl-assertions og revisionsdiff (§1.3, F25), outlier
 `--accept-outlier "<hvad blev tjekket; hvorfor>"`; accepterede (maaned, vaerdi)-par gemmes i
 manual/outliers_accepteret.json, F31) og den udgivelses-bevidste friskheds-guard (§1.7) haandhaeves
 her. Snapshottet faar `spine.refit_klar` (F5): false hvis multpl eller SP500 fejlede, eller rygraden
-er stale — saa naegter finalize6/diagnostik at rekalibrere, mens den maanedlige laesning fortsaetter.
+er stale — saa ADVARER finalize6/diagnostik (curve-only kalibreres uafhaengigt af rygraden; fuldmodellens gate
+kan blive 'comparison unavailable'), mens den maanedlige laesning fortsaetter.
 
 Manuelle inputs (dokumenteret protokol, raadets Section 9):
   manual/manual.json  — {"spx_vs_hi": .., "cape": .., "margin_yoy": .., "as_of": "YYYY-MM-DD",
@@ -49,7 +50,7 @@ HERE = Path(__file__).parent
 RAW = HERE / "data" / "raw"
 MANUAL = HERE / "manual"
 LOG = HERE.parent / "LOG.md"
-WORKERS = 8          # parallelle kald: 37 serier ~3-5 s parallelt
+WORKERS = 8          # parallelle kald: 54 serier paa faa sekunder
 
 # Serier og hvorfor de hentes: afledt af spine.SERIER (+ ikke-FRED-kilder i spine.EKSTERNE)
 SERIES = {sid: v[3] for sid, v in SP.SERIER.items()}
@@ -278,13 +279,16 @@ def afledte_tal(outdir, series_data, hent_finra=True):
     except Exception as e:
         ud["cape"] = dict(fejl=str(e)[:200])
     if hent_finra:
+        b = None
         try:
             b = fetch_finra()
             (outdir / "finra_margin.xlsx").write_bytes(b)
             ud["margin_yoy"] = SP.finra_margin(b) | dict(kilde="FINRA margin statistics (debit balances, samme maaned aaret foer)",
                                                           sha256=sha256(b))
         except Exception as e:
-            ud["margin_yoy"] = dict(fejl=str(e)[:200])
+            # audit 2026-11-13: filen er hentet og gemt lokalt, ogsaa naar den ikke kan laeses — saa skal dens hash staa i
+            # meta.json som for de andre lokale kilder (snapshot 2026-11-13 fik en fil uden hash, da formatet var aendret)
+            ud["margin_yoy"] = dict(fejl=str(e)[:200]) | (dict(sha256=sha256(b)) if b is not None else {})
     return ud
 
 
@@ -343,6 +347,16 @@ def rygrad_kilde(today_dir):
 def monthly_last(data):
     """FRED-maanedsserie [(YYYY-MM-DD, v)] -> {YYYY-MM: float} (stemplet den 1.)."""
     return {d[:7]: float(v) for d, v in data}
+
+def arv_sp500_overlap(ov, gl_ov, kilde_navn, cape_ok):
+    """F2 (fra ca. 2032): FRED's rullende 10-aars SP500-vindue overlapper ikke laengere Shiller. SP500-delen af
+    overlap-tjekket arves da fra nyeste snapshot med intakt rygrad (gl_ov); CAPE-delen er tjekket live (cape_ok).
+    Audit 2026-11-13: 'sp500_arvet_fra' kom med baade blandt de arvede sp500-noegler og som eget argument, saa ANDEN arv
+    i traek (kilden har selv arvet) gav TypeError — hver fetch ville vaere vaeltet fra ca. september 2032."""
+    arvet = {k: v for k, v in gl_ov.items() if k.startswith("sp500") and k != "sp500_arvet_fra"}
+    return dict(ov, **arvet, sp500_arvet_fra=gl_ov.get("sp500_arvet_fra", kilde_navn), bestaaet=cape_ok,
+                note="SP500-overlap verificeret tidligere (vinduet er rullet forbi Shiller); CAPE tjekket live")
+
 
 def byg_rygrad(outdir, series_data, argv, today, prev=None):
     """Bygger spine.csv (§1) + koerer overlap/outlier/revisions-guards. Returnerer (meta-blok, kritiske_fejl).
@@ -406,9 +420,7 @@ def byg_rygrad(outdir, series_data, argv, today, prev=None):
             if gl_ov.get("bestaaet"):
                 cape_ok = bool(ov.get("cape_n")) and ov["cape_median_abs_pct"] <= SP.TOL["cape_median"] \
                     and ov["cape_max_abs_pct"] <= SP.TOL["cape_max"]
-                ov = dict(ov, **{k: v for k, v in gl_ov.items() if k.startswith("sp500")},
-                          sp500_arvet_fra=gl_ov.get("sp500_arvet_fra", kilde.name), bestaaet=cape_ok,
-                          note="SP500-overlap verificeret tidligere (vinduet er rullet forbi Shiller); CAPE tjekket live")
+                ov = arv_sp500_overlap(ov, gl_ov, kilde.name, cape_ok)
         info["overlap"] = ov
         if not ov["bestaaet"]:
             kritiske.append("rygrad: overlap-tolerancer (§1.2) ikke overholdt")
@@ -468,7 +480,7 @@ def byg_rygrad(outdir, series_data, argv, today, prev=None):
 
 def refit_klar(spine_info, reserve_fejl, stale):
     """F5: et snapshot er kun egnet til (re)kalibrering hvis rygraden er hel og frisk. Den maanedlige
-    curve-only-laesning paavirkes ikke (§1.7) — kun finalize6/diagnostik naegter at koere."""
+    curve-only-laesning paavirkes ikke (§1.7); finalize6/diagnostik advarer og kalibrerer curve-only alligevel."""
     grunde = []
     if "fejl" in spine_info.get("multpl", {}):
         grunde.append("multpl fejlede (CAPE-kolonnen mangler efter 2023-07)")

@@ -89,6 +89,12 @@ tr.op td { background: var(--operationel-bg); }
 tr.op td:first-child { box-shadow: inset 3px 0 0 var(--operationel); padding-left: 8px; }
 tr.afvist td { color: var(--dæmpet); }
 tr.ref td { border-top: 1px solid var(--blæk); }
+/* hovedbogsrækkens øvrige felter (note, kalibrering, input …) står under rækken. På en smal skærm ruller tabellen vandret;
+   100cqw holder teksten inden for det synlige felt, så den kan læses uden at rulle. */
+.hb-tabel { container-type: inline-size; }
+tr.har-detalje td { border-bottom: 0; padding-bottom: 2px; }
+tr.detalje td { padding-top: 0; font-size: .8rem; color: var(--dæmpet); }
+tr.detalje div { display: flex; flex-wrap: wrap; gap: 2px 18px; overflow-wrap: anywhere; max-width: 85ch; max-width: min(100cqw, 85ch); }
 
 /* linjer (monitorer m.m.) */
 .gruppe { display: grid; gap: 6px; }
@@ -147,21 +153,31 @@ button, input[type=file] { font: inherit; }
   "use strict";
 
   // ---------- tekst: translitteration og dansk talformat (brief: de eneste tilladte ændringer af ordret tekst)
-  const BESKYT = /^(Baa|BAA|Aaa|AAA)$|koef/i;               // Moody's-ratings og 'koef.' er ikke danske å/ø
+  // Ikke danske å/æ/ø: Moody's-ratings, 'koef.' og flertals-oe (datoer, ratioer, saldoer, scenarioer).
+  const BESKYT = /^(Baa|BAA|Aaa|AAA)$|koef|(dat|rati|sald|scenari)oer/i;
+  // Identifikatorer gengives ordret, så de kan findes i repoet: filnavne (BEDOEMMELSESNOEGLE.md), hex-hashes
+  // (6baeade4 må aldrig blive til 6bæade4) og navne i versaler med understreg (RAADETS_KONSENSUS).
+  const FILNAVN = /\.(md|py|json|jsonl|csv|html|yml|xlsx|txt)$/i;
+  const HASH = /^(?=[0-9a-f]*\d)[0-9a-f]{6,}$/;
+  const VERSALNAVN = /^[A-Z0-9]+(_[A-Z0-9]+)+$/;
   function translit(s) {
     if (s === null || s === undefined) return "";
     s = String(s);
     return s.replace(/[A-Za-z0-9_\-.']+/g, w => {
-      if (BESKYT.test(w) || /\d/.test(w) && /[A-Z]{3,}/.test(w)) return w;
+      const kerne = w.replace(/[.']+$/, "");                 // et sætningspunktum efter navnet hører ikke med
+      if (BESKYT.test(w) || FILNAVN.test(kerne) || HASH.test(kerne) || VERSALNAVN.test(kerne) || /\d/.test(w) && /[A-Z]{3,}/.test(w)) return w;
       return w.replace(/aa/g, "å").replace(/Aa/g, "Å").replace(/AA/g, "Å")
               .replace(/ae/g, "æ").replace(/Ae/g, "Æ").replace(/AE/g, "Æ")
               .replace(/oe/g, "ø").replace(/Oe/g, "Ø").replace(/OE/g, "Ø");
     });
   }
+  // Afsnitsnumre er ikke decimaltal: "diagnostik 4.5", "4.4-bootstrap" og "4.4-interval" beholder punktummet.
+  const AFSNIT_FØR = /diagnostik\s$/i, AFSNIT_EFTER = /^-(bootstrap|interval)/i;
   function dkTal(s) {
     return String(s)
       .replace(/(\d),(?=\d{3}(?![\d.,]))/g, "$1\u202f")                    // engelsk tusindtalsseparator -> smalt mellemrum
-      .replace(/(^|[^\d.A-Za-z§])(\d+)\.(\d+)(?![\d.])/g, "$1$2,$3")     // decimalpunktum -> komma (ikke v5.2, G2.3, §1.2)
+      .replace(/(^|[^\d.A-Za-z§])(\d+)\.(\d+)(?![\d.])/g, (m, før, a, b, pos, hele) =>   // decimalpunktum -> komma (ikke v5.2, G2.3, §1.2)
+        AFSNIT_FØR.test(hele.slice(0, pos + før.length)) || AFSNIT_EFTER.test(hele.slice(pos + m.length)) ? m : `${før}${a},${b}`)
       .replace(/(\d)%/g, "$1 %");
   }
   const T = s => dkTal(translit(s));                   // ordret tekst fra JSON'en
@@ -218,6 +234,9 @@ button, input[type=file] { font: inherit; }
 
   // ---------- hovedbogen: register over logførte læsninger (aldrig en dom, aldrig en trend)
   function mIdx(t) { const m = /^(\d{4})-(\d{2})/.exec(t || ""); return m ? (+m[1]) * 12 + (+m[2] - 1) : null; }
+  const MND = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
+  // Mindste skridt, hvor etiketter af en given bredde (i SVG-enheder, 11 px monospace ≈ 6,6 pr. tegn) ikke kan støde sammen.
+  const skridt = (etiketbredde, afstand, trin) => trin.find(t => t * afstand >= etiketbredde) || null;
   function hovedbogsGraf(rækker) {
     const punkter = rækker.map(r => ({ r, i: mIdx(r.logget) })).filter(o => o.i !== null);
     if (!punkter.length) return null;
@@ -225,7 +244,7 @@ button, input[type=file] { font: inherit; }
     const n = Math.max(i1 - i0 + 1, 6);
     const tal = punkter.flatMap(o => [o.r.baand_tal ? o.r.baand_tal[1] : null, o.r.basisrate_tal, o.r.p_tal]).filter(v => v !== null && v !== undefined);
     const ymax = Math.ceil(Math.max(0.25, ...tal) * 1.1 / 0.05) * 0.05;
-    const W = bredde(), H = 210, L = 44, R = 12, T0 = 12, B = 34;
+    const W = bredde(), H = 212, L = 44, R = 12, T0 = 12, B = 36;        // B: to etiketrækker under aksen
     const kol = (W - L - R) / n;
     const x = i => L + kol * (i - i0 + 0.5);
     const y = v => T0 + (H - T0 - B) * (1 - v / ymax);
@@ -236,18 +255,33 @@ button, input[type=file] { font: inherit; }
       gitter.append(s("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end" }, fmt(v * 100, 0) + " %"));
     }
     g.append(gitter);
+    // Tidsaksen i to lag, så etiketterne aldrig støder sammen, uanset hvor mange rækker hovedbogen får: månedsnavne
+    // (talt fra den nyeste række, så den seneste læsning altid er mærket) og årstal under januar og under første række.
+    const hverMåned = skridt(27, kol, [1, 2, 3, 6]);                     // "nov" ≈ 20 enheder + luft
+    const hvertÅr = skridt(34, kol * 12, [1, 2, 5, 10, 20, 50, 100]);    // "2026" ≈ 27 enheder + luft
+    const akse = s("g", { class: "tidsakse" });
+    if (hverMåned) for (let i = i1; i >= i0; i -= hverMåned) akse.append(s("text", { x: Math.max(x(i), L + 6), y: H - 19, "text-anchor": "middle" }, MND[i % 12]));   // fri af y-aksens "0 %"
+    const år = [];
+    for (let i = i0; i <= i1; i++) if (i === i0 || i % 12 === 0) år.push({ i, årstal: Math.floor(i / 12), januar: i % 12 === 0 });
+    const vist = år.filter(a => a.januar && hvertÅr && a.årstal % hvertÅr === 0);
+    // Første række ligger sjældent i januar: dens årstal vises, når det ikke støder sammen med det næste viste årstal.
+    if (!år[0].januar && (!vist.length || (vist[0].i - i0) * kol >= 34)) vist.unshift(år[0]);
+    for (const a of vist) akse.append(s("text", { x: Math.min(x(a.i), W - 15), y: H - 5, "text-anchor": "middle" }, String(a.årstal)));
+    g.append(akse);
+    const rad = Math.max(1.5, Math.min(4.5, kol * 0.42));                 // prikkerne må ikke flyde sammen, når rækkerne står tæt
     for (const { r, i } of punkter) {
-      const mnd = r.logget.slice(0, 7);
-      g.append(s("text", { x: x(i), y: H - 12, "text-anchor": "middle" }, mnd));
       if (r.p_tal === null || r.p_tal === undefined) {               // 'ikke logget': et hul, aldrig interpoleret
-        g.append(s("text", { x: x(i), y: y(ymax / 2), "text-anchor": "middle" }, "ikke logget"));
-        continue;
+        const ym = y(ymax / 2);
+        if (kol >= 78) g.append(s("text", { x: x(i), y: ym, "text-anchor": "middle" }, "ikke logget"));
+        else if (kol >= 13) g.append(s("text", { x: x(i), y: ym, "text-anchor": "middle", "dominant-baseline": "central", transform: `rotate(-90 ${x(i)} ${ym})` }, "ikke logget"));
+        continue;                                                    // smallere kolonner: hullet står tomt
       }
       const bw = Math.min(26, kol * 0.5);
-      if (r.baand_tal) g.append(s("rect", { class: "bånd-rect", x: x(i) - bw / 2, y: y(r.baand_tal[1]), width: bw, height: Math.max(1, y(r.baand_tal[0]) - y(r.baand_tal[1])), rx: 2 }));
+      const streg = Math.min(bw / 2 + 6, kol / 2 - 0.5);             // basisrate-stregen bliver i sin egen kolonne (går aldrig ind i et hul)
+      if (r.baand_tal) g.append(s("rect", { class: "bånd-rect", x: x(i) - bw / 2, y: y(r.baand_tal[1]), width: bw, height: Math.max(1, y(r.baand_tal[0]) - y(r.baand_tal[1])), rx: Math.min(2, bw / 2) }));
       if (r.basisrate_tal !== null && r.basisrate_tal !== undefined)
-        g.append(s("line", { class: "basislinje", x1: x(i) - bw / 2 - 6, x2: x(i) + bw / 2 + 6, y1: y(r.basisrate_tal), y2: y(r.basisrate_tal) }));
-      g.append(s("circle", { class: "punkt", cx: x(i), cy: y(r.p_tal), r: 4.5 }));
+        g.append(s("line", { class: "basislinje", x1: x(i) - streg, x2: x(i) + streg, y1: y(r.basisrate_tal), y2: y(r.basisrate_tal) }));
+      g.append(s("circle", { class: "punkt", cx: x(i), cy: y(r.p_tal), r: rad }));
     }
     return g;
   }
@@ -274,10 +308,20 @@ button, input[type=file] { font: inherit; }
     return `${ym(i)}..${ym(i + 11)}*`;
   }
 
+  // Hovedbogsrækkens øvrige felter fra LOG.md (datakontrakten for hovedbog[]): står ordret under rækken, når de findes.
+  // Ældre rækker mangler felterne eller har en tom streng og får ingen linje. Hashen gengives urørt.
+  const RÆKKEFELTER = [["kalibrering", "Kalibrering"], ["input", "Input"], ["P_maanedlig", "P på månedstal (sammenligning)"],
+    ["P_maanedligt_fit", "Uscoret, månedligt fit"], ["P_1953Q2", "Uscoret, start 1953Q2"], ["P_1960Q1", "Uscoret, start 1960Q1"], ["note", "Note"]];
+  function rækkeFelter(r) {
+    return RÆKKEFELTER.filter(([k]) => typeof r[k] === "string" && r[k].trim() !== "")
+      .map(([k, navn]) => el("span", {}, navn + ": ", el("span", { class: k === "note" ? null : "mono", text: k === "kalibrering" ? r[k] : T(r[k]) })));
+  }
+
   // ---------- hele siden
   function tegn(d) {
-    const side = document.getElementById("side");
-    side.replaceChildren();
+    // Siden bygges færdig i et løst fragment og sættes først ind til sidst: fejler noget undervejs (fx et manglende
+    // felt i JSON'en), står indlæsningsfeltet urørt, og fejlen kan vises — aldrig en halv side uden besked.
+    const side = document.createDocumentFragment();
     const hb = Array.isArray(d.hovedbog) ? d.hovedbog : [];
     const logført = hb.some(r => r.snapshot === d.snapshot);
     const cens = d.censureret && d.censureret.aktiv;
@@ -340,19 +384,25 @@ button, input[type=file] { font: inherit; }
     // 2. hovedbogen
     const ref = d.hovedbog_reference;
     const graf = hovedbogsGraf(hb);
-    const rækker = el("div", { class: "rul" }, el("table", {},
-      el("thead", {}, el("tr", {}, ["Logget", "Vindue", "P", "Bånd", "Basisrate", "Dom", "Kurve", "Antændelse"].map((h, k) => el("th", { class: k > 1 && k !== 5 && k !== 7 ? "tal" : null, text: h })))),
-      el("tbody", {}, hb.slice().reverse().map(r => el("tr", {},
-        el("td", { class: "mono", text: r.logget }),
-        el("td", { class: "mono lille", text: vindueAf(r) }),
-        el("td", { class: "tal", text: T(r.P) }), el("td", { class: "tal", text: T(r.baand) }), el("td", { class: "tal", text: T(r.basisrate) }),
-        el("td", { text: T(r.dom) }), el("td", { class: "tal", text: T(r.kurve) }), el("td", { text: T(r.antaending) }))))));
+    const KOLONNER = ["Logget", "Vindue", "P", "Bånd", "Basisrate", "Dom", "Kurve", "Antændelse"];
+    const rækker = el("div", { class: "rul hb-tabel" }, el("table", {},
+      el("thead", {}, el("tr", {}, KOLONNER.map((h, k) => el("th", { class: k > 1 && k !== 5 && k !== 7 ? "tal" : null, text: h })))),
+      el("tbody", {}, hb.slice().reverse().map(r => {
+        const felter = rækkeFelter(r);
+        return [el("tr", { class: felter.length ? "har-detalje" : null },
+          el("td", { class: "mono", text: r.logget }),
+          el("td", { class: "mono lille", text: vindueAf(r) }),
+          el("td", { class: "tal", text: T(r.P) }), el("td", { class: "tal", text: T(r.baand) }), el("td", { class: "tal", text: T(r.basisrate) }),
+          el("td", { text: T(r.dom) }), el("td", { class: "tal", text: T(r.kurve) }), el("td", { text: T(r.antaending) })),
+          felter.length ? el("tr", { class: "detalje" }, el("td", { colspan: KOLONNER.length }, el("div", {}, felter))) : null];
+      }))));
     side.append(sektion("Hovedbogen", [mærkat("register, ikke en dom")],
       forklaring("Én række om måneden, skrevet før man ved, om en recession kommer. Senere kan rækkerne sammenlignes med, hvad der faktisk skete. Rækkerne ændres aldrig."),
       el("p", { text: T(d.hovedbog_note) }),
       ref && ref.improvement !== null && ref.improvement !== undefined
         ? el("p", { class: "lille", text: `Referencetal for hovedbogen: +${fmt(ref.improvement, 1)} % (${T(ref.kilde)}). ${T(ref.note || "")}` }) : null,
-      graf, el("p", { class: "lille", text: "Prik = P som logget; skygge = båndet; vandret streg = den loggede basisrate. Hver række er skrevet, før udfaldet var kendt." }),
+      graf, el("p", { class: "lille", text: "Prik = P som logget; skygge = båndet; vandret streg = den loggede basisrate. Hver række er skrevet, før udfaldet var kendt."
+        + (hb.some(r => mIdx(r.logget) !== null && (r.p_tal === null || r.p_tal === undefined)) ? " En tom måned er en måned uden læsning i logvinduet." : "") }),
       hb.length ? rækker : el("p", { class: "lille", text: "Ingen logførte rækker endnu." }),
       hb.some(r => !r.vindue && r.p_tal !== null && r.p_tal !== undefined) ? el("p", { class: "lille", text: "* Rækken er skrevet, før vinduet fik sin egen kolonne. Vinduet er afledt efter bedømmelsesnøglens regel (b); selve rækken er uændret." }) : null,
       d.noegle ? el("p", { class: "lille", text: `Bedømmelsesnøgle ${d.noegle}. Ingen samlet score, før mindst 3 komplette cyklusblokke er scoret.` })
@@ -510,12 +560,15 @@ button, input[type=file] { font: inherit; }
       el("dt", { text: "Serier der ikke kunne hentes" }), el("dd", { text: (d.utilgaengelige || []).length ? d.utilgaengelige.join(", ") : "ingen" }));
     blokke.push(el("div", { class: "gruppe" }, el("h3", { text: "Data og friskhed" }), frisk));
     fod.append(el("div", { class: "to-kol" }, blokke),
-      el("p", { text: "Genereret af v5/motor.py --json. Dashboardet er en deterministisk funktion af snapshot, vægte, diagnostik og LOG.md. Kildetekster er translittereret (aa → å, ae → æ, oe → ø) og sat i dansk talformat; ellers gengivet ordret." }));
+      el("p", { text: "Genereret af v5/motor.py --json. Dashboardet er en deterministisk funktion af snapshot, vægte, diagnostik og LOG.md. Kildetekster er translittereret (aa → å, ae → æ, oe → ø; filnavne og hashes står uændret) og sat i dansk talformat; ellers gengivet ordret." }));
     side.append(fod);
+    document.getElementById("side").replaceChildren(side);
   }
 
   // ---------- indlæsning: samme mappe -> indlejret kopi -> filvælger
+  const INDLÆS = document.getElementById("indlaes");
   function fejl(tekst) {
+    if (!INDLÆS.isConnected) document.getElementById("side").replaceChildren(INDLÆS);   // feltet findes altid, også efter en vist side
     document.getElementById("indlaes-tekst").textContent = tekst;
     document.getElementById("vaelg").hidden = false;
   }

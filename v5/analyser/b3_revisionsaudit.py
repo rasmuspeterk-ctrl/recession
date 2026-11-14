@@ -27,7 +27,7 @@ AENDRER INTET I DRIFT: skriver kun analyser/b3_revisionsaudit_resultat.json. Aab
 
 Koer:  cd v5 && python analyser/b3_revisionsaudit.py
 """
-import json, sys
+import json, re, sys
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -53,9 +53,15 @@ def _midx(dato):
 
 def aargange(raekker):
     """Spec 7B §2: [(logget, snapshot)] for raekker logget efter forseglingen, een pr. maaned. Taellingen starter
-    forfra efter en manglende maaned; den foerste loebende serie, der naar 12, bruges. -> (serie, faerdig)."""
+    forfra efter en manglende maaned; den foerste loebende serie, der naar 12, bruges. -> (serie, faerdig).
+    En manglende maaned staar i LOG.md som motorens eksplicitte '<YYYY-MM> (ikke logget)'-raekke med snapshot '–'
+    (audit 2026-11-13): den er et hul, ikke en aargang. Foer talte den med — tegnet '–' er en ikke-tom streng — saa
+    kravet kunne meldes opfyldt paa 11 rigtige aargange, og en hulraekke som aargang 1 stoppede auditten."""
     serie = []
     for r in sorted((r for r in raekker if r.get("logget", "") > FORSEGLET and r.get("snapshot")), key=lambda r: r["logget"]):
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", r["snapshot"]):
+            serie = []                                      # 'ikke logget': hul -> forfra
+            continue
         if serie and _midx(r["logget"]) == _midx(serie[-1][0]):
             continue                                        # dublet i samme maaned: den foerste raekke gaelder
         if serie and _midx(r["logget"]) != _midx(serie[-1][0]) + 1:

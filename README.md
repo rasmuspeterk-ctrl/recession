@@ -14,16 +14,18 @@ curve-only logit, locked by the council (RAADETS_V501 §6); the five-feature ful
 +20.4 % (219 origins; the figure the ledger is judged against); oracle-censored, fixed λ = 1 +27.1 %; nested λ
 (oracle-censored) +18.3 % — and 80 % power requires on the order of 150 calendar years of ledger, while naive
 tests reject a true null hypothesis 36–53 % of the time at 5–20 years.** The ledger is therefore an honesty
-instrument, not a test.
+instrument, not a test. *(Audit 2026-11-13: the pinned simulation gives 45–53 % at 5–20 years, not 36–53 %; the
+ratified sentence stands until the council amends it — see
+[v5/README.md](v5/README.md#audit-2026-11-13--raekke-4-logget-driftsfejl-og-tidsbomber-i-testsuiten-rettet).)*
 
 λ = 1 is inherited from v4 and not selected in a nested way; that is a declared deviation from the blueprint. A
 nested model selection would have chosen the full model and scored +8.5 % (see
-[v5/README.md](v5/README.md#afvigelser-fra-blueprintet-erklaeret-2026-10-15)). Seven feature candidates were
-tested, published and rejected; the search is closed.
+[v5/README.md](v5/README.md#afvigelser-fra-blueprintet-erklaeret-2026-10-15)). Seven candidates (six features
+and the five-feature full model) were tested, published and rejected; the search is closed.
 
-**Latest logged reading (2026-10-10, v5.0.1, daily curve):** P = 15.1 % [10.4–21.6 %] against a base rate of
-18.0 % — not distinguishable from the base rate. See [LOG.md](LOG.md). A mid-month reading on 2026-10-27 (not
-logged) gave 14.8 % [10.2–21.2 %]; the current reading is on the [dashboard](dashboard.html).
+**Latest logged reading (2026-11-13, v5.0.1, daily curve):** P = 17.7 % [12.7–25.6 %] against a base rate of
+18.0 % — not distinguishable from the base rate (ledger row 4). See [LOG.md](LOG.md); the current reading is on
+the [dashboard](dashboard.html).
 
 ### Language
 
@@ -85,10 +87,10 @@ tripwires out of the ledger's ignition column (the council's R3), a preregistere
 | File | Contents |
 |---|---|
 | [v5/README.md](v5/README.md) | Rituals, file map, deviations from the blueprint, build log (Danish) |
-| [v5/](v5/) | The code: fetch → (finalize6 → diagnostik at recalibration) → motor (calibrate.py is the step-1 reproduction and does not overwrite the operational weights). 238 tests. |
+| [v5/](v5/) | The code: fetch → (finalize6 → diagnostik at recalibration) → motor (calibrate.py is the step-1 reproduction and does not overwrite the operational weights). 266 tests. |
 | [LOG.md](LOG.md) | The ledger — one row per month, logged before the outcome is known. Never edited. |
 | [BEDOEMMELSESNOEGLE.md](BEDOEMMELSESNOEGLE.md) | How the ledger is scored — preregistered before row 4, with a power table (Danish) |
-| [UDFALD.csv](UDFALD.csv) / [hovedbog.jsonl](hovedbog.jsonl) | Append-only outcome per row / full record per row (hovedbog.jsonl is created at row 4) |
+| [UDFALD.csv](UDFALD.csv) / [hovedbog.jsonl](hovedbog.jsonl) | Append-only outcome per row / full record per row (hovedbog.jsonl exists from row 4, 2026-11-13) |
 | [RAADETS_KONSENSUS.md](RAADETS_KONSENSUS.md) | The blueprint, ratified 7/7 by a council of language models after six debate rounds |
 | [RAADETS_REVIEW.md](RAADETS_REVIEW.md) | Grand review with 18 models |
 | [RAADETS_V501.md](RAADETS_V501.md) | The council's consensus on v5.0.1 — the first recalibration (4/4, 19 Sept 2026) |
@@ -98,7 +100,7 @@ tripwires out of the ledger's ignition column (the council's R3), a preregistere
 | [REVIEW-2026-10-15.md](REVIEW-2026-10-15.md) | The code review of the whole setup (85 findings) |
 | [TRIGGER-ATLAS.md](TRIGGER-ATLAS.md) | Swarm-simulated recession channels and tripwires — narrative context, not an input to P |
 | [DASHBOARD-BRIEF.md](DASHBOARD-BRIEF.md) | Design rules for a dashboard that cannot oversell (Danish) |
-| [dashboard.html](dashboard.html) | The dashboard: one self-contained page that reads `dashboard.json` from the same folder (`python -m http.server` in the repository root, open `/dashboard.html`; opened from disk, choose the file in the page) |
+| [dashboard.html](dashboard.html) | The dashboard: one HTML file with no build step (web fonts come from Google Fonts) that reads `dashboard.json` from the same folder (`python -m http.server` in the repository root, open `/dashboard.html`; opened from disk, choose the file in the page) |
 | [debat/](debat/) | Transcripts of the council debates (blueprint, v5.0.1, 2027, spec 7 and spec 8; the grand review's rounds A+B were not archived — see RAADETS_REVIEW.md) |
 | [mirofish-sim/](mirofish-sim/) | Raw data and summaries of the swarm simulations |
 | [v4/](v4/) | The predecessor |
@@ -119,12 +121,13 @@ python fetch.py                        # snapshot (FRED + Fed Board EBP), hashed
                                        # CAPE (multpl), margin debt (FINRA) and BEA's GDP release calendar itself
 python motor.py --log --json           # reading, ledger row (only inside the log window), dashboard.json
 python analyser/b3_revisionsaudit.py   # spec 7B: Kim-Wright revision audit (from the 2026-11 row)
-python -m unittest test_v5             # 238 tests
+python skygge.py --verificer           # spec 8: every shadow hash in hovedbog.jsonl has its private line (shows no numbers)
+python -m unittest test_v5             # 266 tests
 ```
 
 The weights are frozen between recalibrations (every September, or when NBER dates a new peak/trough):
-`python finalize6.py && python diagnostik.py` (first bump `VERSION` in finalize6.py, §3.3). See
-[RAADETS_V501.md](RAADETS_V501.md).
+`python finalize6.py && python diagnostik.py && python skygge.py --fit` (first bump `VERSION` in finalize6.py,
+§3.3). See [RAADETS_V501.md](RAADETS_V501.md).
 
 Requires Python 3 and numpy. Nothing else.
 
@@ -151,11 +154,11 @@ bytes can verify the hash.
 | Robert J. Shiller (Yale) | The backbone through 2023-07 (`manual/shiller_yale_2023-09.csv`) | Data courtesy of Robert J. Shiller | yes |
 | multpl.com | Monthly Shiller CAPE after 2023-07 | The page is not copied; only derived monthly figures in `spine.csv` | **page: no (local)** |
 | NY Fed (Adrian, Crump and Moench 2013) | `manual/acm.csv` (the ACM term premium, used only in the step-4 test) | © Federal Reserve Bank of New York; redistributed under the NY Fed's Terms of Use with attribution ("Source: Federal Reserve Bank of New York, ACM Treasury term premia") | yes |
-| FINRA | Margin debt y/y in `manual.json` (a derived figure) | FINRA Margin Statistics | yes |
+| FINRA | Margin debt y/y: a derived figure in each snapshot's `meta.json` (`afledte`), with `manual.json` as reserve | FINRA Margin Statistics | derived figure: yes; the file `margin-statistics.xlsx` itself: **no (local)** |
 
 Citation for FRED series: *Federal Reserve Bank of St. Louis, [series name] [ID], retrieved from FRED, Federal
 Reserve Bank of St. Louis; https://fred.stlouisfed.org/series/[ID]*. The licence labels were taken from FRED's
-series pages on 2026-10-15 and are listed per series in `v5/spine.py` (`SERIER`) and in each snapshot's
+series pages on 2026-10-15 (the context-protocol series on 2026-10-24) and are listed per series in `v5/spine.py` (`SERIER`) and in each snapshot's
 `meta.json`. BEA's GDP release calendar is read from FRED's release calendar (release 53) and ALFRED vintages.
 
 Licence-restricted files from before 2026-10-15 are still in the git history. The recommendation (code review F1,

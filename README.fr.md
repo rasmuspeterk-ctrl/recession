@@ -21,19 +21,19 @@ de données est conservé avec son empreinte (hash).
 - **La lecture est toujours comparée au taux de base** (la fréquence historique à laquelle une récession a
   commencé dans l'année, environ 18 %). Si l'incertitude du modèle inclut le taux de base, le verdict est
   « indiscernable du taux de base ».
-- **Les échecs sont publiés aussi** : sept variables candidates ont été testées et rejetées, et figurent à côté du
-  modèle qui a survécu.
+- **Les échecs sont publiés aussi** : sept candidats (six variables et le modèle complet à cinq variables) ont été testés
+  et rejetés, et figurent à côté du modèle qui a survécu.
 - **Des chiffres avec leur incertitude** : l'amélioration de la log-loss par rapport au taux de base est de
   +20,4 % (sans oracle, 219 origines), mais son intervalle à 90 % commence sous zéro. Détecter cet avantage avec
   une puissance de 80 % exigerait de l'ordre de 150 ans de registre.
-- **Un conseil de modèles de langage** débat et ratifie chaque changement de méthode ; les décisions sont scellées
-  avant l'écriture du code ([RAADETS_SPEC7.md](RAADETS_SPEC7.md) et précédents).
+- **Un conseil de modèles de langage** débat et ratifie les changements de méthode (certains après coup) ; depuis le
+  2026-10-15, les spécifications sont scellées avant l'écriture du code ([RAADETS_SPEC8.md](RAADETS_SPEC8.md) et
+  précédents).
 
 ## Lecture actuelle
 
-Dernière lecture enregistrée (2026-10-10) : **P = 15,1 %** [10,4–21,6 %] contre un taux de base de 18,0 %, soit
-indiscernable du taux de base. Une lecture intermédiaire du 2026-10-27 (non enregistrée) donnait 14,8 %. Le
-modèle ne lit que le niveau de la courbe et ne voit pas les chocs extérieurs : ce chiffre signifie « autour du
+Dernière lecture enregistrée (2026-11-13) : **P = 17,7 %** [12,7–25,6 %] contre un taux de base de 18,0 %, soit
+indiscernable du taux de base. Le modèle ne lit que le niveau de la courbe et ne voit pas les chocs extérieurs : ce chiffre signifie « autour du
 taux de base », pas « risque faible ».
 
 ## Pour en savoir plus

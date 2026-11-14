@@ -606,7 +606,9 @@ class TestFinalize6Main(unittest.TestCase):
         W = self._main()
         self.assertEqual(W["operationel"], "curve_only")
         self.assertEqual(W["op"]["features"], ["curve"])
-        self.assertFalse(W["gate"]["raadsbeslutning_paakraevet"])
+        # audit 2026-11-13: testen kalibrerer paa NYESTE snapshot; fra et september 2027-snapshot er gaten RAADETS_2027's,
+        # som ikke har feltet (den kan kun udloese et dagsordenspunkt, aldrig et skift)
+        self.assertFalse(W["gate"].get("raadsbeslutning_paakraevet", False))
         self.assertEqual(W["version"], F6.VERSION)
         self.assertIn("manifest_hash", W)
         self.assertEqual(len(W["band"]["base"]), W["band"]["n_draws"])     # §4.3: basisrate pr. traek
@@ -667,6 +669,11 @@ class TestFinalize6Main(unittest.TestCase):
         Wn = json.loads((self.here / "weights.json").read_text(encoding="utf-8"))
         for W in (Wc, Wn):
             W.pop("created_utc")
+            # audit 2026-11-13: efter en RIGTIG refit baerer den committede weights.json koerslens registrering (koersel:
+            # maaned/utc/trigger), mens en ren reproduktion paa kalibreringens eget snapshot per definition ikke er en
+            # koersel (None). Feltet er proveniens om koerslen, ikke kalibreringsindhold — uden dette gik determinisme-
+            # vagten roed, saa snart 2027-refitten var committet (generalproeven).
+            W.pop("koersel", None)
         self.assertEqual(Wn, Wc)
         self.assertEqual({p.name: p.read_bytes() for p in (self.here / "kalibreringer").iterdir()}, foer)
 
@@ -718,12 +725,19 @@ class TestMotor(unittest.TestCase):
         # refit 'denne maaned', saa kun test_frosne_vaegte_... (de RIGTIGE vaegte) er den bevidste september-alarm.
         W = json.loads((cls.here / "weights.json").read_text(encoding="utf-8"))
         W["refit_maaned"] = cls.today[:7]
-        (cls.here / "weights.json").write_text(json.dumps(W), encoding="utf-8")
+        W["koersel"] = None        # audit 2026-11-13: en rigtig refit efterlader koerslens maaned her, og september-fristen
+        (cls.here / "weights.json").write_text(json.dumps(W), encoding="utf-8")   # regnes fra det seneste af de to (F4)
     @classmethod
     def tearDownClass(cls): cls.tmp.cleanup()
 
     def _motor(self, argv, raw=None, here=None, vindue=(1, 31), dag=None):
-        """Logvinduet (dag 10-20, G3.6) neutraliseres som standard; test_logvindue_* styrer det selv."""
+        """Logvinduet (dag 10-20, G3.6) neutraliseres som standard; test_logvindue_* styrer det selv.
+        Bedoemmelsesnoeglen ligger ved siden af LOG.md som i repoet (audit 2026-11-13): fra en kalibrering med refit-maaned
+        >= 2027-09 laeser motor noeglens §1 (d) (spec 5), og fixturens refit-maaned er 'denne maaned' — uden filen ville
+        ca. 40 tests fejle med FileNotFoundError fra 2027-09-01, uanset om refitten er koert."""
+        noegle = (here or self.here).parent / "BEDOEMMELSESNOEGLE.md"
+        if not noegle.exists():
+            shutil.copy(HERE.parent / "BEDOEMMELSESNOEGLE.md", noegle)
         out = io.StringIO()
         with mock.patch.object(C, "RAW", raw or self.raw), mock.patch.object(M, "HERE", here or self.here), \
              mock.patch.object(M, "LOGDAG_VINDUE", vindue), \
@@ -1823,7 +1837,9 @@ class Test1015Finalize6(unittest.TestCase):
 
     def test_uden_trigger_kraeves_reparation_og_genbrug_bevarer_refit_maaned(self):
         W1 = self._main()                                          # foerste kalibrering (ingen forrige)
-        self.assertIn("mde_gate_pp", W1["gate"]); self.assertIn("koersel", W1)
+        # paa et snapshot fra 2027-09 og frem er gaten RAADETS_2027's (kritisk vaerdi i stedet for den laante MDE)
+        self.assertIn("kritisk_vaerdi_pp" if P27.er_2027_gate(W1["gate"]) else "mde_gate_pp", W1["gate"])
+        self.assertIn("koersel", W1)
         m1 = json.loads((self.here / "kalibreringer" / f"manifest_{W1['manifest_hash']}.json").read_text(encoding="utf-8"))
         self.assertIn("miljoe", m1); self.assertIn("band_sha256", m1["bootstrap"]); self.assertTrue(m1["L_R_audit"]["ok"])
         andre_ikke_sep = [d for d in sorted(C.RAW.iterdir()) if d.is_dir() and C.snapshot_complete(d)
@@ -1842,14 +1858,19 @@ class Test1015Finalize6(unittest.TestCase):
         self.assertIsNone(W2["koersel"])                                    # reproduktion paa eget snapshot er ingen koersel
         self.assertEqual(W2["audit"], m1["audit"])                          # F49
         self.assertEqual(len(list((self.here / "kalibreringer").glob("manifest_*.json"))), 1)
-        # G4.2: en genbrugende koersel paa et ANDET snapshot registreres i weights.json.koersel (ikke som ny kalibrering)
-        andre = [d for d in sorted(C.RAW.iterdir()) if d.is_dir() and C.snapshot_complete(d) and d != REAL_SNAP]
-        if andre:
-            W3 = self._main("--snapshot", str(andre[-1]), "--reparation", "test: andet snapshot")
-            if W3["manifest_hash"] == W1["manifest_hash"]:
-                self.assertTrue(W3["koersel"]["manifest_genbrugt"])
-                self.assertEqual(W3["refit_maaned"], gl)
-                self.assertEqual(W3["created_utc"], m1["created_utc"])     # kalibreringens dato, ikke koerslens
+        # G4.2: en genbrugende koersel paa et ANDET snapshot registreres i weights.json.koersel (ikke som ny kalibrering).
+        # Audit 2026-11-13: det andet snapshot er en kopi af REAL_SNAP under en anden dato i SAMME maaned (samme R, samme
+        # origins). Foer blev det naestnyeste rigtige snapshot brugt. Ligger det i et andet modenhedskvartal (foerste gang
+        # ved december-ritualet 2026, hvor 2024Q2 modner; igen marts, juni og september 2027), er det en ANDEN
+        # kalibrering: finalize6 stopper korrekt paa origin-auditten, og testen fejlede med SystemExit.
+        with tempfile.TemporaryDirectory() as t:
+            kopi = Path(t) / (REAL_SNAP.name[:8] + ("01" if REAL_SNAP.name[8:] != "01" else "02"))
+            shutil.copytree(REAL_SNAP, kopi)
+            W3 = self._main("--snapshot", str(kopi), "--reparation", "test: andet snapshot")
+        self.assertEqual(W3["manifest_hash"], W1["manifest_hash"])     # samme kalibrering genbrugt
+        self.assertTrue(W3["koersel"]["manifest_genbrugt"])
+        self.assertEqual(W3["refit_maaned"], gl)
+        self.assertEqual(W3["created_utc"], m1["created_utc"])         # kalibreringens dato, ikke koerslens
 
     def test_rygrad_ikke_klar_advarer_men_blokerer_ikke(self):
         """F5 + PR #1: en vagt der STOPPEDE finalize6 ved et multpl-udfald ville blokere hovedbogen i hver
@@ -2079,6 +2100,12 @@ class TestMergeVerifikation(unittest.TestCase):
             f = raw / self.today / "spine.csv"
             ln = f.read_text(encoding="utf-8").splitlines()
             f.write_text(chr(10).join([ln[0]] + [r for r in ln[1:] if r[:7] <= "2023-07"]) + chr(10), encoding="utf-8")
+            # audit 2026-11-13: CAPE holdes frisk, saa testen maaler dd-stien. 'CAPE stale' gaar forud for 'dd stale' i motor,
+            # og fixturen er nyeste snapshot under DAGENS dato: var det over 45 dage gammelt (en sprunget maaned), gik
+            # testen roed uden at noget var galt.
+            mf = raw / self.today / "manual.json"
+            man = json.loads(mf.read_text(encoding="utf-8")); man["cape_dato"] = self.today
+            mf.write_text(json.dumps(man), encoding="utf-8")
             ud = Path(t) / "d.json"
             self._motor(["--json", str(ud)], raw=raw)
             d = json.loads(ud.read_text(encoding="utf-8"))
@@ -2272,7 +2299,9 @@ class TestRaad2027Gate(unittest.TestCase):
         W = self._finalize(P27.IKRAFT)
         self.assertNotIn("protokol", W["gate"])
         self.assertIn("raadsbeslutning_paakraevet", W["gate"])
-        self.assertEqual(W["op"]["w"], json.loads((HERE / "weights.json").read_text(encoding="utf-8"))["op"]["w"])
+        # audit 2026-11-13: mod det ARKIVEREDE v5.0.1-manifest, ikke mod 'vaegtene i drift' (som er andre efter refitten)
+        m72 = json.loads((HERE / "kalibreringer" / "manifest_72c3371d.json").read_text(encoding="utf-8"))
+        self.assertEqual(W["op"]["w"], m72["modeller"]["curve_only"]["w"])
 
     def test_motor_printer_ikke_laant_stoejgulv_under_2027_gate(self):
         """Spec 1 §5: under en 2027-gate printer motor ikke trin 3's 4,42 (stoejgulv-linjen fra diagnostik.gate_mde)."""
@@ -2286,7 +2315,9 @@ class TestRaad2027Gate(unittest.TestCase):
             ud = self._motor(["--allow-stale"], here=here)
         self.assertNotIn("Stoejgulvet", ud)
         self.assertNotIn("4.42", ud)
-        self.assertIn("Stoejgulvet", self._motor(["--allow-stale"]))     # kontrol: v5.0.1-gaten printer den stadig
+        if not P27.er_2027_gate(json.loads((HERE / "weights.json").read_text(encoding="utf-8")).get("gate")):
+            # kontrol: v5.0.1-gaten printer den stadig (kun saa laenge kalibreringen i drift HAR en v5.0.1-gate)
+            self.assertIn("Stoejgulvet", self._motor(["--allow-stale"]))
 
 
 
@@ -2537,12 +2568,14 @@ class TestRaad2027IndholdstriggerKaede(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, "indholdstriggeren, RAADETS_2027 §6, er ikke udloest"):
             self._finalize(A2.midx(2026, 9), "2026-10-15")
 
-    def _motor_2027(self, origins_filter, manifest=True, ikraft=A2.midx(2020, 1)):
+    def _motor_2027(self, origins_filter, manifest=True, ikraft=A2.midx(2020, 1), refit=None):
         with tempfile.TemporaryDirectory() as t:
             here = Path(t) / "v5"; shutil.copytree(self.here, here)
             shutil.copy(HERE.parent / "BEDOEMMELSESNOEGLE.md", Path(t) / "BEDOEMMELSESNOEGLE.md")   # §10.4-tjekket
             W = json.loads((here / "weights.json").read_text(encoding="utf-8"))
             W["manifest_hash"] = "test0002"
+            if refit:
+                W["refit_maaned"] = refit
             (here / "weights.json").write_text(json.dumps(W), encoding="utf-8")
             if manifest:
                 mm = json.loads((HERE / "kalibreringer" / "manifest_72c3371d.json").read_text(encoding="utf-8"))
@@ -2562,7 +2595,9 @@ class TestRaad2027IndholdstriggerKaede(unittest.TestCase):
         self.assertNotIn("NBER-indholdstrigger", ud)
         ud, _ = self._motor_2027(uden_2020, manifest=False)                         # fail-closed
         self.assertIn("kan ikke evalueres", ud)
-        ud, d = self._motor_2027(uden_2020, ikraft=P27.IKRAFT)                      # foer ikrafttraeden: evalueres ikke
+        # foer ikrafttraeden: evalueres ikke. Audit 2026-11-13: refit-maaneden pinnes — fixturens er 'denne maaned', som
+        # fra 2027-09 selv er i kraft, saa testen ville gaa roed paa kalenderen alene
+        ud, d = self._motor_2027(uden_2020, ikraft=P27.IKRAFT, refit="2026-09")
         self.assertNotIn("indholdstrigger", ud.lower())
 
 
@@ -2598,8 +2633,14 @@ class TestRaad2027Replay(unittest.TestCase):
         self.assertNotIn("1991-04", hash_R)
 
     def test_main_koerer_kun_ved_refitten(self):
-        with mock.patch.object(sys, "argv", ["replay2027.py"]), self.assertRaisesRegex(SystemExit, "koeres ved september-refitten 2027"):
-            RP.main()
+        # audit 2026-11-13: en eksplicit kalibrering fra FOER 2027-refitten — ikke 'vaegtene i drift', som efter refitten
+        # er en 2027-kalibrering (testen ville da have koert hele replayen og fejlet)
+        with tempfile.TemporaryDirectory() as t:
+            (Path(t) / "weights.json").write_text(json.dumps(dict(refit_maaned="2026-09", snapshot="2026-09-19")), encoding="utf-8")
+            with mock.patch.object(RP, "HERE", Path(t)), mock.patch.object(sys, "argv", ["replay2027.py"]), \
+                 self.assertRaisesRegex(SystemExit, "koeres ved september-refitten 2027"):
+                RP.main()
+            self.assertFalse((Path(t) / "replay2027_resultat.json").exists())
 
 
 
@@ -2665,7 +2706,9 @@ class TestRaad2027MaanedligtFit(unittest.TestCase):
         self.assertEqual(us, m["uscorede"])
         self.assertEqual(us["spec_sha256"], P27.SPECS["4_maanedligt_fit_uscorede.md"])
         self.assertEqual((us["maanedligt_fit"]["N_m"], us["maanedligt_fit"]["N_q"]), (800, 267))
-        start = json.loads((HERE / "diagnostik.json").read_text(encoding="utf-8"))["start_sensitivitet"]
+        # audit 2026-11-13: beregnet paa SAMME snapshot og R som fittet ovenfor — ikke laest fra diagnostik.json, der efter
+        # refitten beskriver en anden kalibrering
+        start = DG.start_sensitivitet(self.snap, self.eps, self.avail, self.usrec, self.R)
         for felt, navn in (("start_1953Q2", "1953Q2"), ("start_1960Q1", "1960Q1")):
             self.assertEqual(us[felt]["w"], start[navn]["w"])            # samme fit som diagnostik.start_sensitivitet
             self.assertEqual(us[felt]["n_obs"], start[navn]["n_obs"])
@@ -2721,6 +2764,9 @@ class TestRaad2027UscoredeHovedbog(unittest.TestCase):
 
     def test_uden_2027_kalibrering_skrives_intet_nyt(self):
         raw, here = self._scenario(y10=4.50, tb3=3.40)
+        W = json.loads((here / "weights.json").read_text(encoding="utf-8"))
+        W.pop("uscorede", None)             # audit 2026-11-13: eksplicit en kalibrering FOER 2027-refitten (uden uscorede fit)
+        (here / "weights.json").write_text(json.dumps(W), encoding="utf-8")
         ud = here.parent / "d.json"
         out = self._motor(["--log", "--json", str(ud)], raw=raw, here=here)
         self.assertNotIn("Uscoret", out)
@@ -2843,9 +2889,12 @@ class TestRaad2027LiveCensurering(unittest.TestCase):
             here = Path(t) / "v5"; shutil.copytree(self.here, here)
             (Path(t) / "BEDOEMMELSESNOEGLE.md").write_bytes(
                 self.NOEGLE.read_bytes().replace("scores ikke, fordi".encode("utf-8"), "scores ikke, da".encode("utf-8")))
+            # audit 2026-11-13: kalibreringens refit-maaned pinnes (fixturens er 'denne maaned', dvs. I KRAFT fra 2027-09)
+            W = json.loads((here / "weights.json").read_text(encoding="utf-8")); W["refit_maaned"] = "2026-09"
+            (here / "weights.json").write_text(json.dumps(W), encoding="utf-8")
             with mock.patch.object(P27, "IKRAFT", A2.midx(2020, 1)), self.assertRaisesRegex(SystemExit, "ikke byte-identisk"):
                 self._motor(["--allow-stale"], here=here)
-            self._motor(["--allow-stale"], here=here)                 # foer ikrafttraeden: ingen kontrol
+            self._motor(["--allow-stale"], here=here)                 # kalibrering fra foer ikrafttraeden: ingen kontrol
 
 
 
@@ -3091,6 +3140,56 @@ class TestAutomatiskeTal(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "formatet"):
             S.finra_margin(self._xlsx([]))
 
+    def _xlsx_delte(self, raekker, huller=False, saldo_som_tekst=False):
+        """Samme opbygning som FINRA's fil hentet 2026-11-13: tekstcellerne er DELTE strenge (t="s", <v> = indeks i
+        xl/sharedStrings.xml), tallene almindelige <v>-celler i B, C og D."""
+        import zipfile as _zf
+        strenge = ["Year-Month", "Debit Balances in Customers' Securities Margin Accounts",
+                   "Free Credit Balances in Customers' Cash Accounts", "Free Credit Balances in Customers' Securities Margin Accounts"]
+        celler = ['<row r="1" spans="1:4">' + "".join(f'<c r="{k}1" s="1" t="s"><v>{i}</v></c>' for i, k in enumerate("ABCD")) + "</row>"]
+        for i, (m, v) in enumerate(raekker):
+            strenge.append(m)
+            a = f'<c r="A{i + 2}" s="2" t="s"><v>{len(strenge) - 1}</v></c>'
+            if saldo_som_tekst:                                            # saldoen som tekst med tusindtalskomma
+                strenge.append(f"{v:,}")
+                b_ = f'<c r="B{i + 2}" s="3" t="s"><v>{len(strenge) - 1}</v></c>'
+            else:
+                b_ = f'<c r="B{i + 2}" s="3"><v>{v}</v></c>'
+            celler.append(f'<row r="{i + 2}" spans="1:4">{a}{b_}<c r="C{i + 2}" s="3"><v>1</v></c><c r="D{i + 2}" s="3"><v>2</v></c></row>')
+        si = [f"<si><t>{s}</t></si>" for s in strenge]
+        if huller:                                                         # tom delt streng og en streng i to stykker
+            si[2] = "<si/>"
+            si[4] = f'<si><r><t>{raekker[0][0][:5]}</t></r><r><t xml:space="preserve">{raekker[0][0][5:]}</t></r></si>'
+        ark = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet><sheetData>' + "".join(celler)
+               + "</sheetData></worksheet>")
+        b = io.BytesIO()
+        with _zf.ZipFile(b, "w") as z:
+            z.writestr("xl/worksheets/sheet1.xml", ark)
+            z.writestr("xl/sharedStrings.xml", f'<sst count="{len(si)}" uniqueCount="{len(si)}">' + "".join(si) + "</sst>")
+        return b.getvalue()
+
+    def test_finra_margin_med_delte_strenge(self):
+        """Audit 2026-11-13: filen FINRA serverede den dag brugte delte strenge, og parseren fandt ingen maaneder
+        ('formatet er aendret?'); raekke 4 viste derfor marginlaanet fra manual.json (2026-09), selv om filen
+        allerede havde 2026-10."""
+        rk = [("2026-10", 1448360), ("2026-09", 1480054), ("2026-08", 1453832), ("2025-10", 1183654), ("2025-09", 1126494)]
+        for huller in (False, True):
+            r = S.finra_margin(self._xlsx_delte(rk, huller=huller))
+            self.assertEqual((r["periode"], r["saldo"], r["saldo_aaret_foer"]), ("2026-10", 1448360.0, 1183654.0), huller)
+            self.assertEqual(r["vaerdi"], round((1448360 / 1183654 - 1) * 100, 1))
+        with self.assertRaisesRegex(RuntimeError, "formatet"):               # indeks uden for tabellen: ingen maaneder
+            S.finra_margin(self._xlsx_delte(rk).replace(b"xl/sharedStrings.xml", b"xl/sharedStringz.xml"))
+        # saldoen gemt som TEKST: foer blev strengens indeks laest som saldo (en konstrueret fil gav -100 % uden fejl)
+        r = S.finra_margin(self._xlsx_delte(rk, saldo_som_tekst=True))
+        self.assertEqual((r["periode"], r["saldo"], r["saldo_aaret_foer"]), ("2026-10", 1448360.0, 1183654.0))
+        with self.assertRaisesRegex(RuntimeError, "ikke positive"):
+            S.finra_margin(self._xlsx_delte([("2026-10", 0), ("2025-10", 1183654)]))
+        lokal = REAL_SNAP / "finra_margin.xlsx"                              # den rigtige fil findes kun lokalt (git-ignoreret)
+        if lokal.exists():
+            r = S.finra_margin(lokal.read_bytes())
+            self.assertRegex(r["periode"], r"^\d{4}-\d{2}$")
+            self.assertGreater(r["saldo"], 0)
+
     def test_det_nyeste_tal_vinder_og_kilden_vises(self):
         man = dict(spx_vs_hi=-0.02, spx_dato="2026-10-22", cape=40.0, cape_dato="2026-10-27", margin_yoy=30.0, margin_periode="2026-09")
         auto = dict(spx_vs_hi=dict(vaerdi=-0.025, dato="2026-10-23"), cape=dict(vaerdi=40.66, dato="2026-10-26"),
@@ -3111,6 +3210,17 @@ class TestAutomatiskeTal(unittest.TestCase):
             self.assertIn("fejl", ud["margin_yoy"])                                # offline i testen
             ud = F.afledte_tal(Path(tmp) / "findes_ikke", {}, hent_finra=False)
             self.assertIn("fejl", ud["spx_vs_hi"]); self.assertIn("fejl", ud["cape"]); self.assertNotIn("margin_yoy", ud)
+
+    def test_finra_fil_der_ikke_kan_laeses_faar_stadig_sin_hash(self):
+        """Audit 2026-11-13: snapshot 2026-11-13 hentede FINRA-filen, men formatet var aendret, og meta.json fik hverken
+        tal eller hash for den lokale fil. Hashen skal staa der, ogsaa naar filen ikke kan laeses."""
+        ulaeselig = b"ikke en xlsx"
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(F, "fetch_finra", lambda attempts=3: ulaeselig):
+            ud = F.afledte_tal(Path(tmp), {})
+            self.assertIn("fejl", ud["margin_yoy"])
+            self.assertEqual(ud["margin_yoy"]["sha256"], sha(ulaeselig))
+            self.assertEqual((Path(tmp) / "finra_margin.xlsx").read_bytes(), ulaeselig)
+            self.assertNotIn("vaerdi", ud["margin_yoy"])                           # motor falder tilbage til manual.json
 
 
 class TestCPOgDatastatusIMotor(unittest.TestCase):
@@ -3166,6 +3276,269 @@ class TestCPOgDatastatusIMotor(unittest.TestCase):
             self.assertIn(x["rolle"], ("P", "refit", "rygrad", "kontekst"))
 
 
+class TestAudit20261113(unittest.TestCase):
+    """Audit 2026-11-13: en kontekstfil med aendret skema maa aldrig vaelte laesningen (F18). Fejlinjektionen fjernede
+    eller afkortede hver ikke-veto-serie (158 koersler): kun Fed Boards EBP-fil kunne vaelte motor, fordi fetch kun
+    validerer 'ebp'-kolonnen, mens motor ogsaa laeser date, gz_spread og est_prob."""
+
+    @classmethod
+    def setUpClass(cls):
+        TestMotor.setUpClass.__func__(cls)
+
+    @classmethod
+    def tearDownClass(cls):
+        TestMotor.tearDownClass.__func__(cls)
+
+    _motor = TestMotor._motor
+    _scenario = TestMotor._scenario
+    HOVED = "date,gz_spread,ebp,est_prob"
+
+    def _ebp(self, tekst):
+        t = tempfile.TemporaryDirectory(); self.addCleanup(t.cleanup)
+        (Path(t.name) / "EBP.csv").write_text(tekst, encoding="utf-8")
+        return M.ebp_linje(Path(t.name))
+
+    def test_ebp_linjen_uaendret_ved_kendt_skema(self):
+        tekst, fejl = self._ebp(self.HOVED + "\n2026-09-01,0.93,-0.39,0.09\n2026-10-01,0.88,-0.2653,0.13\n")
+        self.assertIsNone(fejl)
+        self.assertEqual(tekst, "-0.27pp (2026-10); GZ-spaend 0.88pp; ekstern in-sample-probit 13% "
+                                "(andet maal, ikke sammenlignelig med P)")
+
+    def test_ebp_uden_fil_eller_uden_raekker_giver_ingen_linje(self):
+        with tempfile.TemporaryDirectory() as t:
+            self.assertEqual(M.ebp_linje(Path(t)), (None, None))
+        self.assertEqual(self._ebp(self.HOVED + "\n2026-10-01,0.88,.,0.13\n"), (None, None))
+
+    def test_ebp_skemaaendring_giver_grund_ikke_crash(self):
+        for navn, tekst in (("est_prob omdoebt", "date,gz_spread,ebp,est_prob_ny\n2026-10-01,0.88,-0.27,0.13\n"),
+                            ("est_prob fjernet", "date,gz_spread,ebp\n2026-10-01,0.88,-0.27\n"),
+                            ("gz_spread tom", self.HOVED + "\n2026-10-01,,-0.27,0.13\n"),
+                            ("date omdoebt", "Date,gz_spread,ebp,est_prob\n2026-10-01,0.88,-0.27,0.13\n"),
+                            ("kort raekke", self.HOVED + "\n2026-10-01,0.88,-0.27\n")):
+            linje, fejl = self._ebp(tekst)
+            self.assertIsNone(linje, navn)
+            self.assertRegex(fejl, "^(KeyError|ValueError|TypeError)", navn)
+
+    def test_motor_overlever_ebp_skemaaendring_og_p_er_uroert(self):
+        raw, here = self._scenario()
+        ud = here.parent / "d.json"
+        self._motor(["--json", str(ud)], raw=raw, here=here)
+        foer = json.loads(ud.read_text(encoding="utf-8"))
+        f = raw / self.today / "EBP.csv"
+        if not f.exists():
+            self.skipTest("snapshottet har ingen EBP.csv")
+        ln = f.read_text(encoding="utf-8-sig").splitlines()
+        f.write_text(chr(10).join([ln[0].replace("est_prob", "est_prob_ny")] + ln[1:]) + chr(10), encoding="utf-8")
+        tekst = self._motor(["--json", str(ud)], raw=raw, here=here)          # foer rettelsen: KeyError 'est_prob'
+        efter = json.loads(ud.read_text(encoding="utf-8"))
+        self.assertIn("utilgaengelig — uventet format i EBP.csv", tekst)
+        self.assertEqual((efter["p"], efter["baand"], efter["dom"]), (foer["p"], foer["baand"], foer["dom"]))
+        linje = next(k for k in efter["kredit"] if k["navn"].startswith("Excess bond premium"))
+        self.assertIn("utilgaengelig", linje["vaerdi"])
+
+    _orakel = TestMotor._orakel
+    LOGHOVED = ("| logget | snapshot | P | baand | basisrate | dom | kurve | antaending | note | kalibrering |" + chr(10)
+                + "|---|" + chr(10))
+
+    def _ny(self, snapnavn=None, **scen):
+        """Frisk (raw, here, LOG.md) — evt. med snapshottet under et andet navn (dato)."""
+        raw, here = self._scenario(**scen)
+        if snapnavn and snapnavn != self.today:
+            (raw / self.today).rename(raw / snapnavn)
+        logf = here.parent / "LOG.md"
+        logf.write_text(self.LOGHOVED, encoding="utf-8")
+        return raw, here, logf
+
+    def test_hele_hovedbogsraekken_og_recorden_matcher_et_uafhaengigt_orakel(self):
+        """Hovedbogen kan aldrig rettes, saa HVERT felt i raekken og i hovedbog.jsonl-recorden pinnes (mutationstest
+        2026-11-13: basisrate, vindue, input, P paa maanedstal, snapshot-hash, manifest, noegle og antaending kunne
+        aendres, uden at en eneste test fejlede)."""
+        y10, tb3 = 4.50, 3.40
+        p, lo, hi, dom, W = self._orakel(y10 - tb3)
+        raw, here, logf = self._ny(y10=y10, tb3=tb3)
+        snap = raw / self.today
+        meta = json.loads((snap / "meta.json").read_text(encoding="utf-8"))
+        gs10, tb3ms = C.read_fred(snap, "GS10"), C.read_fred(snap, "TB3MS")
+        mk = max(set(gs10) & set(tb3ms)); km = gs10[mk] - tb3ms[mk]                   # de publicerede maanedstal
+        op = W["op"]
+        pm = 1 / (1 + math.exp(-(op["w"][0] + op["w"][1] * (km - op["mu"]["curve"]) / op["sd"]["curve"])))
+        d0 = date.fromisoformat(self.today)
+        slut = d0.year * 12 + d0.month - 1 + 11
+        vindue = f"{d0.year}-{d0.month:02d}..{slut // 12}-{slut % 12 + 1:02d}"         # logningsmaaneden + 11 maaneder
+        nh = hashlib.sha256((HERE.parent / "BEDOEMMELSESNOEGLE.md").read_bytes().replace(b"\r\n", b"\n")).hexdigest()[:8]
+        self.assertIn("LOGGET som raekke 1", self._motor(["--log"], raw=raw, here=here))
+        r = M.laes_hovedbog(logf)[-1]
+        rec = json.loads((here.parent / "hovedbog.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+        # LOG.md-raekken, celle for celle
+        self.assertEqual((r["logget"], r["snapshot"]), (self.today, self.today))
+        self.assertEqual(r["P"], f"{p * 100:.1f}%")
+        self.assertEqual(r["baand"], f"{lo * 100:.1f}-{hi * 100:.1f}%")
+        self.assertEqual(r["basisrate"], f"{W['base_rate'] * 100:.1f}%")
+        self.assertEqual((r["dom"], r["kurve"]), (dom, f"{y10 - tb3:+.2f}"))
+        self.assertEqual((r["kalibrering"], r["vindue"]), (W["manifest_hash"], vindue))
+        self.assertEqual(r["P_maanedlig"], f"{pm * 100:.1f}%")
+        self.assertIn(f"noegle {nh} (BEDOEMMELSESNOEGLE.md)", r["note"])
+        self.assertEqual(r["antaending"], ", ".join(rec["antaending"]) or "ingen")
+        # recorden, felt for felt
+        self.assertEqual((rec["logget"], rec["snapshot"], rec["snapshot_sha256"]), (self.today, self.today, meta["snapshot_sha256"]))
+        self.assertEqual((rec["manifest"], rec["version"], rec["basisrate"], rec["dom"], rec["vindue"], rec["noegle"]),
+                         (W["manifest_hash"], W["version"], W["base_rate"], dom, vindue, nh))
+        self.assertAlmostEqual(rec["p"], p, places=6); self.assertAlmostEqual(rec["kurve"], y10 - tb3, places=4)
+        self.assertAlmostEqual(rec["baand"][0], lo, places=6); self.assertAlmostEqual(rec["baand"][1], hi, places=6)
+        self.assertAlmostEqual(rec["p_maanedlig"], pm, places=6)
+        self.assertEqual(rec["maanedlig"]["maaned"], f"{mk[0]}-{mk[1]:02d}")
+        self.assertAlmostEqual(rec["maanedlig"]["curve"], km, places=6)
+        li = rec["live_input"]
+        self.assertEqual(li["kilde"], "daglig")
+        self.assertAlmostEqual(li["y10"], y10, places=4); self.assertAlmostEqual(li["tb3"], tb3, places=4)
+        self.assertEqual(rec["input"], f"daglig {li['vindue'][0]}..{li['vindue'][1]} ({li['n_dage']}d)")
+        self.assertEqual(r["input"], rec["input"])
+        self.assertEqual(rec["antaending"], [m["navn"] for m in rec["monitors"] if m["aktiv"] is True])
+        self.assertEqual((len(rec["monitors"]), len(rec["scenarie"])), (5, 3))        # antaendings-klassen og appendikset
+        self.assertEqual(rec["monitors"][0]["navn"], "Kurven inverteret")
+        self.assertEqual((rec["censureret"], rec["ikke_logget_foer"]), (False, []))
+        self.assertIn(f"noegle {nh} (BEDOEMMELSESNOEGLE.md)", rec["noter"])
+
+    def test_logvinduets_regel_og_graenser(self):
+        """Noeglens pkt. (i): foerste hverdag fra den 10. + 3 dage. Soendag, vinduets foerste og sidste dag og dagen paa
+        hver side var uden test (mutationstest 2026-11-13)."""
+        self.assertEqual(M.logvindue(date(2027, 1, 20)), (date(2027, 1, 11), date(2027, 1, 14)))     # den 10. er en soendag
+        self.assertEqual(M.logvindue(date(2026, 10, 1)), (date(2026, 10, 12), date(2026, 10, 15)))    # ... en loerdag
+        self.assertEqual(M.logvindue(date(2026, 11, 30)), (date(2026, 11, 10), date(2026, 11, 13)))   # ... en hverdag
+        fra, til = M.logvindue(date.fromisoformat(self.today))
+        for dag, logges in ((fra, True), (til, True), (fra - timedelta(days=1), False), (til + timedelta(days=1), False)):
+            raw, here, _ = self._ny(snapnavn=fra.isoformat())
+            out = self._motor(["--log"], raw=raw, here=here, vindue=None, dag=dag)
+            self.assertEqual("LOGGET som raekke 1" in out, logges, dag)
+            self.assertEqual("uden for logvinduet" in out, not logges, dag)
+        # et snapshot hentet FOER vinduet maa ikke logges inde i det (G3.6: fetch skal koeres i vinduet)
+        raw, here, _ = self._ny(snapnavn=(fra - timedelta(days=1)).isoformat())
+        out = self._motor(["--log"], raw=raw, here=here, vindue=None, dag=fra)
+        self.assertIn("er hentet foer logvinduet", out); self.assertNotIn("LOGGET", out)
+
+    def test_log_uden_for_vindue_kraever_en_begrundelse(self):
+        for argv in (["--log", "--log-uden-for-vindue"], ["--log", "--log-uden-for-vindue", "--allow-stale"],
+                     ["--log", "--log-uden-for-vindue", "   "]):
+            raw, here, _ = self._ny()
+            out = self._motor(argv, raw=raw, here=here, vindue=(40, 41))               # aldrig i vinduet
+            self.assertIn("kraever en begrundelse", out, argv); self.assertNotIn("LOGGET", out, argv)
+
+    def test_log_afvises_naar_tabel_eller_diagnostik_ikke_passer(self):
+        """Tre --log-vagter uden test (mutationstest 2026-11-13). Uden synk-vagten kunne en ucensureret raekke logges
+        inde i en recession, hvis annonceringstabellen og USREC var uenige."""
+        raw, here, _ = self._ny()                                                       # (1) tabellen ude af synk med USREC
+        tab = here / "nber_announcements.csv"
+        tab.write_text(tab.read_text(encoding="utf-8").rstrip(chr(10)) + chr(10) + "peak_test,2099-01,2099-07-01,test" + chr(10),
+                       encoding="utf-8")
+        W = json.loads((here / "weights.json").read_text(encoding="utf-8"))            # hash-triggeren neutraliseres:
+        W["announcement_table_sha256"], W["announcement_table_kanonisk"] = C.ann_sha256(tab), A2.tabel_hash(tab)
+        (here / "weights.json").write_text(json.dumps(W), encoding="utf-8")            # kun synk-vagten er tilbage
+        out = self._motor(["--log"], raw=raw, here=here)
+        self.assertIn("--log AFVIST: ANNONCERINGSTABEL UDE AF SYNK MED USREC", out); self.assertNotIn("LOGGET", out)
+        self.assertNotIn("REKALIBRERING PAAKRAEVET", out)
+        raw, here, _ = self._ny()                                                       # (2) diagnostik.json mangler
+        (here / "diagnostik.json").unlink()
+        out = self._motor(["--log"], raw=raw, here=here)
+        self.assertIn("--log AFVIST: diagnostik.json passer ikke", out); self.assertNotIn("LOGGET", out)
+        raw, here, _ = self._ny()                                                       # (3) diagnostik fra et andet snapshot
+        d = json.loads((here / "diagnostik.json").read_text(encoding="utf-8")); d["snapshot"] = "1999-01-01"
+        (here / "diagnostik.json").write_text(json.dumps(d), encoding="utf-8")
+        out = self._motor(["--log"], raw=raw, here=here)
+        self.assertIn("--log AFVIST: diagnostik.json passer ikke", out); self.assertNotIn("LOGGET", out)
+
+    def test_fremmede_mapper_i_data_raw_blokerer_ikke_log(self):
+        """Foer blokerede ENHVER mappe, der sorterede efter snapshottet, --log med raadet 'koer fetch.py igen' — ogsaa
+        <dato>.gammel, som fetch efterlader paa Windows og selv kalder 'ignoreret af motor'."""
+        raw, here, _ = self._ny()
+        (raw / f"{self.today}.gammel").mkdir(); (raw / "noter").mkdir(); (raw / "zzz").mkdir()
+        self.assertIn("LOGGET som raekke 1", self._motor(["--log"], raw=raw, here=here))
+        raw, here, _ = self._ny()                                                       # et afbrudt forsoeg blokerer stadig
+        (raw / f"{self.today}.ny").mkdir()
+        out = self._motor(["--log"], raw=raw, here=here)
+        self.assertIn(f"nyeste snapshot-mappe er {self.today}.ny", out); self.assertNotIn("LOGGET", out)
+
+    def test_skyggefejl_efter_logmd_efterlader_altid_en_record(self):
+        """En raekke i LOG.md uden record i hovedbog.jsonl kan ikke repareres (maaneden er 'allerede logget'). Foer laa
+        opslaget af backup-mappen uden for skyggens try: en fejl dér vaeltede motor mellem de to skrivninger."""
+        def boom(*a, **k):
+            raise PermissionError("OneDrive utilgaengelig")
+        raw, here, logf = self._ny()
+        with mock.patch.object(SK, "backup_mappe", boom):
+            out = self._motor(["--log"], raw=raw, here=here)
+        self.assertIn("LOGGET som raekke 1", out); self.assertIn("BACKUP FEJLEDE", out)
+        rk = [ln for ln in (here.parent / "hovedbog.jsonl").read_text(encoding="utf-8").splitlines() if ln.strip()]
+        self.assertEqual(len(rk), 1)
+        self.assertEqual(len(M.laes_hovedbog(logf)), 1)
+        linje = (here.parent / SK.PRIVAT).read_text(encoding="utf-8").splitlines()[0]
+        self.assertEqual(json.loads(rk[0])["skygge_sha256"], SK.sha(linje))            # linjen ER skrevet: hashen staar der
+        raw, here, logf = self._ny()                                                    # og en HELT uventet fejl i skyggen
+        with mock.patch.object(SK, "hovedbogsfelter", boom):
+            out = self._motor(["--log"], raw=raw, here=here)
+        self.assertIn("LOGGET som raekke 1", out); self.assertIn("skygge (spec 8): MANGLER - PermissionError", out)
+        rec = json.loads((here.parent / "hovedbog.jsonl").read_text(encoding="utf-8").splitlines()[0])
+        self.assertIsNone(rec["skygge_sha256"]); self.assertIn("PermissionError", rec["skygge_mangler"])
+        self.assertEqual(rec["logget"], M.laes_hovedbog(logf)[0]["logget"])
+
+    def test_hovedbog_jsonl_uden_afsluttende_linjeskift_heles(self):
+        raw, here, _ = self._ny()
+        jf = here.parent / "hovedbog.jsonl"
+        jf.write_text('{"logget": "2026-01-12", "p": 0.2}', encoding="utf-8")           # uden LF (fx gemt i en editor)
+        self.assertIn("LOGGET", self._motor(["--log"], raw=raw, here=here))
+        rk = [json.loads(ln) for ln in jf.read_text(encoding="utf-8").splitlines()]    # hver linje er gyldig JSON
+        self.assertEqual([r["logget"] for r in rk], ["2026-01-12", self.today])
+        self.assertTrue(jf.read_bytes().endswith(b"\n"))
+
+    def test_arv_af_sp500_overlap_to_gange_i_traek(self):
+        """fetch fra ca. 2032: SP500-overlappet arves fra forrige snapshot. Har forrige snapshot SELV arvet, gav dict(...)
+        'multiple values for keyword argument sp500_arvet_fra' — hver fetch ville vaere vaeltet fra ca. september 2032."""
+        live = dict(sp500_n=3, cape_n=400, cape_median_abs_pct=0.01, cape_max_abs_pct=0.2, bestaaet=False)
+        foerste = F.arv_sp500_overlap(live, dict(sp500_n=81, sp500_median_abs_pct=0.0, bestaaet=True), "2032-07-12", True)
+        self.assertEqual((foerste["sp500_n"], foerste["sp500_arvet_fra"], foerste["bestaaet"]), (81, "2032-07-12", True))
+        anden = F.arv_sp500_overlap(live, foerste, "2032-08-10", True)                 # kilden har selv arvet
+        self.assertEqual((anden["sp500_n"], anden["sp500_arvet_fra"]), (81, "2032-07-12"))   # den oprindelige kilde bevares
+        self.assertEqual(anden["cape_n"], 400)                                         # CAPE-delen er dagens
+        self.assertFalse(F.arv_sp500_overlap(live, foerste, "2032-08-10", False)["bestaaet"])
+
+    def test_daglige_kurveserier_er_kritiske_efter_ti_dage(self):
+        """Live-kurvens friskhedsvagt (DGS10/DTB3: over 10 dage -> snapshot ukomplet -> --log afvist) var uden test."""
+        st = S.staleness({"DGS10": "2026-11-02", "DTB3": "2026-11-02", "GS10": "2026-10-01"}, today=date(2026, 11, 13))
+        self.assertEqual({k: (v["kritisk"], v["alder_dage"]) for k, v in st.items()}, {"DGS10": (True, 11), "DTB3": (True, 11)})
+        self.assertEqual(S.staleness({"DGS10": "2026-11-03", "DTB3": "2026-11-03"}, today=date(2026, 11, 13)), {})
+        self.assertTrue({"DGS10", "DTB3", "GS10", "TB3MS", "USREC"} <= set(S.KRITISKE))
+
+    def test_tidsrejsens_standarddatoer(self):
+        """tidsrejse.py uden argumenter: den 10. i naeste maaned (ogsaa hen over nytaar) og den foerste forfaldne september."""
+        import tidsrejse as TR
+        d = TR.standarddatoer(date(2026, 12, 28))
+        self.assertEqual(d[0], "2027-01-10")
+        self.assertLessEqual(len(d), 2)
+        self.assertTrue(all(x.endswith("-09-10") and x > "2026-12-28" for x in d[1:]))
+        self.assertEqual(TR.ALARM.rsplit(".", 1)[1], "test_frosne_vaegte_giver_ingen_reankrings_advarsel")
+        self.assertTrue(hasattr(TestMotor, TR.ALARM.rsplit(".", 1)[1]))      # alarmtesten findes stadig under det navn
+
+    def test_foerste_raekke_under_noeglen_faar_noegle_noten_een_gang(self):
+        """Noeglens regel ('Foerste raekke under en ny bedoemmelsesnoegle faar noten noegle <hash>') var uden test: ingen
+        test-fixture havde noeglefilen ved siden af LOG.md. Raekke 4 (2026-11-13) var foerste raekke under f9ad45db."""
+        hoved = ("| logget | snapshot | P | baand | basisrate | dom | kurve | antaending | note | kalibrering |" + chr(10)
+                 + "|---|" + chr(10))
+        nh = hashlib.sha256((HERE.parent / "BEDOEMMELSESNOEGLE.md").read_bytes().replace(b"\r\n", b"\n")).hexdigest()[:8]
+        raw, here = self._scenario()
+        logf = here.parent / "LOG.md"
+        logf.write_text(hoved, encoding="utf-8")
+        self.assertIn("LOGGET", self._motor(["--log"], raw=raw, here=here))
+        self.assertIn(f"noegle {nh} (BEDOEMMELSESNOEGLE.md)", M.laes_hovedbog(logf)[-1]["note"])
+        rec = json.loads((here.parent / "hovedbog.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+        self.assertEqual(rec["noegle"], nh)
+        raw, here = self._scenario()                                     # en senere raekke under SAMME noegle: ingen ny note
+        aar = date.today().year - 1
+        forrige = (f"| {aar}-01-12 | {aar}-01-12 | 17.7% | 12.7-25.6% | 18.0% | ikke skelnelig | +0.96 | ingen | "
+                   f"noegle {nh} (BEDOEMMELSESNOEGLE.md) | 72c3371d | {aar}-01..{aar}-12 | daglig | 15.6% |")
+        logf = here.parent / "LOG.md"
+        logf.write_text(hoved + forrige + chr(10), encoding="utf-8")
+        self.assertIn("LOGGET", self._motor(["--log"], raw=raw, here=here))
+        self.assertNotIn("noegle", M.laes_hovedbog(logf)[-1]["note"])
+
+
 class TestRaadetsSpec7(unittest.TestCase):
     """RAADETS_SPEC7 (7/7, 2026-10-27): maerke-taerskel, §1.2 i benchmark-raekken, BNP 'foerst set af os', ingen
     forventningsdel-advarsel, oracle-fri bootstrap foer den orakel-censurerede, BEY-formlen. Kun tekst, aldrig P."""
@@ -3199,8 +3572,16 @@ class TestRaadetsSpec7(unittest.TestCase):
         d = json.loads((HERE.parent / "dashboard.json").read_text(encoding="utf-8"))
         self.assertNotIn("forventningsdel", d["advarsler"])               # §3.6: C6 fjernet
         tekst = json.dumps(d, ensure_ascii=False)
-        for forbudt in ("98 %", "Rosenberg", "17.9", "senere vintage end advance", "parallelt skift"):
+        for forbudt in ("98 %", "Rosenberg", "senere vintage end advance", "parallelt skift"):
             self.assertNotIn(forbudt, tekst)
+        # RAADETS_SPEC7 (D6): P med CMT-kurven sat ind i de frosne vaegte vises ikke. Audit 2026-11-13: foer stod "17.9"
+        # (tallet fra oktober 2026) som forbudt streng i HELE dashboard.json — en hovedbogsraekke med P 17,9 % (kurve ca.
+        # +0,95pp; i dag +0,96) ville have gjort testen roed for altid, fordi raekker aldrig aendres.
+        konv = (d["live_input"].get("konvention") or {})
+        if konv.get("kurve_cmt") is not None and d.get("raa"):
+            p_cmt = 1 / (1 + math.exp(-(d["raa"]["alpha"] + d["raa"]["beta_curve_pr_pp"] * konv["kurve_cmt"])))
+            self.assertNotIn(f"{p_cmt * 100:.1f}", konv["tekst"])
+            self.assertNotIn(f"{p_cmt * 100:.1f}".replace(".", ","), konv["tekst"])
         of = d["diagnostik"]["parret_loss_bootstrap_oraclefri"]
         self.assertEqual(of["n_origins"], d["diagnostik"]["oracle_fri"]["alle_live_publicerbare"]["n"])
         self.assertEqual(of["n_draws"], 10000)
@@ -3303,9 +3684,11 @@ class TestSpec7ADiagnostik(unittest.TestCase):
         self.assertIsNone(M.diag_til_dashboard(None))
 
     def test_intet_foer_refitten_2027(self):
+        """Spec 7A §1: intet skrives foer R >= 2027-09 — og fra refitten skal diagnostikken vaere der (audit 2026-11-13:
+        foer kraevede testen 'ingen uscorede' ubetinget og gik roed, saa snart 2027-refitten var koert)."""
         d = json.loads((HERE / "diagnostik.json").read_text(encoding="utf-8"))
-        self.assertNotIn("uscorede", d)                                # spec 7A §1: intet skrives foer R >= 2027-09
-        self.assertFalse(P27.i_kraft_maaned(d.get("refit_maaned") or "2026-09"))
+        ikraft = P27.i_kraft_maaned(d.get("refit_maaned") or "2026-09")
+        self.assertEqual("konvention_bey" in (d.get("uscorede") or {}), ikraft)
 
     def test_build_dataset_omregner_kun_tb3(self):
         Dc = A2.build_dataset(REAL_SNAP, ["curve"])
@@ -3338,6 +3721,26 @@ class TestSpec7BRevisionsaudit(unittest.TestCase):
         self.assertEqual(len(serie), 12)
         self.assertEqual(serie[0][0], "2026-11-10")
         self.assertEqual(B3.aargange([])[0], [])
+
+    def test_ikke_logget_raekken_er_et_hul_ikke_en_aargang(self):
+        """Audit 2026-11-13: motor skriver en sprunget maaned som '| YYYY-MM (ikke logget) | – | ...'. Laest med motorens
+        egen parser talte den raekke som en aargang (snapshot '–' er en ikke-tom streng), saa 12 'i traek' kunne naas
+        paa 11 rigtige aargange — i strid med den forseglede spec 7B §2 (hul -> forfra)."""
+        hul = "| 2027-01 (ikke logget) | – | ikke logget | | | | | | ingen raekke i logvinduet | | | | |"
+        def linje(d):
+            return f"| {d} | {d} | 17.7% | 12.7-25.6% | 18.0% | ikke skelnelig | +0.96 | ingen |  | 72c3371d | x | y | 15.6% |"
+        datoer = [f"{2026 + (10 + i) // 12}-{(10 + i) % 12 + 1:02d}-10" for i in range(13)]      # 2026-11 .. 2027-11
+        with tempfile.TemporaryDirectory() as t:
+            logf = Path(t) / "LOG.md"
+            logf.write_text(chr(10).join(hul if d[:7] == "2027-01" else linje(d) for d in datoer) + chr(10), encoding="utf-8")
+            rk = M.laes_hovedbog(logf)                                # praecis som b3_revisionsaudit.main laeser LOG.md
+        self.assertEqual(rk[2]["snapshot"], "–")
+        serie, faerdig = B3.aargange(rk)
+        self.assertFalse(faerdig)                                     # foer rettelsen: 12 aargange, faerdig = True
+        self.assertEqual([lg for lg, _ in serie], datoer[3:])         # forfra efter hullet: 2027-02 .. 2027-11 (10 stk.)
+        self.assertTrue(all(sn != "–" for _, sn in serie))
+        serie, faerdig = B3.aargange([dict(logget="2026-11 (ikke logget)", snapshot="–")])
+        self.assertEqual((serie, faerdig), ([], False))               # en hulraekke som foerste raekke: ingen aargang 1
 
     def _byg(self, raw, skridt, drop_sidste=False, markedsrevision=False):
         datoer = [f"{y}-{m:02d}-15" for y in (2024, 2025, 2026) for m in range(1, 13)][9:34]   # 2024-10..2026-10
