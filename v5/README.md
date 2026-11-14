@@ -27,6 +27,7 @@ blev til, ikke hvordan den koeres i dag.
 | `protokol2027.py`, `spec2027/` | RAADETS_2027's regler fra september-refitten 2027, hver efter en forseglet spec (sha256 laast i koden): gate, L_R-audit, indholdstrigger, maanedligt fit + uscorede felter, live-censureringens regeltekst, skill-saetningen ved refitten. Virker kun for kalibreringer med refit-maaned >= 2027-09 |
 | `replay2027.py` | Den konfigurationsspecifikke hovedbogs-replay (september + hash + indholdstrigger) og den re-afledte styrkeklausul — koeres ved refitten 2027 |
 | `tidsrejse.py` | Koerer testsuiten paa en fremtidig kalenderdato (audit 2026-11-13): fanger tests og regler, der gaar i stykker paa kalenderen alene. Skriver intet |
+| `dashboard_tjek.js` | Proever `../dashboard.html` i en rigtig browser (audit 2026-11-13): hovedbogsgrafen med 1-480 maaneders raekker og huller, translitterationen, raekkernes felter og fejlstierne. Kraever Node og Playwright; ikke en del af CI. Skriver intet |
 | `skygge.py` | Spec 8 (RAADETS_SPEC8): hukommelses-skyggemodellen (curve + curve_min12) uden operationel myndighed. `motor.py --log` skriver hver raekkes linje i den private `../skygge_hukommelse.jsonl` (git-ignoreret, backup uden for repoet) og kun dens sha256 i hovedbog.jsonl; `--fit` ved refitten (`kalibreringer/skygge_<manifest>.json`); `--verificer` tjekker kompletheden. Viser aldrig skyggens tal |
 
 ## Maanedligt ritual (~5 min) — logdag: foerste hverdag fra den 10. (+ 3 dage)
@@ -282,7 +283,11 @@ Siden er [../dashboard.html](../dashboard.html) (2026-10-26): én HTML-fil uden 
 [../DASHBOARD-BRIEF.md](../DASHBOARD-BRIEF.md)'s sektioner og 15 regler. Den læser `dashboard.json` fra samme
 mappe; serveres repo-roden (`python -m http.server`), virker den direkte, ellers vælges filen i siden.
 Kildetekster translittereres (aa/ae/oe -> å/æ/ø, med undtagelse af fx Baa og koef.) og sættes i dansk
-talformat — de eneste ændringer brief'en tillader.
+talformat — de eneste ændringer brief'en tillader. Filnavne, hashes og afsnitsnumre ("diagnostik 4.5") gengives
+ordret, så de kan findes i repoet. Hovedbogstabellen viser rækkens øvrige LOG.md-felter (kalibrering, input, P på
+månedstal, de uscorede felter og noten) på en linje under rækken. Hovedbogsgrafens tidsakse har to lag (månedsnavne
+talt fra nyeste række, årstal under januar), der tyndes ud efter pladsen, så etiketterne ikke støder sammen, når
+rækkerne bliver mange. Efter ændringer i siden: `node dashboard_tjek.js` (kræver Node og Playwright; ikke i CI).
 
 `python motor.py --json [sti]` skriver hele laesningen som JSON (default
 `../dashboard.json`): P, baand, basisrate, `baand_udelukker_basisrate`/`ratio`,
@@ -1008,6 +1013,17 @@ re-afledt til "over 200 kalenderaar; 0,25; 53-66 %". Forudsaetning: NBER daterer
   raekke med P 17,9 %; den tjekker nu det, raadet besluttede (ingen P med CMT-kurven i konventionsnoten).
 - **`analyser/frekvensgate.py`** brugte stille nyeste snapshot til blokken `P_i_dag`, saa den hash-laaste resultatfil
   ikke kunne genskabes. Nu pinnet til 2026-10-15 som `universstart.py`; filen genskabes identisk.
+- **Dashboardet** (`../dashboard.html`; proevet i Chromium med `dashboard_tjek.js`, som fejler paa den gamle side og
+  er groen paa den nye — 1.164 grafer med 1-480 maaneders raekker paa 320-1280 px, med og uden huller):
+  (1) hovedbogsgrafens maanedsetiketter stoedte sammen fra 7 raekker paa en telefon, dvs. ved februar-laesningen 2027,
+  og fra 13 paa en bred skaerm; tidsaksen har nu to lag (maanedsnavne talt fra nyeste raekke, aarstal under januar),
+  der tyndes ud efter pladsen, og "ikke logget" staar lodret eller udelades i smalle kolonner i stedet for at ligge
+  oven paa naboraekkerne; (2) en fejl under tegningen (fx et manglende felt) efterlod en halv side uden besked, fordi
+  fejlbeskedens felt var fjernet, foer tegningen begyndte — siden bygges nu faerdig, foer den vises; (3)
+  translitterationen aendrede filnavne ("BEDØMMELSESNØGLE.md"), ville aendre hashes med "ae"/"aa" (6baeade4) og
+  flertals-oe ("datør"), og talformatet gjorde afsnitsnummeret "diagnostik 4.5" til "4,5"; (4) hovedbogstabellen viser
+  nu raekkens kalibrering, input, P paa maanedstal, de uscorede felter og noten under raekken. Kendt graense: over
+  ca. 90 maaneder paa en telefon er kolonnerne smallere end en synlig prik. `dashboard.json` er uroert.
 - **Dokumentation:** testantal (stod 238/248), 54 serier (stod 53), `skygge.py` har ingen `--log`, finalize6 ADVARER
   ved en ikke-refit-klar rygrad (stod "naegter" fem steder), ablation9's "40 % samlet" stod om den forkerte model,
   "syv feature-kandidater" er seks features plus fuldmodellen, forsidernes ritual manglede spec 8's to trin,
@@ -1029,11 +1045,9 @@ re-afledt til "over 200 kalenderaar; 0,25; 53-66 %". Forudsaetning: NBER daterer
 4. **Intet minimum for antal dage i trailing-vinduet.** Med DGS10 eller DTB3 afkortet til tre raekker beregner motor
    P af tre dage (18,7 % mod 17,7 %) uden advarsel; raekkens `input`-felt viser dog "(3d)". Forslag: fetch goer
    snapshottet ukomplet under fx 15 faelles handelsdage.
-5. **Dashboardet** (gennemgaaet i browser ved 1280 og 390 px; ingen fejl med dagens data): hovedbogsgrafens
-   maanedsetiketter overlapper fra ca. 7 raekker paa mobil og 13 paa desktop; hovedbogstabellen viser hverken `note`,
-   `kalibrering`, `input` eller P paa maanedstal; en undtagelse under tegningen efterlader en stille afkortet side;
-   siden har ingen doctype og venter paa Google Fonts; "BEDOEMMELSESNOEGLE.md" og "diagnostik 4.5" translittereres
-   forkert ("BEDØMMELSESNØGLE.md", "4,5").
+5. **Dashboardet:** de fire visningsfejl er rettet (se ovenfor). Tilbage staar to valg i sidens opbygning, som
+   ikke giver synlige fejl: siden har ingen doctype (browseren tegner den i quirks mode), og dens foerste visning
+   venter paa stylesheetet fra Google Fonts.
 6. **Analyserne:** `styrke_simulation.py` er ikke bit-reproducerbar paa tvaers af CPU'er (wild-cluster-felterne i 3.-4.
    decimal), fire analyser laeser vaegtene i drift og kan ikke genkoeres efter 2027-refitten, og
    indholdstriggerens "max ca. 1 pp" er regel B's tal, ikke den vedtagne regels (delegeret gennemgang; de to sidste
